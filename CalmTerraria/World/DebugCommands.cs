@@ -97,6 +97,15 @@ internal static class DebugCommands
         // talk - whether the game thinks a conversation is open.
         autopilot.Register("talk", _ => log.Info($"Talk: npc {Main.LocalPlayer.talkNPC} sign {Main.LocalPlayer.sign} text '{Main.npcChatText}' shop {Main.npcShop} "
             + $"mouseRight {Main.mouseRight} release {Main.mouseRightRelease} chatRelease {Main.npcChatRelease} inventory {Main.playerInventory} mouse {Main.mouseX},{Main.mouseY}"));
+        // clearing - nothing but air around the player, down to the feet.
+        autopilot.Register("clearing", _ =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            for (var x = px - 6; x <= px + 6; x++)
+                for (var y = py - 8; y <= py + 1; y++)
+                    WorldGen.KillTile(x, y, noItem: true);
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

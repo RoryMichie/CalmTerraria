@@ -25,6 +25,8 @@ direction, and what is under it is said as it lands.
 - Shift with a direction skims: the cursor runs that way to the first
   tile that reads differently.
 - K says what is under the cursor and where that is from the player.
+- Shift+K asks the game whether the room at the cursor is fit to
+  live in, and reads its answer: what is missing, if anything.
 - Ctrl+K brings the cursor back to the player.
 
 While the cursor is within reach it travels with the player and keeps
@@ -42,6 +44,13 @@ whatever the game's own mouse buttons are bound to.
 
 Using a tool or placing something beyond the character's reach says
 "Out of reach."
+
+Building is the left bracket with a block or a wall held: it goes on
+the cursor's tile. Holding the bracket and moving the cursor builds on
+each tile it reaches. A placement that works makes the game's sound;
+one that does not says why - "Occupied.", "Nothing to attach to.",
+"Out of reach", "None left." A block cannot go where the character is
+standing.
 
 # 4. The scanner
 

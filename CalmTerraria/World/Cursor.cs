@@ -65,6 +65,14 @@ internal sealed class Cursor
         Bind(commands, 'm', 0, 1);
         Bind(commands, ',', 1, 1);
         commands[KeyCombo.Plain(Key.Char('k'))] = ReadWhere;
+        // Shift+K: the game's own housing query, on the cursor's tile.
+        // What it finds is one of the game's messages, spoken as those are.
+        commands[KeyCombo.WithShift(Key.Char('k'))] = () =>
+        {
+            var (x, y) = Tile;
+            if (WorldGen.MoveTownNPC(x, y, -1))
+                Main.NewText(Lang.inter[39].Value, 255, 240, 20);
+        };
         commands[KeyCombo.WithCtrl(Key.Char('k'))] = () =>
         {
             var (px, py) = WorldScanner.PlayerTile();
@@ -99,6 +107,57 @@ internal sealed class Cursor
     {
         Place(x, y);
         Say(TileReader.Describe(_x, _y));
+        // Dragged with the button down: the next tile is built on too.
+        if (_left)
+            WatchPlacing();
+    }
+
+    /// <summary>A tile something is being placed on, as it was, and
+    /// how many frames it has to change before the failure is said.</summary>
+    private (int X, int Y, bool HadTile, ushort Wall, int Item, int Frames)? _placeWatch;
+
+    /// <summary>Placing makes the game's own sound when it works and
+    /// nothing at all when it does not; this is where the nothing
+    /// gets words.</summary>
+    private void WatchPlacing()
+    {
+        var item = Main.LocalPlayer.HeldItem;
+        if (item.IsAir || (item.createTile < 0 && item.createWall <= 0) || !InReach(_x, _y))
+        {
+            _placeWatch = null;
+            return;
+        }
+        var tile = Main.tile[_x, _y];
+        _placeWatch = (_x, _y, tile.HasTile, tile.WallType, item.type, 20);
+    }
+
+    private void CheckPlacing()
+    {
+        if (_placeWatch is not { } watch)
+            return;
+        var tile = Main.tile[watch.X, watch.Y];
+        var held = Main.LocalPlayer.HeldItem;
+        if (tile.HasTile != watch.HadTile || tile.WallType != watch.Wall)
+        {
+            _placeWatch = null;
+            // The last of the stack went into it.
+            if (held.IsAir || held.type != watch.Item)
+                Say("None left.");
+            return;
+        }
+        if (watch.Frames > 0 && _left)
+        {
+            _placeWatch = watch with { Frames = watch.Frames - 1 };
+            return;
+        }
+        _placeWatch = null;
+        if (watch.Frames > 0)
+            return;
+        var wall = Terraria.ID.ContentSamples.ItemsByType[watch.Item].createWall > 0;
+        if (wall)
+            Say(watch.Wall != 0 ? "Already walled." : "Nothing to attach the wall to.");
+        else
+            Say(watch.HadTile ? "Occupied." : "Nothing to attach to.");
     }
 
     private void Place(int x, int y)
@@ -119,6 +178,7 @@ internal sealed class Cursor
     /// player goes. Silently - the player moved, not the cursor.</summary>
     private void Carry()
     {
+        CheckPlacing();
         if (_lockWatch is { } watch)
         {
             // A key in the pack opens it on the click; without one
@@ -246,6 +306,8 @@ internal sealed class Cursor
             Say($"Out of reach, {Directions.Offset(x - px, y - py)}.");
         }
         button = true;
+        if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _left))
+            WatchPlacing();
     }
 
     /// <summary>Whether using the item acts on the tile under the

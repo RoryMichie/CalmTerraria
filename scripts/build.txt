@@ -1,0 +1,71 @@
+# Building as it is: place, drag, fail with a reason, check the housing.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+key shift+tab
+key shift+tab
+key shift+tab
+key shift+tab
+heard Powers
+key enter
+heard Omniscience
+key tab
+key tab
+key enter
+heard Items
+type dirt
+wait 600
+key enter
+heard Given
+key escape
+key escape
+key escape
+wait 2000
+key tab
+heard Inventory
+type dirt
+wait 600
+key space
+heard Held
+key escape
+wait 500
+do clearing
+wait 1500
+log --- place beside the feet, then drag upwards with the button down
+key ctrl+k
+key l
+key l
+key m
+key k
+down [
+wait 500
+key i
+wait 500
+key i
+wait 500
+up [
+key k
+key m
+key k
+log --- on an occupied tile, and out in the open air
+down [
+wait 600
+up [
+wait 300
+key ctrl+k
+key i
+key i
+key i
+key i
+key i
+down [
+wait 600
+up [
+wait 300
+key shift+k
+wait 500
+quit
