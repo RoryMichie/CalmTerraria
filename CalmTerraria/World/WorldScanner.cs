@@ -213,6 +213,15 @@ internal sealed class WorldScanner
         const int edge = 400;
         foreach (var feature in features)
         {
+            // A chest the player has named is found by that name: it
+            // is its own entry among the containers, name first.
+            if (feature.Kind.Category == TerrariaScanSource.Containers)
+            {
+                var index = Chest.FindChest(feature.Bounds.Left, feature.Bounds.Top);
+                if (index >= 0 && Main.chest[index] is { } chest && !string.IsNullOrWhiteSpace(chest.name))
+                    feature.Name = $"{chest.name.Trim()}, {feature.Kind.Name}";
+                continue;
+            }
             if (feature.Kind.Name != "Water" || feature.Tiles < oceanTiles || feature.Bounds.Top > Main.worldSurface)
                 continue;
             var left = feature.Bounds.Left < edge;

@@ -111,6 +111,9 @@ Factorio Access's keys.
 - Ctrl+Home: move the character there - a teleport, to the nearest
   footing beside the thing - and the cursor onto it.
 
+A chest that has been given a name is listed under Containers by that
+name, as its own entry: "Ores, Chest".
+
 Players are the scanner's second category, after waypoints: everyone
 else in the world, at any distance, each under their own name.
 

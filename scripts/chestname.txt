@@ -1,0 +1,36 @@
+# A named chest is in the scanner under its name.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do placechest
+wait 500
+do cursor-last
+down ]
+heard list
+up ]
+key tab
+key end
+key enter
+heard Name
+type Loot
+key enter
+heard Renamed
+key escape
+wait 8000
+key end
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pagedown
+wait 300
+key pagedown
+wait 300
+key pagedown
+wait 300
+key pageup
+key pageup
+quit
