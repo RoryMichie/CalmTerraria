@@ -210,12 +210,35 @@ internal sealed class Cursor
         return false;
     }
 
+    /// <summary>The right button on someone who can be talked to but
+    /// is too far away to hear: the game does nothing, so it is said.</summary>
+    private bool PersonTooFar(int x, int y)
+    {
+        var tile = new Rectangle(x * 16, y * 16, 16, 16);
+        var player = Main.LocalPlayer;
+        // The game's own test for who is near enough to talk to.
+        var near = new Rectangle(
+            (int)player.Center.X - Player.tileRangeX * 16, (int)player.Center.Y - Player.tileRangeY * 16,
+            Player.tileRangeX * 32, Player.tileRangeY * 32);
+        foreach (var npc in Main.ActiveNPCs)
+        {
+            if (!npc.townNPC && !npc.isLikeATownNPC || !npc.Hitbox.Intersects(tile))
+                continue;
+            if (near.Intersects(npc.Hitbox))
+                return false;
+            var (px, py) = WorldScanner.PlayerTile();
+            Say($"Too far to talk, {Directions.Offset(x - px, y - py)}.");
+            return true;
+        }
+        return false;
+    }
+
     private void Press(ref bool button)
     {
         if (button)
             return;
         var (x, y) = Tile;
-        if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _right) && ChestRefused(x, y))
+        if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _right) && (ChestRefused(x, y) || PersonTooFar(x, y)))
             return;
         if (!InReach(x, y) && UsesReach(Main.LocalPlayer.HeldItem))
         {

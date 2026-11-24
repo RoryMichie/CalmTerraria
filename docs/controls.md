@@ -75,7 +75,9 @@ refusal is read out before the title menu returns.
 # 6. The pack screen
 
 Tab or Escape, in a world. The stops: the inventory, the equipment,
-crafting, the chat list, the message box, Powers, and Save and exit.
+crafting, Powers, Save and exit, then the chat list and the message
+box - chat is last, so from the world it is Shift+Tab away and the
+things done with the hands are forwards.
 
 - Inventory: Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
@@ -102,6 +104,17 @@ safe, brings the same screen with two tab stops in front:
 
 While a chest is open, Enter in the inventory puts all of the item in
 the chest; Space still holds. Escape closes the chest.
+
+Talking to someone (right bracket on them, from near enough) brings the
+screen with what they said in front, as a stop that does nothing, and
+after it a Replies list of the conversation's buttons: Shop, Quest,
+Heal, Happiness and so on. Enter chooses one, and what they say next
+is read. Escape ends the conversation. A sign reads the same way.
+
+A shop puts its list in front: each item with its price, Enter buys
+one and says what money is left, F1 describes. While a shop is open,
+Enter in the inventory sells all of the item; the shop keeps it, to
+be bought back.
 
 Holding swaps the item into the hand; the number keys still switch
 between the last ten things held.

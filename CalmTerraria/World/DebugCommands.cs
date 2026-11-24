@@ -94,6 +94,9 @@ internal static class DebugCommands
         });
         // clock - the world's time, to see whether it is running.
         autopilot.Register("clock", _ => log.Info($"Clock: {Main.time:0} paused {Main.gamePaused}"));
+        // talk - whether the game thinks a conversation is open.
+        autopilot.Register("talk", _ => log.Info($"Talk: npc {Main.LocalPlayer.talkNPC} sign {Main.LocalPlayer.sign} text '{Main.npcChatText}' shop {Main.npcShop} "
+            + $"mouseRight {Main.mouseRight} release {Main.mouseRightRelease} chatRelease {Main.npcChatRelease} inventory {Main.playerInventory} mouse {Main.mouseX},{Main.mouseY}"));
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

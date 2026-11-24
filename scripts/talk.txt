@@ -1,0 +1,52 @@
+# Talking to people: the merchant's shop, the angler's quest.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do spawn Merchant 2 0
+wait 1500
+do cursor-npc Merchant
+down ]
+heard Merchant
+up ]
+key tab
+heard Replies
+key enter
+heard Shop
+key f1
+wait 300
+key enter
+wait 500
+key down
+key enter
+wait 500
+key tab
+heard Inventory
+type wood
+wait 600
+key enter
+wait 500
+key escape
+wait 1000
+log --- the angler
+do spawn Angler 2 0
+wait 1500
+do cursor-npc Angler
+down ]
+heard Angler
+up ]
+key tab
+heard Replies
+key enter
+wait 1500
+key tab
+wait 300
+key down
+wait 300
+key escape
+wait 500
+do state
+quit

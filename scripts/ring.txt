@@ -11,6 +11,8 @@ key shift+tab
 heard World
 wait 300
 key shift+tab
+key shift+tab
+key shift+tab
 heard Save and exit
 key tab
 heard World

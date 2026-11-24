@@ -4,6 +4,8 @@ play calmtest calmtest
 heard Ready
 wait 2000
 key shift+tab
+key shift+tab
+key shift+tab
 heard Save and exit
 key enter
 heard Single player

@@ -144,17 +144,20 @@ internal static class ItemKeys
 /// natural thing with the item - wears what can be worn, holds
 /// anything else - Space always holds, Delete trashes one stack, a
 /// digit puts it in that hotbar slot, F1 describes it. While a chest
-/// is open, Enter puts the item in the chest.</summary>
+/// is open, Enter puts the item in the chest; in a shop, Enter sells
+/// it.</summary>
 public sealed class PackList : ListBox<PackLine>
 {
     private readonly IPack _pack;
     private readonly IChest? _chest;
+    private readonly IShop? _shop;
 
-    public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null)
+    public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null, IShop? shop = null)
         : base(parent, "Inventory", Array.Empty<PackLine>())
     {
         _pack = pack;
         _chest = chest;
+        _shop = shop;
         BindItems(new StackLines(pack.Stacks).Lines);
     }
 
@@ -169,6 +172,16 @@ public sealed class PackList : ListBox<PackLine>
         var line = Items[SelectedIndex];
         if (input.Kind == InputKind.Activate)
         {
+            if (_shop != null)
+            {
+                // Every stack of it, as with a chest. The shop keeps
+                // what it is sold, to be bought back.
+                var any = false;
+                foreach (var stack in line.Stacks.ToList())
+                    any |= _shop.Sell(stack.Slot);
+                Announce(any ? $"Sold. {_shop.Money()}." : "Can't sell that.");
+                return true;
+            }
             if (_chest != null)
             {
                 // Every stack of it. The line leaves for the other list.
@@ -505,6 +518,107 @@ internal sealed class WorldStop : CustomWidget
     }
 }
 
+/// <summary>What someone in the world is saying, and what can be
+/// said back.</summary>
+/// <param name="Options">The dialogue's buttons, without Close:
+/// leaving the screen is how a conversation is closed.</param>
+public sealed record Talk(string Speaker, string Text, IReadOnlyList<string> Options);
+
+/// <summary>Something a shop sells.</summary>
+/// <param name="Price">As words: "1 gold 50 silver".</param>
+public sealed record ShopItem(int Slot, string Name, int Count, string Price);
+
+public enum BuyResult { Bought, CantAfford, NoRoom, Refused }
+
+public interface IShop
+{
+    IReadOnlyList<ShopItem> Items();
+
+    /// <summary>Buy one, into the inventory.</summary>
+    BuyResult Buy(int slot);
+
+    /// <summary>Sell an inventory stack. False when the shop will
+    /// not take it.</summary>
+    bool Sell(int packSlot);
+
+    /// <summary>What the player has to spend, as words.</summary>
+    string Money();
+
+    string Describe(int slot);
+}
+
+public sealed partial class ShopLine : Element
+{
+    public ShopItem Item { get; internal set; }
+
+    public ShopLine(ShopItem item) => Item = item;
+
+    [Field]
+    public string Value => Item.Count > 1 ? $"{Item.Name}, {Item.Count}, {Item.Price}" : $"{Item.Name}, {Item.Price}";
+}
+
+/// <summary>What the shop sells, alphabetical, each with its price.
+/// Enter buys one and says what money is left; F1 describes.</summary>
+public sealed class ShopList : ListBox<ShopLine>
+{
+    private readonly IShop _shop;
+    private readonly Dictionary<int, ShopLine> _lines = new();
+    private List<ShopLine> _sorted = new();
+
+    public ShopList(IWidgetContainer parent, IShop shop)
+        : base(parent, "Shop", Array.Empty<ShopLine>())
+    {
+        _shop = shop;
+        BindItems(Lines);
+    }
+
+    private IReadOnlyList<ShopLine> Lines()
+    {
+        var items = _shop.Items()
+            .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(item => item.Slot)
+            .ToList();
+        var changed = items.Count != _sorted.Count;
+        var sorted = new List<ShopLine>(items.Count);
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (!_lines.TryGetValue(items[i].Slot, out var line) || line.Item.Name != items[i].Name)
+                _lines[items[i].Slot] = line = new ShopLine(items[i]);
+            line.Item = items[i];
+            sorted.Add(line);
+            changed |= i >= _sorted.Count || !ReferenceEquals(_sorted[i], line);
+        }
+        if (changed)
+            _sorted = sorted;
+        return _sorted;
+    }
+
+    public override bool ReservesKey(KeyCombo combo) =>
+        (!combo.HasModifier && (combo.Key == Key.Enter || combo.Key == ItemKeys.Describe)) || base.ReservesKey(combo);
+
+    protected override bool OnInput(in InputEvent input)
+    {
+        if (Items.Count == 0)
+            return base.OnInput(input);
+        var item = Items[SelectedIndex].Item;
+        if (input.Is(ItemKeys.Describe))
+        {
+            Announce(ItemKeys.Said(_shop.Describe(item.Slot)));
+            return true;
+        }
+        if (input.Kind != InputKind.Activate)
+            return base.OnInput(input);
+        Announce(_shop.Buy(item.Slot) switch
+        {
+            BuyResult.Bought => $"Bought. {_shop.Money()} left.",
+            BuyResult.CantAfford => $"Not enough money. You have {_shop.Money()}.",
+            BuyResult.NoRoom => "No room in the inventory.",
+            _ => "Can't buy that.",
+        });
+        return true;
+    }
+}
+
 /// <summary>Which stop a freshly opened pack screen starts on.</summary>
 public enum PackFocus { First, Last, Chat }
 
@@ -545,7 +659,11 @@ public sealed class PackScreen
     /// <param name="notice">Why something the player reached for
     /// did not open - a chest someone else has open. It stands first,
     /// as a tab stop that does nothing, where the chest would be.</param>
-    public void Open(IChest? chest = null, string? notice = null, PackFocus focus = PackFocus.First)
+    /// <param name="talk">Someone speaking: their words stand first,
+    /// as a stop that does nothing, then what can be said back.</param>
+    /// <param name="choose">Called with the index of the reply chosen.</param>
+    public void Open(IChest? chest = null, string? notice = null, PackFocus focus = PackFocus.First,
+        Talk? talk = null, Action<int>? choose = null, IShop? shop = null)
     {
         if (_dialog != null)
             return;
@@ -562,6 +680,17 @@ public sealed class PackScreen
         ChatBox? box = null;
         if (notice != null)
             first = new CustomWidget(dialog, notice);
+        if (talk != null)
+        {
+            first ??= new CustomWidget(dialog, $"{talk.Speaker}: {talk.Text}");
+            if (talk.Options.Count > 0)
+            {
+                var replies = new ListBox(dialog, "Replies", talk.Options, activateItems: true);
+                replies.Activated += () => choose?.Invoke(replies.SelectedIndex);
+            }
+        }
+        if (shop != null)
+            first ??= new ShopList(dialog, shop);
         if (chest != null)
         {
             first ??= new ChestList(dialog, chest);
@@ -581,11 +710,21 @@ public sealed class PackScreen
                 }
             };
         }
-        var pack = new PackList(dialog, _pack, chest);
+        var pack = new PackList(dialog, _pack, chest, shop);
         first ??= pack;
         _ = new EquipList(dialog, _pack);
         if (_crafting != null)
             _ = new CraftList(dialog, _crafting);
+        if (_powers is { } powers)
+            new Button(dialog, "Powers").Activated += powers.Open;
+        var exit = new Button(dialog, "Save and exit");
+        exit.Activated += () =>
+        {
+            _saveAndExit();
+            dialog.Close();
+        };
+        // Chat comes last, so that from the world it is one step
+        // backwards and the things done with the hands are forwards.
         if (_chatLog != null && _chat != null)
         {
             var log = _chatLog;
@@ -595,14 +734,6 @@ public sealed class PackScreen
             messages.SelectedIndex = int.MaxValue;
             box = new ChatBox(dialog, _chat);
         }
-        if (_powers is { } powers)
-            new Button(dialog, "Powers").Activated += powers.Open;
-        var exit = new Button(dialog, "Save and exit");
-        exit.Activated += () =>
-        {
-            _saveAndExit();
-            dialog.Close();
-        };
         dialog.Closed += () =>
         {
             _dialog = null;
@@ -610,7 +741,7 @@ public sealed class PackScreen
         };
         Widget start = focus switch
         {
-            PackFocus.Last => exit,
+            PackFocus.Last => (Widget?)box ?? exit,
             PackFocus.Chat when box != null => box,
             _ => first,
         };

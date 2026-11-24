@@ -65,7 +65,7 @@ public class ChatAndRingTests
     {
         var (ui, screen, _, _) = Make();
         screen.Open(focus: PackFocus.Last);
-        ui.Expect("Save and exit button");
+        ui.Expect("Message edit blank");
         ui.Press("tab");
         ui.Expect("World");
         Assert.False(screen.IsOpen);

@@ -6,6 +6,8 @@ wait 3000
 key end
 key k
 key shift+tab
+key shift+tab
+key shift+tab
 heard Save and exit
 key enter
 heard Single player

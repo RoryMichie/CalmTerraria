@@ -79,6 +79,22 @@ public sealed class CalmTerrariaMod : Mod
                 scanner.JumpRequested += target => cursor.MoveTo(target.X, target.Y);
                 _autopilot?.Register("state", _ => Logger.Info($"State: {cursor.DebugState()}"));
                 _autopilot?.Register("cursor-last", _ => cursor.MoveTo(DebugCommands.LastPlaced.X, DebugCommands.LastPlaced.Y));
+                // cursor-npc Merchant - the cursor onto the nearest of them.
+                _autopilot?.Register("cursor-npc", name =>
+                {
+                    var type = Terraria.ID.NPCID.Search.GetId(name.Trim());
+                    foreach (var npc in Main.ActiveNPCs)
+                    {
+                        if (npc.type != type)
+                            continue;
+                        // Beside them first: people wander.
+                        Main.LocalPlayer.Bottom = npc.Bottom - new Microsoft.Xna.Framework.Vector2(24f, 0f);
+                        Main.LocalPlayer.velocity = Microsoft.Xna.Framework.Vector2.Zero;
+                        cursor.MoveTo((int)(npc.Center.X / 16f), (int)(npc.Center.Y / 16f));
+                        return;
+                    }
+                    throw new InvalidOperationException($"no {name} in the world");
+                });
                 _ = new Feedback(_host, _shell);
                 _autopilot?.Register("footsteps", _ => Logger.Info($"Footsteps: {Feedback.FootstepsRaised} raised, last {Feedback.LastFootstep}"));
                 var sonar = new EnemySonar(_host, _shell, Logger);

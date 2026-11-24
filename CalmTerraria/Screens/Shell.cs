@@ -58,6 +58,12 @@ internal sealed class Shell
                 _paused = false;
                 Main.autoPause = _autoPauseWas;
             }
+            // Put away only to be put back for what was said next:
+            // the conversation goes on.
+            if (_following)
+                return;
+            _context = "";
+            World.TerrariaTalk.End();
             Main.playerInventory = false;
             if (World.TerrariaChest.IsOpen)
             {
@@ -113,7 +119,7 @@ internal sealed class Shell
     /// for as long as the screen is up, whatever the game's own
     /// autopause setting says: the game is told its inventory is open
     /// and to pause for that. A server cannot be paused.</summary>
-    private void OpenPack(bool onChest = false, string? notice = null,
+    private void OpenPack(string? notice = null,
         PackFocus focus = PackFocus.First, bool paused = false)
     {
         if (_pack.IsOpen)
@@ -128,29 +134,75 @@ internal sealed class Shell
             _host.App.Announce("Paused.");
         }
         Recipe.FindRecipes();
-        _pack.Open(onChest ? new World.TerrariaChest() : null, notice, focus);
-        _onChest = onChest;
+        _pack.Open(null, notice, focus);
     }
 
     /// <summary>The pack screen, opened on the reason a chest did not
     /// open.</summary>
     public void OpenPackOnNotice(string notice) => OpenPack(notice: notice);
 
-    private bool _onChest;
+    private readonly World.TerrariaTalk _talk = new();
+    /// <summary>What in the world the pack screen was opened for and
+    /// is showing: a chest, someone's words, a shop. Empty when the
+    /// player opened it themselves.</summary>
+    private string _context = "";
+    private bool _following;
 
-    /// <summary>A chest the player opened in the world brings the pack
-    /// screen with it; a chest the game closed - broken, or taken by
-    /// someone else - takes the screen away again.</summary>
-    private void FollowChest()
+    /// <summary>What the player has in front of them in the world
+    /// brings the pack screen with it - a chest they opened, someone
+    /// they spoke to, a shop - and when that changes, because a reply
+    /// was chosen or the game closed the chest, the screen follows.</summary>
+    private void FollowWorld()
     {
-        var open = World.TerrariaChest.IsOpen;
-        if (!_pack.IsOpen)
+        if (_busy)
+            return;
+        World.TerrariaChest? chest = null;
+        World.TerrariaShop? shop = null;
+        Talk? talk = null;
+        var buttons = new List<int>();
+        var context = "";
+        if (World.TerrariaShop.IsOpen)
         {
-            if (open && !_busy)
-                OpenPack(onChest: true);
+            shop = new World.TerrariaShop();
+            context = $"shop {Main.LocalPlayer.talkNPC}";
         }
-        else if (_onChest && !open)
+        else if (World.TerrariaTalk.Talking)
+        {
+            talk = _talk.Current(out buttons);
+            // Not drawn yet: its buttons are not known. Next frame.
+            if (talk == null)
+                return;
+            context = $"talk {talk.Speaker} {talk.Text} {string.Join("|", talk.Options)}";
+        }
+        else if (World.TerrariaChest.IsOpen)
+        {
+            chest = new World.TerrariaChest();
+            context = $"chest {Main.LocalPlayer.chest}";
+        }
+        if (context == _context)
+            return;
+        if (_pack.IsOpen)
+        {
+            // Opened by the player, with nothing in front of them:
+            // theirs to close.
+            if (_context == "")
+                return;
+            _following = true;
             _pack.Close();
+            _following = false;
+            if (context == "")
+            {
+                _context = "";
+                Main.playerInventory = false;
+                if (!_busy)
+                    _host.ReleaseKeyboard();
+                return;
+            }
+        }
+        _context = context;
+        _host.TakeKeyboard();
+        Recipe.FindRecipes();
+        _pack.Open(chest, talk: talk, choose: index => _talk.Press(buttons[index]), shop: shop);
     }
 
     /// <summary>A key came up while the player is in a world.</summary>
@@ -235,7 +287,7 @@ internal sealed class Shell
         {
             if (place == Place.World)
             {
-                FollowChest();
+                FollowWorld();
                 WorldFrame?.Invoke();
             }
             return;
