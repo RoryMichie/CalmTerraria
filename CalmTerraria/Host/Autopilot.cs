@@ -51,8 +51,12 @@ internal sealed class Autopilot
 
     public static Autopilot? TryLoad(SruiHost host, Shell shell, ILog log)
     {
-        var path = Path.Combine(Main.SavePath, "CalmTerraria", "autopilot.txt");
-        if (!File.Exists(path))
+        // The script is named in the environment of the one process
+        // that is to run it, never left in a file for whichever game
+        // starts next: a game the player starts themselves must never
+        // find one.
+        var path = Environment.GetEnvironmentVariable("CALMTERRARIA_AUTOPILOT");
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             return null;
         var steps = File.ReadAllLines(path)
             .Select(line => line.Trim())

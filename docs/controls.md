@@ -52,6 +52,13 @@ whatever the game's own mouse buttons are bound to.
 Using a tool or placing something beyond the character's reach says
 "Out of reach."
 
+Fighting is the left bracket with a weapon held. While it is held and
+an enemy is on screen, the weapon is aimed at that enemy and not at
+the cursor: the nearest in plain sight, said by name as it is picked,
+and the same one until it is gone. A yoyo flies to it and stays on it,
+arrows and spells leave towards it, a sword swings to its side. With
+no enemy about, the weapon goes to the cursor as before.
+
 Building is the left bracket with a block or a wall held: it goes on
 the cursor's tile. Holding the bracket and moving the cursor builds on
 each tile it reaches. A placement that works makes the game's sound;

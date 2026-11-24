@@ -1,0 +1,25 @@
+# A weapon held on the bracket aims at the enemy, not the cursor.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do clearing
+wait 2000
+do hold WoodYoyo
+wait 300
+do spawn Zombie 10 0
+wait 1500
+key ctrl+k
+do state
+down [
+wait 400
+do state
+wait 4000
+do state
+up [
+wait 300
+do state
+quit

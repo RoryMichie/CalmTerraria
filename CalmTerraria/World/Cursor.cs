@@ -224,8 +224,63 @@ internal sealed class Cursor
 
     /// <summary>Each frame: a cursor within reach goes where the
     /// player goes. Silently - the player moved, not the cursor.</summary>
+    /// <summary>The enemy a weapon is being aimed at.</summary>
+    private NPC? _aim;
+
+    /// <summary>A weapon goes where the mouse is: a yoyo flies to it,
+    /// an arrow leaves towards it, a sword swings to its side. The
+    /// cursor is a tile, kept beside the character, and no enemy
+    /// stands still on a tile. So while the left bracket is held on a
+    /// weapon, the mouse rides on an enemy instead: the nearest in
+    /// plain sight, or failing that the nearest, and the same one
+    /// until it is gone. The game does this itself for a gamepad.
+    /// The cursor does not move; with no enemy about, it aims as ever.</summary>
+    private void Aim()
+    {
+        var player = Main.LocalPlayer;
+        if (!_left || !IsWeapon(player.HeldItem) || player.dead)
+        {
+            _aim = null;
+            return;
+        }
+        if (_aim != null && Hostile(_aim) && OnScreen(_aim))
+            return;
+        NPC? best = null;
+        var bestScore = float.MaxValue;
+        foreach (var npc in Main.ActiveNPCs)
+        {
+            if (!Hostile(npc) || !OnScreen(npc))
+                continue;
+            var score = Vector2.Distance(npc.Center, player.Center);
+            // Behind ground counts as much further off.
+            if (!Collision.CanHitLine(player.position, player.width, player.height, npc.position, npc.width, npc.height))
+                score += 800f;
+            if (score < bestScore)
+                (best, bestScore) = (npc, score);
+        }
+        if (best != null && !ReferenceEquals(best, _aim))
+            Say(best.TypeName);
+        _aim = best;
+    }
+
+    private static bool Hostile(NPC npc) =>
+        npc.active && !npc.friendly && !npc.townNPC && npc.lifeMax > 5 && !npc.dontTakeDamage && !npc.CountsAsACritter;
+
+    private static bool OnScreen(NPC npc)
+    {
+        var screen = Vector2.Transform(npc.Center - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);
+        return screen.X >= 0f && screen.Y >= 0f && screen.X < Main.screenWidth && screen.Y < Main.screenHeight;
+    }
+
+    /// <summary>Something used to hurt, and not a tool or a thing to
+    /// place, which are for the cursor's own tile.</summary>
+    private static bool IsWeapon(Item item) =>
+        !item.IsAir && item.damage > 0 && item.pick == 0 && item.axe == 0 && item.hammer == 0
+        && item.createTile < 0 && item.createWall <= 0;
+
     private void Carry()
     {
+        Aim();
         CheckPlacing();
         if (_lockWatch is { } watch)
         {
@@ -440,6 +495,8 @@ internal sealed class Cursor
         var world = new Vector2(_x * 16f + 8f, _y * 16f + 8f);
         if (_right && _riding is { active: true } riding)
             world = riding.Center;
+        else if (_left && _aim is { active: true } enemy)
+            world = enemy.Center;
         var screen = Vector2.Transform(world - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);
         PlayerInput.MouseX = (int)Math.Clamp(screen.X, 0f, Main.screenWidth - 1f);
         PlayerInput.MouseY = (int)Math.Clamp(screen.Y, 0f, Main.screenHeight - 1f);
