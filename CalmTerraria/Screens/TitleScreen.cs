@@ -47,10 +47,12 @@ internal sealed class TitleScreen
     /// restore focus to the title menu and read it.</summary>
     public void Hide()
     {
-        _characters?.Close(nested: true);
-        _characters = null;
+        // Hidden first, so the dialogs close over a ground with
+        // nothing to restore to.
         if (_menu != null)
             _menu.Hidden = true;
+        _characters?.Close(nested: true);
+        _characters = null;
     }
 
     private void ChooseCharacter()
