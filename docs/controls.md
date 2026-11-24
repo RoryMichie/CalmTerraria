@@ -1,6 +1,6 @@
 # Controls
 
-Sections 2 to 4 and 6 are implemented.
+Everything here is implemented.
 
 # 1. Principle
 
@@ -54,9 +54,18 @@ Factorio Access's keys.
 
 Tab moves between the parts of a screen. Escape goes back one step.
 
-# 6. In a world
+# 6. The pack screen
 
-Escape opens the game menu.
+Escape, in a world. Three tab stops: the inventory, the equipment, and
+Save and exit.
+
+- Inventory: Enter wears what can be worn and holds anything else.
+  Space always holds. Delete trashes one stack. Typing letters jumps
+  to an item by name.
+- Equipment: Enter takes the piece off.
+
+Holding swaps the item into the hand; the number keys still switch
+between the last ten things held.
 
 # 7. Keys taken from the game
 

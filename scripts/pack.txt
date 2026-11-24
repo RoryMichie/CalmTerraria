@@ -1,0 +1,23 @@
+# The pack screen on the test character: read, hold, take off, wear.
+heard Single player
+play calmtest calmtest
+heard Ready
+do godmode
+wait 1000
+key escape
+heard Inventory
+key down
+key down
+key down
+key down
+key space
+key tab
+key enter
+key shift+tab
+key n
+key enter
+key tab
+key escape
+wait 300
+do state
+quit

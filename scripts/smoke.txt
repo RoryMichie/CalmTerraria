@@ -4,6 +4,9 @@ play calmtest calmtest
 heard Ready
 wait 2000
 key escape
+heard Inventory
+key tab
+key tab
 heard Save and exit
 key enter
 heard Single player

@@ -203,8 +203,14 @@ internal sealed class Autopilot
             throw new FormatException($"'{config}' is not a key combo");
         var (key, mods) = combo.ToFlat();
         var input = combo.ToInput();
-        if (input is null && !combo.Ctrl && !combo.Alt && combo.Key.IsChar(out var c))
-            input = new InputEvent(InputKind.TypeChar, combo.Shift ? char.ToUpperInvariant(c) : c, key, mods);
+        // A plain printable arrives as the character it types.
+        if (input is null && !combo.Ctrl && !combo.Alt)
+        {
+            if (combo.Key == Key.Space)
+                input = new InputEvent(InputKind.TypeChar, ' ', key, mods);
+            else if (combo.Key.IsChar(out var c))
+                input = new InputEvent(InputKind.TypeChar, combo.Shift ? char.ToUpperInvariant(c) : c, key, mods);
+        }
         _host.Inject(new KeyboardEvent(new KeyInput(key, mods, KeyPhase.Press), input));
         _host.Inject(new KeyboardEvent(new KeyInput(key, mods, KeyPhase.Release), null));
     }

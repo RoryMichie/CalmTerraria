@@ -58,13 +58,28 @@ the inventory, coins and ammo, equipment, and a chest, shop, or
 crafting list when one is open. A shop beside the inventory is two tab
 stops, not a mode.
 
-# 5. Order
+# 5. The enemy sonar
 
-1. Scanner.
-2. Cursor and clicking.
-3. Inventory, chests, shops, crafting.
-4. Positional audio for enemies, drops, hazards, edges.
-5. Build mode, on the cursor.
-6. The remaining menus: creating characters and worlds, settings,
+Distance is told by rate, not loudness: a far enemy pulses about every
+second and a half, one beside the player several times a second, and
+most of that change happens in the last fifteen tiles, where it is
+acted on. Direction is HRTF, with pitch added for above and below
+since elevation is the weakest thing HRTF tells. An enemy behind solid
+ground is low-passed. One the held melee weapon would reach changes
+tone. The five nearest sound.
+
+Every number is in `SonarSettings`. The two tones are synthesized
+placeholders, kept under a quarter of full scale by a test, waiting to
+be replaced with designed sounds.
+
+# 6. Order
+
+Done: scanner, cursor and clicking, enemy sonar, the inventory and
+equipment.
+
+1. Chests, shops, and crafting, as further lists on the pack screen.
+2. Positional audio for drops, hazards, and edges.
+3. Build mode, on the cursor.
+4. The remaining menus: creating characters and worlds, settings,
    multiplayer, mods.
-7. The long tail: NPC dialogue, bestiary, journey mode, events, bosses.
+5. The long tail: NPC dialogue, bestiary, journey mode, events, bosses.

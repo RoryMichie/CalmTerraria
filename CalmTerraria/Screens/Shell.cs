@@ -1,4 +1,5 @@
 using CalmTerraria.Host;
+using CalmTerraria.Pack;
 using Srui;
 using Terraria;
 
@@ -7,7 +8,7 @@ namespace CalmTerraria.Screens;
 /// <summary>Decides who has the keyboard, by where the game is. On the
 /// title screen and in the screens opened from it, SRUI has it and the
 /// game's own menu is never used. In a world the game has it, and
-/// Escape opens the game menu. Anywhere this mod has no screen for,
+/// Escape opens the pack screen. Anywhere this mod has no screen for,
 /// the keyboard is the game's, so a mouse or a sighted helper can
 /// still get through.
 ///
@@ -24,7 +25,7 @@ internal sealed class Shell
 
     private readonly SruiHost _host;
     private readonly TitleScreen _title;
-    private readonly GameMenu _gameMenu;
+    private readonly PackScreen _pack;
     private Place _place = Place.Unknown;
     private bool _busy;
 
@@ -32,7 +33,19 @@ internal sealed class Shell
     {
         _host = host;
         _title = new TitleScreen(host.App, this);
-        _gameMenu = new GameMenu(host, this);
+        _pack = new PackScreen(host.App, new World.TerrariaPack(), () =>
+        {
+            BeginBusy("Saving.");
+            WorldGen.SaveAndQuit();
+        });
+        _pack.Closed += () =>
+        {
+            Main.playerInventory = false;
+            // Mid-save the keys stay ours: the character must not
+            // walk off while the world is being written.
+            if (!_busy)
+                _host.ReleaseKeyboard();
+        };
         // Loading and saving take the keys nowhere.
         host.App.InputFilter = _ => _busy;
         host.KeyReleasedWhileGameOwns = key => WorldKeyReleased?.Invoke(key);
@@ -42,7 +55,7 @@ internal sealed class Shell
                 return false;
             if (combo == KeyCombo.Plain(Key.Escape))
             {
-                _gameMenu.Open();
+                OpenPack();
                 return true;
             }
             if (!WorldCommands.TryGetValue(combo, out var command))
@@ -50,6 +63,19 @@ internal sealed class Shell
             command();
             return true;
         };
+    }
+
+    /// <summary>Escape, in a world: the inventory, what is worn, and
+    /// the way out. The game is told its own inventory is open, so a
+    /// sighted onlooker sees it and the game's autopause setting
+    /// applies as it would for anyone.</summary>
+    private void OpenPack()
+    {
+        if (_pack.IsOpen)
+            return;
+        _host.TakeKeyboard();
+        Main.playerInventory = true;
+        _pack.Open();
     }
 
     /// <summary>A key came up while the player is in a world.</summary>
@@ -117,7 +143,7 @@ internal sealed class Shell
         {
             case Place.Title:
                 _busy = false;
-                _gameMenu.Close();
+                _pack.Close();
                 _host.TakeKeyboard();
                 _title.Show();
                 break;
@@ -140,7 +166,7 @@ internal sealed class Shell
                     break;
                 _busy = false;
                 _title.Hide();
-                _gameMenu.Close();
+                _pack.Close();
                 _host.App.Announce(string.IsNullOrWhiteSpace(Main.statusText)
                     ? "A screen CalmTerraria cannot read yet."
                     : Main.statusText);
