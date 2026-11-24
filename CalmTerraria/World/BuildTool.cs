@@ -34,11 +34,13 @@ internal sealed class BuildTool : IBuild
 
     private enum Kind { Fill, Outline, Wall, Clear, Unwall, Soak, Pour }
 
+    /// <param name="Then">The job that follows this one: building,
+    /// after what was in its way has been cleared.</param>
     /// <param name="More">For work that makes more work - water poured
     /// on lava uncovers the lava beneath: called when the targets run
     /// out, for the next ones. Empty when there is nothing left.</param>
     private sealed record Job(Kind Kind, int Item, string Doing, string Failed, List<(int X, int Y)> Targets,
-        Func<List<(int X, int Y)>>? More = null);
+        Func<List<(int X, int Y)>>? More = null, Func<Job>? Then = null);
 
     private readonly SruiHost _host;
     private readonly Cursor _cursor;
@@ -199,19 +201,38 @@ internal sealed class BuildTool : IBuild
         if (!held.IsAir && held.createTile >= TileID.Dirt && (Main.tileSolid[held.createTile] || TileID.Sets.Platforms[held.createTile]))
         {
             var name = held.Name;
-            var empty = all.Where(t => !Main.tile[t.X, t.Y].HasTile).ToList();
-            var occupied = all.Count - empty.Count;
-            var note = (occupied > 0 ? $" {occupied} occupied tiles are left as they are." : "")
-                + (lava > 0 ? $" Lava in the area, {lava} tiles." : "");
-            if (empty.Count > 0)
-                Offer(new Job(Kind.Fill, held.type, "Filling", "filled", empty),
-                    $"Fill with {name}, {empty.Count} tiles",
-                    $"{empty.Count} tiles to fill. {Supply(empty.Count, held.type, name)}{note}");
-            var edge = empty.Where(t => t.X == left || t.X == right || t.Y == top || t.Y == bottom).ToList();
-            if (edge.Count > 0 && edge.Count < empty.Count)
-                Offer(new Job(Kind.Outline, held.type, "Outlining", "placed", edge),
-                    $"Outline with {name}, {edge.Count} tiles",
-                    $"{edge.Count} tiles round the edge. {Supply(edge.Count, held.type, name)}{note}");
+            var item = held.type;
+            var rim = all.Where(t => t.X == left || t.X == right || t.Y == top || t.Y == bottom).ToList();
+            // A job of building, over some of the area: what is in the
+            // way and can be cut down or dug out - trees, plants, loose
+            // things, not solid ground, which is as good as a wall, and
+            // not chests - goes first, then the blocks go in.
+            void Build(Kind kind, List<(int X, int Y)> over, string doing, string done, string title, string what)
+            {
+                var open = over.Where(t => Open(t.X, t.Y)).ToList();
+                var inWay = over.Where(t => InWay(t.X, t.Y)).ToList();
+                var needed = open.Count + inWay.Count;
+                if (needed == 0)
+                    return;
+                var solid = over.Count - needed;
+                var names = inWay.Select(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType] ? "Tree" : TileNames.At(t.X, t.Y, Main.tile[t.X, t.Y]))
+                    .Distinct().OrderBy(n => n).ToList();
+                var plan = $"{needed} {what}. {Supply(needed, item, name)}"
+                    + (inWay.Count > 0 ? $" In the way and cleared first: {string.Join(", ", names)}." : "")
+                    + (solid > 0 ? $" {solid} tiles of solid ground are left as they are." : "")
+                    + (lava > 0 ? $" Lava in the area, {lava} tiles." : "");
+                Job Placing() => new Job(kind, item, doing, done, over.Where(t => Open(t.X, t.Y)).ToList());
+                var job = inWay.Count == 0
+                    ? Placing()
+                    : new Job(Kind.Clear, 0, "Clearing the way,", "cleared",
+                        inWay.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
+                            .Concat(inWay.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList(),
+                        Then: Placing);
+                Offer(job, $"{title} with {name}, {needed} tiles", plan);
+            }
+            Build(Kind.Fill, all, "Filling", "filled", "Fill", "tiles to fill");
+            if (rim.Count < all.Count)
+                Build(Kind.Outline, rim, "Outlining", "placed", "Outline", "tiles round the edge");
         }
 
         if (!held.IsAir && held.createWall > 0)
@@ -280,6 +301,27 @@ internal sealed class BuildTool : IBuild
             }
         }
         return options;
+    }
+
+    /// <summary>Where a block can go: nothing there, or only what a
+    /// block breaks as it is placed - grass, vines, pots.</summary>
+    private static bool Open(int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        return !tile.HasTile || Main.tileCut[tile.TileType];
+    }
+
+    /// <summary>In the way of building and fit to clear: a tree, or
+    /// something that is not solid ground. Not a chest.</summary>
+    private static bool InWay(int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (!tile.HasTile || Main.tileCut[tile.TileType])
+            return false;
+        var type = tile.TileType;
+        if (TileID.Sets.BasicChest[type] || TileID.Sets.BasicDresser[type] || Main.tileHammer[type])
+            return false;
+        return Main.tileAxe[type] || !Main.tileSolid[type] || Main.tileSolidTop[type];
     }
 
     private static bool IsLava(int x, int y) =>
@@ -467,6 +509,16 @@ internal sealed class BuildTool : IBuild
             Say("Nothing to do.");
             return;
         }
+        _cursorWas = _cursor.Tile;
+        _smartCursorWas = Main.SmartCursorWanted_Mouse;
+        // Smart cursor chooses its own tile; this work chooses each one.
+        Main.SmartCursorWanted_Mouse = false;
+        Working = true;
+        Begin(job);
+    }
+
+    private void Begin(Job job)
+    {
         _job = job;
         _queue = new Queue<(int X, int Y)>(job.Targets);
         _failed = new List<(int X, int Y)>();
@@ -479,11 +531,8 @@ internal sealed class BuildTool : IBuild
         _tally = _tallyAge = 0;
         _tallyName = "";
         _rounds = 0;
-        _cursorWas = _cursor.Tile;
-        _smartCursorWas = Main.SmartCursorWanted_Mouse;
-        // Smart cursor chooses its own tile; this work chooses each one.
-        Main.SmartCursorWanted_Mouse = false;
-        Working = true;
+        _walk = Walk.No;
+        _gaveUpWalking = false;
         Say($"{job.Doing} {job.Targets.Count} tiles. X stops.");
     }
 
@@ -493,6 +542,9 @@ internal sealed class BuildTool : IBuild
             return;
         _job = null;
         _current = null;
+        _walk = Walk.No;
+        WalkDirection = 0;
+        WalkJump = false;
         Working = false;
         _cursor.Drive(null, false);
         _cursor.MoveSilently(_cursorWas.X, _cursorWas.Y);
@@ -504,7 +556,7 @@ internal sealed class BuildTool : IBuild
         var tile = Main.tile[at.X, at.Y];
         return _job!.Kind switch
         {
-            Kind.Fill or Kind.Outline => tile.HasTile,
+            Kind.Fill or Kind.Outline => tile.HasTile && !Main.tileCut[tile.TileType],
             Kind.Wall => tile.WallType != 0,
             Kind.Clear => !tile.HasTile,
             Kind.Unwall => tile.WallType == 0,
@@ -592,12 +644,14 @@ internal sealed class BuildTool : IBuild
         }
         if (_tally > 0 && ++_tallyAge >= 240)
             Shout();
+        KeepWalking();
         if (_current is { } now)
         {
             if (Done(now))
             {
                 _progress = true;
                 _toldFar = false;
+                _gaveUpWalking = false;
                 _current = null;
                 Tally(_currentName);
             }
@@ -684,27 +738,31 @@ internal sealed class BuildTool : IBuild
         if (_aside.Count > 0)
         {
             // The game will not put a block where a character is.
-            if (!_toldAside)
+            if (!_gaveUpWalking && _walk == Walk.No)
+                StartWalking(Walk.Aside, _aside[0]);
+            if (_gaveUpWalking && !_toldAside)
             {
                 _toldAside = true;
                 Say($"Step aside: {_aside.Count} left where you are standing.");
             }
             Requeue();
-            _wait = 20;
+            _wait = 10;
             return;
         }
         if (_far.Count > 0)
         {
-            if (!_toldFar)
+            var (px, py) = WorldScanner.PlayerTile();
+            var nearest = _far.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
+            if (!_gaveUpWalking && _walk == Walk.No)
+                StartWalking(Walk.Closer, nearest);
+            if (_gaveUpWalking && !_toldFar)
             {
                 _toldFar = true;
-                var (px, py) = WorldScanner.PlayerTile();
-                var nearest = _far.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
                 Say($"Walk closer: {_far.Count + _failed.Count} left, nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}.");
             }
             _queue = new Queue<(int X, int Y)>(_far);
             _far = new List<(int X, int Y)>();
-            _wait = 30;
+            _wait = 10;
             return;
         }
         // Work that makes more work: give what was poured a moment to
@@ -716,6 +774,16 @@ internal sealed class BuildTool : IBuild
             {
                 _queue = new Queue<(int X, int Y)>(more);
                 _wait = 45;
+                return;
+            }
+        }
+        if (_job.Then != null)
+        {
+            Shout();
+            var next = _job.Then();
+            if (next.Targets.Count > 0)
+            {
+                Begin(next);
                 return;
             }
         }
@@ -781,6 +849,135 @@ internal sealed class BuildTool : IBuild
 
     private List<(int X, int Y)> _aside = new();
     private bool _toldAside;
+
+    // ── Walking ──
+    // The job walks the character itself: out of the way of a block
+    // that is to go where they stand, and nearer to what is out of
+    // reach. It walks as a player does - left, right, a jump at a
+    // step - and will not walk into lava or off a drop. When it
+    // cannot get where it wants, it says what it wanted and leaves
+    // the walking to the player.
+
+    private enum Walk { No, Aside, Closer }
+
+    private Walk _walk;
+    private (int X, int Y) _walkGoal;
+    private int _walkDirection, _stuckFrames, _jumpFrames, _hops, _walkFrames;
+    private float _walkLastX;
+    private bool _gaveUpWalking;
+
+    /// <summary>What the job wants of the character's legs this
+    /// frame, for the hook that turns keys into controls.</summary>
+    public static int WalkDirection { get; private set; }
+    public static bool WalkJump { get; private set; }
+
+    public static void InjectMovement()
+    {
+        if (!Working || WalkDirection == 0)
+            return;
+        var controls = Terraria.GameInput.PlayerInput.Triggers.Current;
+        if (WalkDirection < 0)
+            controls.Left = true;
+        else
+            controls.Right = true;
+        if (WalkJump)
+            controls.Jump = true;
+    }
+
+    private void StartWalking(Walk why, (int X, int Y) goal)
+    {
+        var player = Main.LocalPlayer;
+        var (px, _) = WorldScanner.PlayerTile();
+        _walk = why;
+        _walkGoal = goal;
+        if (why == Walk.Aside)
+        {
+            // Out of the area by the nearer side, so as not to be
+            // walled in by the work.
+            var (left, _, right, _) = _a != null && _b != null ? Area() : (goal.X, 0, goal.X, 0);
+            _walkDirection = px - left <= right - px ? -1 : 1;
+        }
+        else
+        {
+            if (goal.X == px)
+            {
+                // Straight above or below: walking will not reach it.
+                GiveUpWalking();
+                return;
+            }
+            _walkDirection = Math.Sign(goal.X - px);
+        }
+        _stuckFrames = _jumpFrames = _hops = _walkFrames = 0;
+        _walkLastX = player.position.X;
+        // Said only when it cannot be done: walking that is happening
+        // is heard in the footsteps, and needs no announcing.
+    }
+
+    private void GiveUpWalking()
+    {
+        _walk = Walk.No;
+        _gaveUpWalking = true;
+        WalkDirection = 0;
+        WalkJump = false;
+    }
+
+    /// <summary>One frame of walking. The work goes on meanwhile.</summary>
+    private void KeepWalking()
+    {
+        if (_walk == Walk.No)
+        {
+            WalkDirection = 0;
+            WalkJump = false;
+            return;
+        }
+        var player = Main.LocalPlayer;
+        var (px, py) = WorldScanner.PlayerTile();
+        var arrived = _walk == Walk.Aside
+            ? !_aside.Concat(_queue).Any(InTheWay) && !(_current is { } now && InTheWay(now)) && ++_walkFrames > 12
+            : Reachable(_walkGoal);
+        if (arrived)
+        {
+            _walk = Walk.No;
+            WalkDirection = 0;
+            WalkJump = false;
+            return;
+        }
+        // Not into lava, and not off an edge with nothing under it.
+        var ahead = px + _walkDirection;
+        var lava = false;
+        for (var row = py - 1; row <= py + 3 && !lava; row++)
+            lava = IsLava(ahead, row) || IsLava(ahead + _walkDirection, row);
+        var floor = false;
+        for (var row = py + 1; row <= py + 8 && !floor; row++)
+            floor = WorldGen.InWorld(ahead, row) && Main.tile[ahead, row] is { HasTile: true } tile
+                && (Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType]);
+        if (lava || !floor)
+        {
+            Say(lava ? "Lava that way: not walking into it." : "A drop that way: not walking off it.");
+            GiveUpWalking();
+            return;
+        }
+        // Against a step: jump it. Against a wall: stop trying.
+        if (Math.Abs(player.position.X - _walkLastX) < 0.5f)
+            _stuckFrames++;
+        else
+            _stuckFrames = 0;
+        _walkLastX = player.position.X;
+        if (_stuckFrames >= 12 && _jumpFrames == 0)
+        {
+            if (++_hops > 4)
+            {
+                GiveUpWalking();
+                return;
+            }
+            _jumpFrames = 14;
+            _stuckFrames = 0;
+        }
+        if (_jumpFrames > 0)
+            _jumpFrames--;
+        WalkDirection = _walkDirection;
+        WalkJump = _jumpFrames > 0;
+    }
 
     private bool Placing => _job!.Kind is Kind.Fill or Kind.Outline or Kind.Wall;
 

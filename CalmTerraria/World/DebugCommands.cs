@@ -150,6 +150,40 @@ internal static class DebugCommands
             RequireTestWorld();
             Main.LocalPlayer.statLife = int.Parse(args.Trim());
         });
+        // recall - the test character back at the world's spawn point.
+        autopilot.Register("recall", _ =>
+        {
+            RequireTestWorld();
+            Main.LocalPlayer.Spawn(PlayerSpawnContext.RecallFromItem);
+        });
+        // arena - a clean place to test: high above the spawn point, a
+        // flat stone floor sixty tiles wide with nothing but air over
+        // it, and the character stood in the middle of it. The ground
+        // near spawn is dug to pieces by earlier tests.
+        autopilot.Register("arena", _ =>
+        {
+            RequireTestWorld();
+            var cx = Main.spawnTileX;
+            var floor = Math.Max(60, Main.spawnTileY - 120);
+            for (var x = cx - 30; x <= cx + 30; x++)
+            {
+                for (var y = floor - 30; y < floor; y++)
+                {
+                    var tile = Main.tile[x, y];
+                    tile.ClearEverything();
+                }
+                for (var y = floor; y <= floor + 1; y++)
+                {
+                    Main.tile[x, y].ClearEverything();
+                    WorldGen.PlaceTile(x, y, TileID.Stone, mute: true, forced: true);
+                }
+            }
+            var player = Main.LocalPlayer;
+            player.Bottom = new Microsoft.Xna.Framework.Vector2(cx * 16f + 8f, floor * 16f);
+            player.velocity = Microsoft.Xna.Framework.Vector2.Zero;
+            player.fallStart = floor;
+            log.Info($"Debug: arena floor at {floor}, centre {cx}.");
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

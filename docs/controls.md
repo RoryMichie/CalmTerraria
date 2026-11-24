@@ -91,6 +91,16 @@ Work on an area:
   character comes nearer.
 - The work is called out as it goes, a run of one thing at a time:
   "There goes a tree." "Off go 13 Dirt Block." "In go 15 Stone Block."
+- The job walks the character itself: aside, when a block is to go
+  where they stand, and closer, when what is left is out of reach. It
+  walks as a player would, jumping a step, and will not walk into lava
+  or off a drop. It says nothing while it can do this itself; where it
+  cannot get to, it says what it wanted and
+  leaves the walking to the player.
+- Filling and outlining clear their own way first: trees, plants and
+  loose things where the blocks are to go are cut down or dug out,
+  then the blocks go in. Solid ground already there is left, being as
+  good as a wall, and chests are never touched.
 - X stops a job. The area stays marked for the next one.
 - With the scanner on something, the Build list also has Clear path
   to it, area or no area: a stair cut through the ground from the

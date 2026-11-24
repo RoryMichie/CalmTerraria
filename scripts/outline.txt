@@ -6,15 +6,11 @@ wait 3000
 do time day
 do clear
 do godmode
-hold D 2500
-wait 500
-do clearing
-wait 2500
+do arena
+wait 1500
 do hold Wood 300
+do state
 key ctrl+k
-key l
-key l
-key l
 key m
 key x
 heard First corner
@@ -46,4 +42,5 @@ heard Start
 key enter
 heard Done
 wait 500
+do state
 quit

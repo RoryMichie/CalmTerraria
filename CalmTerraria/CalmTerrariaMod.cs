@@ -36,7 +36,10 @@ public sealed class CalmTerrariaMod : Mod
         {
             var any = orig();
             if (!_failed)
+            {
                 _cursor?.InjectButtons();
+                BuildTool.InjectMovement();
+            }
             return any;
         };
     }
