@@ -154,7 +154,7 @@ internal sealed class Feedback
 
         // A change made from the pack screen has been said there.
         var selected = player.selectedItem;
-        if (_selected >= 0 && selected != _selected && !_host.OwnsKeyboard && !player.dead)
+        if (_selected >= 0 && selected != _selected && !_host.OwnsKeyboard && !player.dead && !BuildTool.Working)
             Say(ItemText.Stack(player.inventory[selected]));
         _selected = selected;
     }

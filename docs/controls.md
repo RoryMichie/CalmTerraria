@@ -52,6 +52,28 @@ one that does not says why - "Occupied.", "Nothing to attach to.",
 "Out of reach", "None left." A block cannot go where the character is
 standing.
 
+Work on an area:
+
+- X marks one corner at the cursor, X again the other, and says the
+  size. X a third time lets the area go.
+- With an area marked, the Tab ring leads with a Build list of what
+  can be done to it with what is held:
+  - a block: Fill, and Outline (the edge only: the shell of a room);
+  - a wall: Wall;
+  - always: Clear, using the best pickaxe and axe carried;
+  - an empty bucket or a sponge: Soak up the liquid;
+  - a water bucket, where there is lava: Pour water on lava.
+- Enter on a job reads its plan first - how many tiles, how much is
+  carried, what clearing would give, what is in the way (tiles too
+  hard for the pickaxe, a chest, lava) - with a Start button after.
+- The work is done by using the held item on one tile after another,
+  as a hand on a mouse would: it costs the blocks, takes the time and
+  breaks only what the tool can. While it runs the character reaches
+  anything on screen. Tiles further than that are said - "Walk
+  closer: 12 left, nearest 48 right" - and it carries on as the
+  character comes nearer.
+- X stops a job. The area stays marked for the next one.
+
 # 4. The scanner
 
 Factorio Access's keys.

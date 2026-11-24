@@ -619,6 +619,24 @@ public sealed class ShopList : ListBox<ShopLine>
     }
 }
 
+/// <summary>A job that can be done to the area the player marked.</summary>
+/// <param name="Name">What the list says: "Fill with Dirt Block, 60 tiles".</param>
+/// <param name="Plan">What doing it would take and give, and what
+/// could go wrong, read before it is started.</param>
+public sealed record BuildOption(int Id, string Name, string Plan);
+
+/// <summary>The area the player marked in the world and what can be
+/// done to it with what they hold.</summary>
+public interface IBuild
+{
+    /// <summary>The area, as the list's name: "Build, 12 by 5".</summary>
+    string Title { get; }
+
+    IReadOnlyList<BuildOption> Options();
+
+    void Start(int id);
+}
+
 /// <summary>Which stop a freshly opened pack screen starts on.</summary>
 public enum PackFocus { First, Last, Chat }
 
@@ -663,7 +681,7 @@ public sealed class PackScreen
     /// as a stop that does nothing, then what can be said back.</param>
     /// <param name="choose">Called with the index of the reply chosen.</param>
     public void Open(IChest? chest = null, string? notice = null, PackFocus focus = PackFocus.First,
-        Talk? talk = null, Action<int>? choose = null, IShop? shop = null)
+        Talk? talk = null, Action<int>? choose = null, IShop? shop = null, IBuild? build = null)
     {
         if (_dialog != null)
             return;
@@ -710,6 +728,12 @@ public sealed class PackScreen
                 }
             };
         }
+        if (build != null && build.Options() is { Count: > 0 } options)
+        {
+            var jobs = new ListBox(dialog, build.Title, options.Select(option => option.Name).ToList(), activateItems: true);
+            jobs.Activated += () => Plan(build, options[jobs.SelectedIndex], dialog);
+            first ??= jobs;
+        }
         var pack = new PackList(dialog, _pack, chest, shop);
         first ??= pack;
         _ = new EquipList(dialog, _pack);
@@ -751,6 +775,24 @@ public sealed class PackScreen
     }
 
     public void Close() => _dialog?.Close(nested: true);
+
+    /// <summary>What a job would take, before it is started: the plan
+    /// as a stop that does nothing, and Start. Starting puts the
+    /// screens away, back to the world where the work happens.</summary>
+    private void Plan(IBuild build, BuildOption option, Dialog screen)
+    {
+        var dialog = _app.OpenDialog();
+        _ = new CustomWidget(dialog, option.Plan);
+        var start = new Button(dialog, "Start");
+        _app.SetPrimary(start);
+        start.Activated += () =>
+        {
+            dialog.Close();
+            screen.Close();
+            build.Start(option.Id);
+        };
+        dialog.AnnounceOpened();
+    }
 
     private void Rename(IChest chest)
     {

@@ -108,6 +108,9 @@ internal sealed class Shell
         };
     }
 
+    /// <summary>The area the player has marked, if anything offers one.</summary>
+    public IBuild? Build { get; set; }
+
     /// <summary>The game's messages, for the chat list.</summary>
     public ChatLog ChatLog { get; } = new();
 
@@ -134,7 +137,7 @@ internal sealed class Shell
             _host.App.Announce("Paused.");
         }
         Recipe.FindRecipes();
-        _pack.Open(null, notice, focus);
+        _pack.Open(null, notice, focus, build: Build);
     }
 
     /// <summary>The pack screen, opened on the reason a chest did not

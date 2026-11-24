@@ -318,6 +318,24 @@ internal sealed class Cursor
 
     private void Say(string text) => _host.App.Announce(text);
 
+    /// <summary>A job has the cursor: it is on this tile with the left
+    /// button as given, saying nothing. Null gives it back, button up.</summary>
+    public void Drive((int X, int Y)? tile, bool hold)
+    {
+        if (tile is { } at)
+        {
+            _x = at.X;
+            _y = at.Y;
+            _placed = true;
+            _carried = false;
+        }
+        _left = tile != null && hold;
+        _placeWatch = null;
+    }
+
+    /// <summary>Put the cursor on a tile without reading it.</summary>
+    public void MoveSilently(int x, int y) => Place(x, y);
+
     /// <summary>For autopilot scripts: what the game currently
     /// believes about the mouse and the held item.</summary>
     public string DebugState()
