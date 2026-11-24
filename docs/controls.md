@@ -20,7 +20,8 @@ of J:
 J is the left of the middle row, so the hand finds the pad the way it
 finds the home row. Columns follow the keyboard's stagger: U J N, I K M,
 O L comma. The eight keys around K move the cursor one tile in their
-direction, and what is under it is said as it lands.
+direction, and what is under it is said as it lands, with where that
+is from the character: "Dirt, 3 right 1 down".
 
 - Shift with a direction skims: the cursor runs that way to the first
   tile that reads differently.
@@ -34,6 +35,12 @@ its place relative to them: put it one tile ahead and it stays one tile
 ahead. Beyond reach - after Home in the scanner, or after moving it
 there - it stays on that spot in the world until it is moved back
 within reach or Ctrl+K brings it home.
+
+Looking along a line: Shift with W, A, S or D reads what lies that way
+from the character, as runs of the same thing with how many tiles of
+each - "Air, 5. Grass, 1. Dirt, 12." - out to fifty tiles. Left and
+right look along the middle of the body; up starts above the head and
+down below the feet. The character does not move for that press.
 
 # 3. Clicking
 

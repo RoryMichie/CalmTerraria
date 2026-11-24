@@ -103,10 +103,19 @@ internal sealed class Cursor
     }
 
     /// <summary>Put the cursor on a tile and say what is there.</summary>
-    public void MoveTo(int x, int y)
+    /// <param name="where">Say also where that is from the player:
+    /// for moves made from the pad, where it is the only way to keep
+    /// track. Not for a jump from the scanner, which has just said.</param>
+    public void MoveTo(int x, int y, bool where = false)
     {
         Place(x, y);
-        Say(TileReader.Describe(_x, _y));
+        if (where)
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            Say($"{TileReader.Describe(_x, _y)}, {Directions.Offset(_x - px, _y - py)}");
+        }
+        else
+            Say(TileReader.Describe(_x, _y));
         // Dragged with the button down: the next tile is built on too.
         if (_left)
             WatchPlacing();
@@ -242,7 +251,7 @@ internal sealed class Cursor
     private void Move(int dx, int dy)
     {
         var (x, y) = Tile;
-        MoveTo(x + dx, y + dy);
+        MoveTo(x + dx, y + dy, where: true);
     }
 
     /// <summary>Run in a direction to the first tile that reads
@@ -261,7 +270,7 @@ internal sealed class Cursor
             if (TileReader.Describe(x, y) != from)
                 break;
         }
-        MoveTo(x, y);
+        MoveTo(x, y, where: true);
     }
 
     /// <summary>K: what is here, and where here is from the player.</summary>

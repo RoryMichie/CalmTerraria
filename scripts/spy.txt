@@ -1,0 +1,22 @@
+# Looking along a line, and the cursor saying where it is.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+key shift+d
+wait 300
+key shift+a
+wait 300
+key shift+w
+wait 300
+key shift+s
+wait 300
+do state
+key ctrl+k
+key l
+key l
+key m
+key shift+m
+quit
