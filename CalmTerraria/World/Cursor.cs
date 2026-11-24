@@ -1,0 +1,192 @@
+using CalmTerraria.Host;
+using CalmTerraria.Scan;
+using CalmTerraria.Screens;
+using Microsoft.Xna.Framework;
+using Srui;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameInput;
+
+namespace CalmTerraria.World;
+
+/// <summary>The cursor: a tile in the world the player points at, in
+/// place of the mouse. It is moved from the right-hand pad, says what
+/// is under it as it lands, and is where the game believes the mouse
+/// to be - so the held item is used there, and the two bracket keys
+/// are the two mouse buttons.
+///
+/// It stays where it is put while the player walks; Ctrl+K brings it
+/// back to the player.</summary>
+internal sealed class Cursor
+{
+    /// <summary>How far a skim looks for something different.</summary>
+    private const int SkimLimit = 200;
+
+    private readonly SruiHost _host;
+    private readonly Shell _shell;
+    private int _x, _y;
+    private bool _placed;
+    private bool _left, _right;
+
+    public Cursor(SruiHost host, Shell shell)
+    {
+        _host = host;
+        _shell = shell;
+        shell.EnteredWorld += () =>
+        {
+            _placed = false;
+            _left = _right = false;
+        };
+        shell.LeftWorld += () => _left = _right = false;
+        shell.WorldKeyReleased += key =>
+        {
+            if (key == Key.Char('['))
+                _left = false;
+            if (key == Key.Char(']'))
+                _right = false;
+        };
+
+        var commands = shell.WorldCommands;
+        // The pad, as it lies under the hand: U I O, J K L, N M comma.
+        Bind(commands, 'u', -1, -1);
+        Bind(commands, 'i', 0, -1);
+        Bind(commands, 'o', 1, -1);
+        Bind(commands, 'j', -1, 0);
+        Bind(commands, 'l', 1, 0);
+        Bind(commands, 'n', -1, 1);
+        Bind(commands, 'm', 0, 1);
+        Bind(commands, ',', 1, 1);
+        commands[KeyCombo.Plain(Key.Char('k'))] = ReadWhere;
+        commands[KeyCombo.WithCtrl(Key.Char('k'))] = () =>
+        {
+            (_x, _y) = WorldScanner.PlayerTile();
+            _placed = true;
+            Say(TileReader.Describe(_x, _y));
+        };
+        commands[KeyCombo.Plain(Key.Char('['))] = () => Press(ref _left);
+        commands[KeyCombo.Plain(Key.Char(']'))] = () => Press(ref _right);
+    }
+
+    private void Bind(Dictionary<KeyCombo, Action> commands, char key, int dx, int dy)
+    {
+        commands[KeyCombo.Plain(Key.Char(key))] = () => Move(dx, dy);
+        commands[KeyCombo.WithShift(Key.Char(key))] = () => Skim(dx, dy);
+    }
+
+    /// <summary>The cursor's tile. It starts on the player.</summary>
+    public (int X, int Y) Tile
+    {
+        get
+        {
+            if (!_placed)
+            {
+                (_x, _y) = WorldScanner.PlayerTile();
+                _placed = true;
+            }
+            return (_x, _y);
+        }
+    }
+
+    /// <summary>Put the cursor on a tile and say what is there.</summary>
+    public void MoveTo(int x, int y)
+    {
+        _x = Math.Clamp(x, 0, Main.maxTilesX - 1);
+        _y = Math.Clamp(y, 0, Main.maxTilesY - 1);
+        _placed = true;
+        Say(TileReader.Describe(_x, _y));
+    }
+
+    private void Move(int dx, int dy)
+    {
+        var (x, y) = Tile;
+        MoveTo(x + dx, y + dy);
+    }
+
+    /// <summary>Run in a direction to the first tile that reads
+    /// differently from this one: the end of the wall, the far side of
+    /// the gap.</summary>
+    private void Skim(int dx, int dy)
+    {
+        var (x, y) = Tile;
+        var from = TileReader.Describe(x, y);
+        for (var step = 0; step < SkimLimit; step++)
+        {
+            if (!WorldGen.InWorld(x + dx, y + dy))
+                break;
+            x += dx;
+            y += dy;
+            if (TileReader.Describe(x, y) != from)
+                break;
+        }
+        MoveTo(x, y);
+    }
+
+    /// <summary>K: what is here, and where here is from the player.</summary>
+    private void ReadWhere()
+    {
+        var (x, y) = Tile;
+        var (px, py) = WorldScanner.PlayerTile();
+        Say($"{TileReader.Describe(x, y)}, {Directions.Offset(x - px, y - py)}");
+    }
+
+    private void Press(ref bool button)
+    {
+        if (button)
+            return;
+        var (x, y) = Tile;
+        if (!Main.LocalPlayer.IsInTileInteractionRange(x, y, TileReachCheckSettings.Simple)
+            && UsesReach(Main.LocalPlayer.HeldItem))
+            Say("Out of reach.");
+        button = true;
+    }
+
+    /// <summary>Whether using the item acts on the tile under the
+    /// cursor, so that distance matters: tools and things that are
+    /// placed. A sword or a bow is aimed, not reached with.</summary>
+    private static bool UsesReach(Item item) =>
+        item.pick > 0 || item.axe > 0 || item.hammer > 0 || item.createTile >= 0 || item.createWall > 0;
+
+    private void Say(string text) => _host.App.Announce(text);
+
+    /// <summary>For autopilot scripts: what the game currently
+    /// believes about the mouse and the held item.</summary>
+    public string DebugState()
+    {
+        var player = Main.LocalPlayer;
+        return $"cursor {Tile}, player {WorldScanner.PlayerTile()}, held '{player.HeldItem.Name}' slot {player.selectedItem}, "
+            + $"focus {Main.hasFocus} active {Main.instance.IsActive}, mouse {Main.mouseX},{Main.mouseY} left {Main.mouseLeft} "
+            + $"brackets {_left}/{_right}, target {Player.tileTargetX},{Player.tileTargetY}, "
+            + $"useItem {player.controlUseItem} animation {player.itemAnimation} dead {player.dead}";
+    }
+
+    /// <summary>Called as the game reads the mouse: the mouse is
+    /// where the cursor is.</summary>
+    public void InjectMouse()
+    {
+        if (!_shell.InWorld || _host.OwnsKeyboard)
+        {
+            _left = _right = false;
+            return;
+        }
+        if (!_placed)
+            return;
+        var world = new Vector2(_x * 16f + 8f, _y * 16f + 8f);
+        var screen = Vector2.Transform(world - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);
+        PlayerInput.MouseX = (int)Math.Clamp(screen.X, 0f, Main.screenWidth - 1f);
+        PlayerInput.MouseY = (int)Math.Clamp(screen.Y, 0f, Main.screenHeight - 1f);
+    }
+
+    /// <summary>Called as the game turns keys into controls: the
+    /// brackets are the mouse buttons. Set on the controls themselves,
+    /// not as mouse presses for the game to map, because which control
+    /// a mouse button is bound to is the player's to change.</summary>
+    public void InjectButtons()
+    {
+        if (!_shell.InWorld || _host.OwnsKeyboard)
+            return;
+        if (_left)
+            PlayerInput.Triggers.Current.MouseLeft = true;
+        if (_right)
+            PlayerInput.Triggers.Current.MouseRight = true;
+    }
+}

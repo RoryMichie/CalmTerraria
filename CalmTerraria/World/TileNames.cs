@@ -23,8 +23,11 @@ internal static class TileNames
         var name = Lang.GetMapObjectName(lookup);
         if (!string.IsNullOrWhiteSpace(name))
             return name;
-        if (ItemOfTile(type, option) is { } item)
-            return Lang.GetItemNameValue(item);
+        // Seeds place grass, and grass is not called seeds.
+        if (ItemOfTile(type, option) is { } item
+            && Lang.GetItemNameValue(item) is var itemName
+            && !itemName.EndsWith("Seeds", StringComparison.OrdinalIgnoreCase))
+            return itemName;
         return TileID.Search.TryGetName(type, out var internalName) ? Spaced(internalName) : $"Tile {type}";
     }
 
@@ -44,7 +47,13 @@ internal static class TileNames
             .ToDictionary(group => group.Key, group => group.Min(item => item.type));
         if (_itemOfWall.TryGetValue(wall, out var item))
             return Lang.GetItemNameValue(item);
-        return WallID.Search.TryGetName(wall, out var internalName) ? Spaced(internalName) + " wall" : "Wall";
+        // Natural walls have no item, and internal names like
+        // "Cave6Unsafe": the kind of wall is the only part worth saying.
+        if (!WallID.Search.TryGetName(wall, out var internalName))
+            return "Wall";
+        var kind = new string(internalName.Where(c => !char.IsDigit(c)).ToArray())
+            .Replace("Unsafe", "").Replace("Echo", "").Replace("Wall", "");
+        return kind.Length == 0 ? "Wall" : Spaced(kind) + " wall";
     }
 
     private static int? ItemOfTile(int type, int style)

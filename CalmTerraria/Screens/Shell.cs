@@ -35,6 +35,7 @@ internal sealed class Shell
         _gameMenu = new GameMenu(host, this);
         // Loading and saving take the keys nowhere.
         host.App.InputFilter = _ => _busy;
+        host.KeyReleasedWhileGameOwns = key => WorldKeyReleased?.Invoke(key);
         host.KeyWhileGameOwns = combo =>
         {
             if (_place != Place.World)
@@ -50,6 +51,9 @@ internal sealed class Shell
             return true;
         };
     }
+
+    /// <summary>A key came up while the player is in a world.</summary>
+    public event Action<Key>? WorldKeyReleased;
 
     /// <summary>The mod's keys in a world, where the game has the
     /// keyboard. A key bound here is taken from the game.</summary>

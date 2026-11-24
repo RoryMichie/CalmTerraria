@@ -11,6 +11,7 @@ public sealed class CalmTerrariaMod : Mod
     private SruiHost? _host;
     private Shell? _shell;
     private Autopilot? _autopilot;
+    private Cursor? _cursor;
     private bool _failed;
 
     public override void Load()
@@ -22,6 +23,22 @@ public sealed class CalmTerrariaMod : Mod
         // and in a world alike, on the main thread, and the game's
         // keyboard read is the last thing the original does.
         On_Main.DoUpdate_HandleInput += AfterGameReadsInput;
+        // The cursor is the mouse: its position and buttons go in
+        // where the game reads the real one, so everything downstream
+        // of that - aiming, reach, the held item - agrees.
+        Terraria.GameInput.On_PlayerInput.MouseInput += orig =>
+        {
+            orig();
+            if (!_failed)
+                _cursor?.InjectMouse();
+        };
+        Terraria.GameInput.On_PlayerInput.KeyboardInput += orig =>
+        {
+            var any = orig();
+            if (!_failed)
+                _cursor?.InjectButtons();
+            return any;
+        };
     }
 
     public override void Unload()
@@ -31,6 +48,7 @@ public sealed class CalmTerrariaMod : Mod
         _host = null;
         _shell = null;
         _autopilot = null;
+        _cursor = null;
         if (host == null)
             return;
         // Mods unload off the main thread. SDL must stop calling into
@@ -55,6 +73,9 @@ public sealed class CalmTerrariaMod : Mod
                 _shell = new Shell(_host);
                 _autopilot = Autopilot.TryLoad(_host, _shell, Logger);
                 var scanner = new WorldScanner(_host, _shell, Logger);
+                var cursor = _cursor = new Cursor(_host, _shell);
+                scanner.JumpRequested += target => cursor.MoveTo(target.X, target.Y);
+                _autopilot?.Register("state", _ => Logger.Info($"State: {cursor.DebugState()}"));
                 if (_autopilot != null)
                     scanner.RegisterDebug(_autopilot);
             }

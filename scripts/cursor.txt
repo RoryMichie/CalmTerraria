@@ -1,0 +1,37 @@
+# The cursor: moving, skimming, reading, the scanner's jump, clicking.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+key k
+key l
+key l
+key m
+key m
+key m
+key shift+m
+key shift+l
+key shift+i
+key k
+key ctrl+k
+key ,
+key u
+key end
+key home
+key k
+key ctrl+pagedown
+key ctrl+pagedown
+key home
+key k
+log --- dig down under the feet with whatever is held
+key ctrl+k
+key m
+key m
+key m
+key k
+down [
+wait 3000
+up [
+key k
+key 1
+quit

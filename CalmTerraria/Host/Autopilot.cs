@@ -15,6 +15,8 @@ namespace CalmTerraria.Host;
 /// One step per line; a step finishes before the next begins.
 /// <list type="bullet">
 /// <item><c>key ctrl+pagedown</c> - tap a combo, as typed.</item>
+/// <item><c>down [</c>, <c>up [</c> - press and release separately,
+/// for a key that is held.</item>
 /// <item><c>type some text</c> - type characters.</item>
 /// <item><c>hold D 800</c> - hold one of the game's keys for that many
 /// milliseconds (the game's key names: A, Space, OemComma).</item>
@@ -122,6 +124,18 @@ internal sealed class Autopilot
                 // The tap is dispatched by the host this frame; let it land.
                 WaitFor("the tap to land", After(50));
                 break;
+            case "down":
+            case "up":
+            {
+                if (!KeyCombo.TryParseConfig(rest, out var combo))
+                    throw new FormatException($"'{rest}' is not a key combo");
+                var (key, mods) = combo.ToFlat();
+                _heardThisStep.Clear();
+                _host.Inject(new KeyboardEvent(
+                    new KeyInput(key, mods, verb == "down" ? KeyPhase.Press : KeyPhase.Release), null));
+                WaitFor("the key to land", After(50));
+                break;
+            }
             case "type":
                 _heardThisStep.Clear();
                 foreach (var c in rest)

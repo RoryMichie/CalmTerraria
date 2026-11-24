@@ -1,0 +1,20 @@
+# Dig the dirt under the feet with the pickaxe, and check it went.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 2000
+hold D2 100
+wait 200
+key ctrl+k
+key m
+key m
+key m
+do state
+down [
+wait 300
+do state
+wait 3000
+up [
+key k
+do state
+quit
