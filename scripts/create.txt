@@ -1,0 +1,44 @@
+# Create a character and a world from the title menu, then play them.
+# Delete the calmtestnew character and world afterwards.
+heard Single player
+key down
+key down
+key enter
+heard Name
+type calmtestnew
+key enter
+heard created
+wait 500
+key down
+key enter
+heard Name
+type calmtestnew
+key tab
+heard Size
+key tab
+heard Difficulty
+key tab
+heard Evil
+key tab
+heard Seed
+key enter
+heard Creating
+heard 30 percent
+heard 60 percent
+heard 90 percent
+heard created
+wait 1000
+play calmtestnew calmtestnew
+heard Ready
+wait 2000
+key backspace
+key tab
+heard Inventory
+key escape
+key shift+tab
+key shift+tab
+key shift+tab
+heard Save and exit
+key enter
+heard Terraria list
+quit

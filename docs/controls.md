@@ -119,7 +119,11 @@ runs on while this is done. Enter goes straight to the message box.
 Escape opens the same ring with the game paused for as long as it is
 up, in single player; a server cannot be paused.
 
-The title menu has Single player, Join by address, and Exit. Join by
+The title menu has Single player, Join by address, New character, New
+world, and Exit. A new character takes a name and a difficulty; its
+looks are rolled at random. A new world takes a name (one is
+suggested), a size, a difficulty, which evil, and a seed if wanted;
+making it says every tenth of the way and then that it is done. Join by
 address asks for a character, then an address and a port (7777 unless
 changed; "host:port" typed into the address works too), starting from
 the last server joined. Escape gives up on a connection that is taking

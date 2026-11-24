@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Srui;
 using Terraria;
 using Terraria.IO;
+using Terraria.ModLoader;
 
 namespace CalmTerraria.Screens;
 
@@ -28,13 +29,16 @@ internal sealed class TitleScreen
     {
         if (_menu == null)
         {
-            _menu = new ListBox(_app, "Terraria", new[] { "Single player", "Join by address", "Exit" }, activateItems: true);
+            _menu = new ListBox(_app, "Terraria",
+                new[] { "Single player", "Join by address", "New character", "New world", "Exit" }, activateItems: true);
             _menu.Activated += () =>
             {
                 switch (_menu.SelectedIndex)
                 {
                     case 0: ChooseCharacter(ChooseWorld); break;
                     case 1: ChooseCharacter(AskAddress); break;
+                    case 2: NewCharacter(); break;
+                    case 3: NewWorld(); break;
                     default: QuitGame(Main.instance); break;
                 }
             };
@@ -57,6 +61,137 @@ internal sealed class TitleScreen
         _password = null;
         _characters?.Close(nested: true);
         _characters = null;
+    }
+
+    // Creating a character or a world is done by the game's own
+    // creation screens, built but never shown: their choices are set
+    // and their own Create is called, so what is made is exactly what
+    // the game makes, starting inventory and all. None of that is
+    // public, so it is reached by name.
+    private const System.Reflection.BindingFlags Hidden =
+        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+
+    private static void Call(object screen, string method, params object?[] arguments) =>
+        (screen.GetType().GetMethod(method, Hidden)
+            ?? throw new MissingMethodException(screen.GetType().Name, method)).Invoke(screen, arguments);
+
+    private static System.Reflection.FieldInfo Field(object screen, string name) =>
+        screen.GetType().GetField(name, Hidden) ?? throw new MissingFieldException(screen.GetType().Name, name);
+
+    private static readonly string[] CharacterDifficulties =
+    {
+        "Classic, coins are dropped on death",
+        "Mediumcore, everything carried is dropped on death",
+        "Hardcore, death is the end of the character",
+        "Journey, with its own powers, for journey worlds only",
+    };
+
+    private void NewCharacter()
+    {
+        var dialog = _characters = _app.OpenDialog();
+        var name = new EditBox(dialog, "Name");
+        var difficulty = new ListBox(dialog, "Difficulty", CharacterDifficulties);
+        var create = new Button(dialog, "Create");
+        _app.SetPrimary(create);
+        create.Activated += () =>
+        {
+            var text = name.Text.Trim();
+            if (text.Length == 0 || text.Length > 20)
+            {
+                _app.Announce("A name of 1 to 20 characters is needed.");
+                return;
+            }
+            try
+            {
+                var player = Main.PendingPlayer = new Player();
+                var screen = new Terraria.GameContent.UI.States.UICharacterCreation(player);
+                // Looks are the game's own roll of the dice.
+                Call(screen, "Click_RandomizePlayer", null, null);
+                player.name = text;
+                // The list is in the game's own order: 0 to 3.
+                player.difficulty = (byte)difficulty.SelectedIndex;
+                Call(screen, "FinishCreatingCharacter");
+                // The game goes to its own character list from there.
+                Main.menuMode = 0;
+            }
+            catch (Exception e)
+            {
+                ModContent.GetInstance<CalmTerrariaMod>().Logger.Error("Creating a character failed.", e);
+                _app.Announce("The character could not be created; the reason is in the log.");
+                return;
+            }
+            dialog.Close();
+            _app.Announce($"{text} created.");
+        };
+        dialog.AnnounceOpened();
+    }
+
+    private static readonly string[] WorldSizes = { "Small", "Medium", "Large" };
+    private static readonly string[] WorldDifficulties =
+    {
+        "Classic", "Expert, harder with better rewards", "Master, hardest", "Journey, for journey characters only",
+    };
+    private static readonly string[] WorldDifficultyIds = { "Normal", "Expert", "Master", "Creative" };
+    private static readonly string[] WorldEvils = { "Random", "Corruption", "Crimson" };
+
+    private void NewWorld()
+    {
+        object screen;
+        string suggested;
+        try
+        {
+            // The game's screen looks at the chosen character to
+            // suggest a difficulty, and here none has been chosen.
+            if (Main.ActivePlayerFileData?.Player == null)
+                new PlayerFileData { Player = new Player() }.SetAsActive();
+            screen = new Terraria.GameContent.UI.States.UIWorldCreation();
+            Call(screen, "AssignRandomWorldName");
+            suggested = Field(screen, "_optionwWorldName").GetValue(screen) as string ?? "";
+        }
+        catch (Exception e)
+        {
+            ModContent.GetInstance<CalmTerrariaMod>().Logger.Error("Opening world creation failed.", e);
+            _app.Announce("Worlds cannot be created here; the reason is in the log.");
+            return;
+        }
+        var dialog = _characters = _app.OpenDialog();
+        var name = new EditBox(dialog, "Name", suggested) { SelectAllOnFocus = true };
+        var size = new ListBox(dialog, "Size", WorldSizes);
+        var difficulty = new ListBox(dialog, "Difficulty", WorldDifficulties);
+        var evil = new ListBox(dialog, "Evil", WorldEvils);
+        var seed = new EditBox(dialog, "Seed, blank for random");
+        var create = new Button(dialog, "Create");
+        _app.SetPrimary(create);
+        create.Activated += () =>
+        {
+            var text = name.Text.Trim();
+            if (text.Length == 0 || text.Length > 27)
+            {
+                _app.Announce("A name of 1 to 27 characters is needed.");
+                return;
+            }
+            try
+            {
+                void Choose(string field, string value)
+                {
+                    var info = Field(screen, field);
+                    info.SetValue(screen, Enum.Parse(info.FieldType, value));
+                }
+                Field(screen, "_optionwWorldName").SetValue(screen, text);
+                Field(screen, "_optionSeed").SetValue(screen, seed.Text.Trim());
+                Choose("_optionSize", WorldSizes[size.SelectedIndex]);
+                Choose("_optionDifficulty", WorldDifficultyIds[difficulty.SelectedIndex]);
+                Choose("_optionEvil", WorldEvils[evil.SelectedIndex]);
+                _shell.BeginGenerating(text);
+                Call(screen, "FinishCreatingWorld");
+            }
+            catch (Exception e)
+            {
+                ModContent.GetInstance<CalmTerrariaMod>().Logger.Error("Creating a world failed.", e);
+                _shell.GeneratingFailed();
+            }
+        };
+        dialog.AnnounceOpened();
     }
 
     private const int DefaultPort = 7777;

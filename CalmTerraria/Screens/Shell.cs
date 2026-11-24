@@ -278,6 +278,62 @@ internal sealed class Shell
         _host.TakeKeyboard();
     }
 
+    private string? _generating;
+    private bool _sawGenerating;
+    private int _generatingFrames, _saidPercent;
+
+    /// <summary>A world is about to be made: the keys go nowhere and
+    /// progress is said until it is done.</summary>
+    public void BeginGenerating(string world)
+    {
+        _generating = world;
+        _sawGenerating = false;
+        _generatingFrames = 0;
+        _saidPercent = 0;
+        BeginBusy($"Creating {world}.");
+    }
+
+    public void GeneratingFailed()
+    {
+        _generating = null;
+        _busy = false;
+        Main.menuMode = TitleMenuMode;
+        _place = Place.Unknown;
+        _host.App.Announce("The world could not be created; the reason is in the log.");
+    }
+
+    /// <summary>While a world is being made: every tenth of the way is
+    /// said, and at the end the game is brought back to the title
+    /// menu from its own world list.</summary>
+    private bool Generating()
+    {
+        if (_generating == null)
+            return false;
+        _generatingFrames++;
+        if (WorldGen.generatingWorld)
+        {
+            _sawGenerating = true;
+            var progress = Terraria.WorldBuilding.WorldGenerator.CurrentGenerationProgress;
+            var percent = progress == null ? 0 : (int)(progress.TotalProgress * 100f);
+            if (percent >= _saidPercent + 10)
+            {
+                _saidPercent = percent / 10 * 10;
+                _host.App.Announce($"{_saidPercent} percent.");
+            }
+            return true;
+        }
+        // It starts on another thread; give it a few seconds to.
+        if (!_sawGenerating && _generatingFrames < 300)
+            return true;
+        var world = _generating;
+        _generating = null;
+        _busy = false;
+        Main.menuMode = TitleMenuMode;
+        _place = Place.Unknown;
+        _host.App.Announce(_sawGenerating ? $"{world} created." : "The world could not be created.");
+        return true;
+    }
+
     /// <summary>Once a frame, before the host's.</summary>
     public void Update()
     {
@@ -286,6 +342,8 @@ internal sealed class Shell
             : _busy && (Main.menuMode == StatusMenuMode || Main.menuMode == ConnectingMenuMode) ? Place.Busy
             : Main.menuMode == PasswordMenuMode ? Place.Password
             : Place.Elsewhere;
+        if (Generating())
+            return;
         // A connection that was refused, lost or ended by the server:
         // say why, and go back to the title rather than leave the
         // game's own notice up. The game shows the reason on its

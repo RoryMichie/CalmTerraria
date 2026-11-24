@@ -181,7 +181,9 @@ internal sealed class Feedback
                 ? name
                 : $"{name} {Duration(player.buffTime[i])}");
         }
-        return string.Join(", ", parts) + ".";
+        // Some effects are named with their own punctuation: "Happy!"
+        var said = string.Join(", ", parts);
+        return said[^1] is '!' or '?' or '.' ? said : said + ".";
     }
 
     private static string Duration(int frames)
