@@ -37,10 +37,43 @@ internal sealed class Shell
         host.App.InputFilter = _ => _busy;
         host.KeyWhileGameOwns = combo =>
         {
-            if (_place == Place.World && combo == KeyCombo.Plain(Key.Escape))
+            if (_place != Place.World)
+                return false;
+            if (combo == KeyCombo.Plain(Key.Escape))
+            {
                 _gameMenu.Open();
+                return true;
+            }
+            if (!WorldCommands.TryGetValue(combo, out var command))
+                return false;
+            command();
+            return true;
         };
     }
+
+    /// <summary>The mod's keys in a world, where the game has the
+    /// keyboard. A key bound here is taken from the game.</summary>
+    public Dictionary<KeyCombo, Action> WorldCommands { get; } = new();
+
+    public bool InWorld => _place == Place.World;
+
+    /// <summary>Raised when a world has loaded and the player is in it.</summary>
+    public event Action? EnteredWorld;
+
+    /// <summary>Raised when the player has left a world.</summary>
+    public event Action? LeftWorld;
+
+    /// <summary>Starts single player with this character in this world,
+    /// as the title screen's own path does.</summary>
+    public void Play(Terraria.IO.PlayerFileData player, Terraria.IO.WorldFileData world, string? renameWorldTo = null)
+    {
+        _renameWorldTo = renameWorldTo;
+        _title.Start(player, world);
+    }
+
+    public void Quit() => _title.Quit();
+
+    private string? _renameWorldTo;
 
     /// <summary>True from the moment the mod starts a load or a save
     /// until the game arrives where that leads.</summary>
@@ -67,6 +100,8 @@ internal sealed class Shell
             return;
         var from = _place;
         _place = place;
+        if (from == Place.World)
+            LeftWorld?.Invoke();
         switch (place)
         {
             case Place.Title:
@@ -79,7 +114,11 @@ internal sealed class Shell
                 _busy = false;
                 _title.Hide();
                 _host.ReleaseKeyboard();
+                if (_renameWorldTo != null)
+                    Main.worldName = _renameWorldTo;
+                _renameWorldTo = null;
                 _host.App.Announce("Ready.");
+                EnteredWorld?.Invoke();
                 break;
             case Place.Elsewhere:
                 // Mods are still loading at startup, which is nothing

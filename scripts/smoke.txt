@@ -1,0 +1,10 @@
+# Title to world and back, on the test saves.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 2000
+key escape
+heard Save and exit
+key enter
+heard Single player
+quit

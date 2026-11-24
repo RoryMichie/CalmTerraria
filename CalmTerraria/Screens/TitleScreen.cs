@@ -72,15 +72,30 @@ internal sealed class TitleScreen
         dialog.AnnounceOpened();
     }
 
-    private void ChooseWorld(PlayerFileData player)
+    /// <summary>Straight into a world, without the lists.</summary>
+    public void Start(PlayerFileData player, WorldFileData world)
     {
-        // What the game's own character list does on a single-player pick.
+        Select(player);
+        Play(player, world);
+    }
+
+    public void Quit() => QuitGame(Main.instance);
+
+    /// <summary>What the game's own character list does on a
+    /// single-player pick.</summary>
+    private static void Select(PlayerFileData player)
+    {
         Main.menuMultiplayer = false;
         Main.ServerSideCharacter = false;
         Main.myPlayer = 0;
         player.SetAsActive();
         Main.player[Main.myPlayer].position = Vector2.Zero;
         Main.LoadWorlds();
+    }
+
+    private void ChooseWorld(PlayerFileData player)
+    {
+        Select(player);
 
         var worlds = Main.WorldList.ToList();
         if (worlds.Count == 0)

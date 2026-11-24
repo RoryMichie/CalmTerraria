@@ -9,6 +9,7 @@ public sealed class CalmTerrariaMod : Mod
 {
     private SruiHost? _host;
     private Shell? _shell;
+    private Autopilot? _autopilot;
     private bool _failed;
 
     public override void Load()
@@ -28,6 +29,7 @@ public sealed class CalmTerrariaMod : Mod
         var host = _host;
         _host = null;
         _shell = null;
+        _autopilot = null;
         if (host == null)
             return;
         // Mods unload off the main thread. SDL must stop calling into
@@ -50,7 +52,9 @@ public sealed class CalmTerrariaMod : Mod
                 // thread, and speech belongs to the thread that speaks.
                 _host = new SruiHost(Logger);
                 _shell = new Shell(_host);
+                _autopilot = Autopilot.TryLoad(_host, _shell, Logger);
             }
+            _autopilot?.Update();
             _shell!.Update();
             _host.Frame();
         }

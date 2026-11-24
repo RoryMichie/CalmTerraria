@@ -12,12 +12,21 @@ internal sealed class LogReader : IReader
     private readonly ILog _log;
     private readonly SpeechVerbosity _verbosity = new();
 
-    public LogReader(ILog log) => _log = log;
+    private readonly Action<string> _heard;
+
+    public LogReader(ILog log, Action<string> heard)
+    {
+        _log = log;
+        _heard = heard;
+    }
 
     public void OnTick(IReadOnlyList<AccessibilityEvent> events)
     {
         foreach (var text in SpeechRenderer.Default.RenderTick(events, _verbosity))
+        {
             _log.Info($"Spoke: {text}");
+            _heard(text);
+        }
     }
 
     public void OnInterrupt()
