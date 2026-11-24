@@ -255,6 +255,20 @@ internal sealed class WorldScanner
                 Live = () => tracked.active && tracked.type == type ? TileOf(tracked.Center) : null,
             });
         }
+        // The other players, wherever they are: the game shows them
+        // on the map at any distance.
+        for (var i = 0; i < Main.maxPlayers; i++)
+        {
+            var other = Main.player[i];
+            if (other is not { active: true } || i == Main.myPlayer)
+                continue;
+            var (x, y) = TileOf(other.Center);
+            var (tracked, name) = (other, other.name);
+            found.Add(new Feature(Kind(other.dead ? $"{name}, dead" : name, TerrariaScanSource.Players), x, y)
+            {
+                Live = () => tracked.active && tracked.name == name ? TileOf(tracked.Center) : null,
+            });
+        }
         foreach (var item in Main.ActiveItems)
         {
             if (!OnScreen(item.Center, out var x, out var y))

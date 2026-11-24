@@ -92,6 +92,9 @@ Factorio Access's keys.
   never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance.
 
+Players are the scanner's second category, after waypoints: everyone
+else in the world, at any distance, each under their own name.
+
 Waypoints are the scanner's first category: places the player has
 named, kept per world.
 
