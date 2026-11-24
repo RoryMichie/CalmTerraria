@@ -5,8 +5,6 @@ heard Ready
 wait 3000
 do time day
 do clear
-key escape
-heard Inventory
 key shift+tab
 key shift+tab
 heard Powers

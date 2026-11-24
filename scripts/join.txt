@@ -5,8 +5,6 @@ heard Ready
 wait 3000
 key end
 key k
-key escape
-heard Inventory
 key shift+tab
 heard Save and exit
 key enter

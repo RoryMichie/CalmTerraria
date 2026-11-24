@@ -4,10 +4,8 @@ play calmtest calmtest
 heard Ready
 wait 3000
 key end
-key escape
-heard Inventory
-key tab
-key tab
+key shift+tab
+key shift+tab
 heard Powers
 key enter
 heard Omniscience
