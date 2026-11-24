@@ -1,3 +1,4 @@
+using CalmTerraria.Powers;
 using Srui;
 
 namespace CalmTerraria.Pack;
@@ -190,19 +191,22 @@ public sealed class EquipList : ListBox<EquipLine>
 }
 
 /// <summary>The screen behind Escape in a world: the inventory, what
-/// is worn, and the way out of the world. Each is one tab stop.</summary>
+/// is worn, the powers, and the way out of the world. Each is one tab
+/// stop.</summary>
 public sealed class PackScreen
 {
     private readonly SruiApp _app;
     private readonly IPack _pack;
     private readonly Action _saveAndExit;
+    private readonly PowersScreen? _powers;
     private Dialog? _dialog;
 
     /// <summary>The screen closed, however it closed.</summary>
     public event Action? Closed;
 
-    public PackScreen(SruiApp app, IPack pack, Action saveAndExit)
+    public PackScreen(SruiApp app, IPack pack, Action saveAndExit, IPowers? powers = null)
     {
+        _powers = powers == null ? null : new PowersScreen(app, powers);
         _app = app;
         _pack = pack;
         _saveAndExit = saveAndExit;
@@ -217,6 +221,8 @@ public sealed class PackScreen
         var dialog = _dialog = _app.OpenDialog();
         _ = new PackList(dialog, _pack);
         _ = new EquipList(dialog, _pack);
+        if (_powers is { } powers)
+            new Button(dialog, "Powers").Activated += powers.Open;
         var exit = new Button(dialog, "Save and exit");
         exit.Activated += () =>
         {

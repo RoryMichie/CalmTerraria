@@ -46,7 +46,7 @@ internal static class DebugCommands
         autopilot.Register("godmode", _ =>
         {
             RequireTestWorld();
-            Main.LocalPlayer.creativeGodMode = true;
+            TerrariaPowers.GodModeOn = true;
         });
     }
 

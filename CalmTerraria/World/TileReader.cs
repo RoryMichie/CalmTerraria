@@ -13,7 +13,7 @@ internal static class TileReader
     {
         if (!WorldGen.InWorld(x, y))
             return "Edge of the world";
-        if (!Main.Map.IsRevealed(x, y))
+        if (!TerrariaPowers.Knows(x, y))
             return "Unknown";
         var area = new Rectangle(x * 16, y * 16, 16, 16);
         foreach (var npc in Main.ActiveNPCs)

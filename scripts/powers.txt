@@ -1,0 +1,59 @@
+# The powers screen: omniscience, god mode, giving an item, spawning, time.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+key end
+key escape
+heard Inventory
+key tab
+key tab
+heard Powers
+key enter
+heard Omniscience
+key space
+key tab
+key space
+key tab
+key enter
+heard Items
+type torch
+wait 600
+key enter
+heard Given
+key escape
+key tab
+key enter
+heard Creatures
+type zombie
+wait 600
+key enter
+heard Spawned
+key escape
+key tab
+key tab
+key enter
+heard Night
+key escape
+log --- the torches are in the inventory
+key shift+tab
+key shift+tab
+type torch
+wait 600
+key escape
+wait 6000
+key end
+key ctrl+k
+key shift+m
+wait 3000
+do state
+log --- switch omniscience back off for the next run
+key escape
+key tab
+key tab
+key enter
+heard Omniscience
+key space
+key escape
+key escape
+quit

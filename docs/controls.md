@@ -60,8 +60,8 @@ Tab moves between the parts of a screen. Escape goes back one step.
 
 # 6. The pack screen
 
-Escape, in a world. Three tab stops: the inventory, the equipment, and
-Save and exit.
+Escape, in a world. Four tab stops: the inventory, the equipment,
+Powers, and Save and exit.
 
 - Inventory: Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
@@ -71,7 +71,22 @@ Save and exit.
 Holding swaps the item into the hand; the number keys still switch
 between the last ten things held.
 
-# 7. Keys taken from the game
+# 7. Powers
+
+The Powers button on the pack screen: what a journey-mode character
+has and more, for any character.
+
+- Omniscience: the scanner and the cursor know the whole world, not
+  only what the character has explored. Remembered between sessions.
+  The scanner takes a few seconds to catch up after it is switched.
+- God mode: no damage. Off again at the next launch.
+- Give item: a list of every item; type the start of a name, Enter
+  gives a full stack. The list stays open for more.
+- Spawn creature: the same for creatures; one appears twelve tiles
+  off on the side the character faces. Single player only.
+- Make it day, Make it night. Single player only.
+
+# 8. Keys taken from the game
 
 A key the mod uses in a world is hidden from the game, so J (quick
 mana) and M (the full-screen map) no longer reach it. Shift and Control

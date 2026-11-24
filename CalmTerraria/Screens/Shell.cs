@@ -37,7 +37,7 @@ internal sealed class Shell
         {
             BeginBusy("Saving.");
             WorldGen.SaveAndQuit();
-        });
+        }, new World.TerrariaPowers());
         _pack.Closed += () =>
         {
             Main.playerInventory = false;

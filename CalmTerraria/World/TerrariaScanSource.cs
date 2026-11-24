@@ -119,7 +119,7 @@ internal sealed class TerrariaScanSource : IScanSource
 
     public int KindAt(int x, int y)
     {
-        if (!Main.Map.IsRevealed(x, y))
+        if (!TerrariaPowers.Knows(x, y))
             return -1;
         var tile = Main.tile[x, y];
         if (tile.HasTile)
