@@ -1,0 +1,18 @@
+# The scan retakes itself: on a category change, and after five idle seconds.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+key end
+key pagedown
+hold D 2500
+key pagedown
+wait 300
+key pageup
+wait 6000
+key pageup
+wait 300
+key ctrl+pagedown
+quit

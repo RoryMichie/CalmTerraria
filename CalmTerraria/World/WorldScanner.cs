@@ -60,16 +60,18 @@ internal sealed class WorldScanner
         var commands = shell.WorldCommands;
         commands[KeyCombo.Plain(Key.End)] = () => Refresh(facingOnly: false);
         commands[KeyCombo.WithShift(Key.End)] = () => Refresh(facingOnly: true);
-        commands[KeyCombo.WithCtrl(Key.PageDown)] = () => Move(list => list.MoveCategory(1));
-        commands[KeyCombo.WithCtrl(Key.PageUp)] = () => Move(list => list.MoveCategory(-1));
+        commands[KeyCombo.WithCtrl(Key.PageDown)] = () => Move(list => list.MoveCategory(1), fresh: true);
+        commands[KeyCombo.WithCtrl(Key.PageUp)] = () => Move(list => list.MoveCategory(-1), fresh: true);
         commands[KeyCombo.Plain(Key.PageDown)] = () => Move(list => list.MoveKind(1));
         commands[KeyCombo.Plain(Key.PageUp)] = () => Move(list => list.MoveKind(-1));
         commands[KeyCombo.WithShift(Key.PageDown)] = () => Move(list => list.MoveInstance(1));
         commands[KeyCombo.WithShift(Key.PageUp)] = () => Move(list => list.MoveInstance(-1));
         commands[KeyCombo.Plain(Key.Home)] = () =>
         {
+            // Never refreshed here: it goes to what was last read.
             if (Ready() && _list.Target is { } target)
                 JumpRequested?.Invoke(target);
+            _usedAt = _host.Now;
         };
     }
 
@@ -122,9 +124,19 @@ internal sealed class WorldScanner
         return true;
     }
 
+    /// <summary>When a scanner key was last pressed, and whether the
+    /// list in hand is of the facing side only.</summary>
+    private ulong _usedAt;
+    private bool _facingOnly;
+    /// <summary>Left alone this long, the list is retaken at the next
+    /// scanner key: what it says should be about now.</summary>
+    private const ulong StaleMs = 5000;
+
     private void Take(bool facingOnly)
     {
         _taken = true;
+        _facingOnly = facingOnly;
+        _usedAt = _host.Now;
         IEnumerable<Feature> features = _latest!.Concat(Creatures());
         if (facingOnly)
         {
@@ -146,10 +158,18 @@ internal sealed class WorldScanner
         _host.App.Announce(_list.Read());
     }
 
-    private void Move(Func<ScanList, string> move)
+    /// <param name="fresh">Retake the list first whatever its age:
+    /// changing category does.</param>
+    private void Move(Func<ScanList, string> move, bool fresh = false)
     {
-        if (Ready())
-            _host.App.Announce(move(_list));
+        if (!Ready())
+            return;
+        // The list never changes under a run of key presses, only
+        // before the first of one. The selection stays on its kind.
+        if (fresh || _host.Now - _usedAt >= StaleMs)
+            Take(_facingOnly);
+        _usedAt = _host.Now;
+        _host.App.Announce(move(_list));
     }
 
     /// <summary>The survey knows tiles; this is where what is known

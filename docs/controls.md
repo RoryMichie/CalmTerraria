@@ -52,6 +52,10 @@ Factorio Access's keys.
 - Shift+Page Up and Shift+Page Down: instance of that kind, nearest
   first.
 - End: refresh the scan. Shift+End: refresh, facing direction only.
+- The scan also refreshes by itself: whenever the category is
+  changed, and at the first scanner key after five seconds without
+  one. It never changes in the middle of a run of key presses. Home
+  never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance.
 
 # 5. Screens
