@@ -1,0 +1,55 @@
+# A chest opened from the world, moved in and out of, renamed; then crafting.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do placechest
+wait 500
+do cursor-last
+down ]
+heard list
+up ]
+key tab
+heard Chest actions
+key tab
+heard Inventory
+type torch
+wait 600
+key enter
+heard Deposited
+key shift+tab
+key shift+tab
+wait 300
+key enter
+heard Taken
+key tab
+key end
+key enter
+heard Name
+type Ores
+key enter
+heard Renamed
+key escape
+wait 1000
+do state
+log --- open it again: the new name
+down ]
+heard list
+up ]
+key escape
+wait 500
+log --- crafting
+key escape
+heard Inventory
+key tab
+key tab
+heard Crafting
+key space
+wait 300
+key enter
+wait 300
+key escape
+quit

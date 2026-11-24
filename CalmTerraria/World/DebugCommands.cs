@@ -10,6 +10,9 @@ namespace CalmTerraria.World;
 /// up what it wants to check. They refuse to run anywhere else.</summary>
 internal static class DebugCommands
 {
+    /// <summary>The tile of the last thing a command placed.</summary>
+    public static (int X, int Y) LastPlaced { get; private set; }
+
     public static void Register(Autopilot autopilot, ILog log)
     {
         // spawn Zombie 12 0 - an NPC by its internal name, that many
@@ -41,6 +44,31 @@ internal static class DebugCommands
                 if (!npc.friendly && !npc.townNPC)
                     npc.active = false;
             }
+        });
+        // placechest - a chest standing on the nearest clear ground to
+        // the player's right, and the player moved beside it. Where it
+        // went is kept in LastPlaced.
+        autopilot.Register("placechest", _ =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            for (var dx = 2; dx < 60; dx++)
+            {
+                for (var dy = -6; dy <= 6; dy++)
+                {
+                    var index = WorldGen.PlaceChest(px + dx, py + dy);
+                    if (index < 0)
+                        continue;
+                    LastPlaced = (px + dx, py + dy);
+                    // Stand the character beside it, within reach.
+                    var player = Main.LocalPlayer;
+                    player.Bottom = new Microsoft.Xna.Framework.Vector2((px + dx - 1) * 16f, (py + dy + 1) * 16f);
+                    player.velocity = Microsoft.Xna.Framework.Vector2.Zero;
+                    log.Info($"Debug: chest {index} at {LastPlaced}, player {px},{py}.");
+                    return;
+                }
+            }
+            throw new InvalidOperationException("nowhere to stand a chest");
         });
         // godmode - the test character cannot be hurt.
         autopilot.Register("godmode", _ =>

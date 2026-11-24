@@ -37,10 +37,17 @@ internal sealed class Shell
         {
             BeginBusy("Saving.");
             WorldGen.SaveAndQuit();
-        }, new World.TerrariaPowers());
+        }, new World.TerrariaPowers(), new World.TerrariaCrafting());
         _pack.Closed += () =>
         {
             Main.playerInventory = false;
+            if (World.TerrariaChest.IsOpen)
+            {
+                // As the game closes a chest: the lid shuts on the
+                // next frame, and a server is told.
+                Main.LocalPlayer.chest = -1;
+                Recipe.FindRecipes();
+            }
             // Mid-save the keys stay ours: the character must not
             // walk off while the world is being written.
             if (!_busy)
@@ -69,13 +76,32 @@ internal sealed class Shell
     /// the way out. The game is told its own inventory is open, so a
     /// sighted onlooker sees it and the game's autopause setting
     /// applies as it would for anyone.</summary>
-    private void OpenPack()
+    private void OpenPack(bool onChest = false)
     {
         if (_pack.IsOpen)
             return;
         _host.TakeKeyboard();
         Main.playerInventory = true;
-        _pack.Open();
+        Recipe.FindRecipes();
+        _pack.Open(onChest ? new World.TerrariaChest() : null);
+        _onChest = onChest;
+    }
+
+    private bool _onChest;
+
+    /// <summary>A chest the player opened in the world brings the pack
+    /// screen with it; a chest the game closed - broken, or taken by
+    /// someone else - takes the screen away again.</summary>
+    private void FollowChest()
+    {
+        var open = World.TerrariaChest.IsOpen;
+        if (!_pack.IsOpen)
+        {
+            if (open && !_busy)
+                OpenPack(onChest: true);
+        }
+        else if (_onChest && !open)
+            _pack.Close();
     }
 
     /// <summary>A key came up while the player is in a world.</summary>
@@ -132,7 +158,10 @@ internal sealed class Shell
         if (place == _place)
         {
             if (place == Place.World)
+            {
+                FollowChest();
                 WorldFrame?.Invoke();
+            }
             return;
         }
         var from = _place;

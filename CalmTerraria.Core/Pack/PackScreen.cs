@@ -60,28 +60,21 @@ public sealed partial class EquipLine : Element
     public string Value => $"{Slot}, {Item ?? "empty"}";
 }
 
-/// <summary>The inventory: one alphabetical list. Enter does the
-/// natural thing with the item - wears what can be worn, holds
-/// anything else - Space always holds, Delete trashes one stack.</summary>
-public sealed class PackList : ListBox<PackLine>
+/// <summary>Stacks, as alphabetical lines with each item's stacks
+/// merged. A line keeps its object for as long as its item is there
+/// at all, so a list's cursor stays with the item while counts change
+/// around it.</summary>
+internal sealed class StackLines
 {
-    private readonly IPack _pack;
+    private readonly Func<IReadOnlyList<PackStack>> _stacks;
     private readonly Dictionary<string, PackLine> _lines = new(StringComparer.Ordinal);
     private List<PackLine> _sorted = new();
 
-    public PackList(IWidgetContainer parent, IPack pack)
-        : base(parent, "Inventory", Array.Empty<PackLine>())
-    {
-        _pack = pack;
-        BindItems(Lines);
-    }
+    public StackLines(Func<IReadOnlyList<PackStack>> stacks) => _stacks = stacks;
 
-    /// <summary>The lines for the inventory as it is now. A line keeps
-    /// its object for as long as its item is held at all, so the
-    /// cursor stays with the item while counts change around it.</summary>
-    private IReadOnlyList<PackLine> Lines()
+    public IReadOnlyList<PackLine> Lines()
     {
-        var groups = _pack.Stacks()
+        var groups = _stacks()
             .GroupBy(stack => stack.Name, StringComparer.Ordinal)
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -107,6 +100,24 @@ public sealed class PackList : ListBox<PackLine>
         }
         return _sorted;
     }
+}
+
+/// <summary>The inventory: one alphabetical list. Enter does the
+/// natural thing with the item - wears what can be worn, holds
+/// anything else - Space always holds, Delete trashes one stack.
+/// While a chest is open, Enter puts the item in the chest.</summary>
+public sealed class PackList : ListBox<PackLine>
+{
+    private readonly IPack _pack;
+    private readonly IChest? _chest;
+
+    public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null)
+        : base(parent, "Inventory", Array.Empty<PackLine>())
+    {
+        _pack = pack;
+        _chest = chest;
+        BindItems(new StackLines(pack.Stacks).Lines);
+    }
 
     public override bool ReservesKey(KeyCombo combo) =>
         (!combo.HasModifier && (combo.Key == Key.Delete || combo.Key == Key.Space || combo.Key == Key.Enter))
@@ -119,6 +130,15 @@ public sealed class PackList : ListBox<PackLine>
         var line = Items[SelectedIndex];
         if (input.Kind == InputKind.Activate)
         {
+            if (_chest != null)
+            {
+                // Every stack of it. The line leaves for the other list.
+                var all = true;
+                foreach (var stack in line.Stacks.ToList())
+                    all &= _chest.Deposit(stack.Slot);
+                Announce(all ? "Deposited." : "No room in the chest.");
+                return true;
+            }
             if (!line.Equippable)
                 return Hold(line);
             // The line leaves this list for the equipment list, where
@@ -190,22 +210,165 @@ public sealed class EquipList : ListBox<EquipLine>
     }
 }
 
+/// <summary>An open container: a chest in the world, or one of the
+/// character's own - piggy bank, safe and the rest.</summary>
+public interface IChest
+{
+    string Name { get; }
+    IReadOnlyList<PackStack> Stacks();
+
+    /// <summary>Move a stack to the inventory. False when it did not
+    /// all fit.</summary>
+    bool Take(int slot);
+
+    /// <summary>Move an inventory stack here. False when it did not
+    /// all fit.</summary>
+    bool Deposit(int packSlot);
+
+    void LootAll();
+    void DepositAll();
+    void QuickStack();
+    void Restock();
+
+    /// <summary>Only chests in the world have names to change.</summary>
+    bool CanRename { get; }
+    void Rename(string name);
+}
+
+/// <summary>What is in the open chest. Enter takes all of the item.</summary>
+public sealed class ChestList : ListBox<PackLine>
+{
+    private readonly IChest _chest;
+
+    public ChestList(IWidgetContainer parent, IChest chest)
+        : base(parent, chest.Name, Array.Empty<PackLine>())
+    {
+        _chest = chest;
+        BindItems(new StackLines(chest.Stacks).Lines);
+    }
+
+    public override bool ReservesKey(KeyCombo combo) =>
+        (!combo.HasModifier && combo.Key == Key.Enter) || base.ReservesKey(combo);
+
+    protected override bool OnInput(in InputEvent input)
+    {
+        if (input.Kind != InputKind.Activate || Items.Count == 0)
+            return base.OnInput(input);
+        var all = true;
+        foreach (var stack in Items[SelectedIndex].Stacks.ToList())
+            all &= _chest.Take(stack.Slot);
+        Announce(all ? "Taken." : "No room in the inventory.");
+        return true;
+    }
+}
+
+/// <summary>Something that can be made right now.</summary>
+/// <param name="Id">The game's recipe, for making it.</param>
+/// <param name="Count">How many one crafting makes.</param>
+/// <param name="Needs">The ingredients, as words.</param>
+public sealed record Craftable(int Id, string Name, int Count, string Needs);
+
+public interface ICrafting
+{
+    /// <summary>What the character can make where they stand, with
+    /// what they carry.</summary>
+    IReadOnlyList<Craftable> Recipes();
+
+    /// <summary>Make it once. False when the game would not.</summary>
+    bool Craft(int id);
+}
+
+public sealed partial class CraftLine : Element
+{
+    public Craftable Recipe { get; internal set; }
+
+    public CraftLine(Craftable recipe) => Recipe = recipe;
+
+    [Field]
+    public string Value => Recipe.Count > 1 ? $"{Recipe.Name}, {Recipe.Count}" : Recipe.Name;
+}
+
+/// <summary>What can be made now: one alphabetical list. Enter makes
+/// it once; Space says what it uses.</summary>
+public sealed class CraftList : ListBox<CraftLine>
+{
+    private readonly ICrafting _crafting;
+    private readonly Dictionary<int, CraftLine> _lines = new();
+    private List<CraftLine> _sorted = new();
+
+    public CraftList(IWidgetContainer parent, ICrafting crafting)
+        : base(parent, "Crafting", Array.Empty<CraftLine>())
+    {
+        _crafting = crafting;
+        BindItems(Lines);
+    }
+
+    private IReadOnlyList<CraftLine> Lines()
+    {
+        var recipes = _crafting.Recipes()
+            .OrderBy(recipe => recipe.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(recipe => recipe.Id)
+            .ToList();
+        var changed = recipes.Count != _sorted.Count;
+        var sorted = new List<CraftLine>(recipes.Count);
+        for (var i = 0; i < recipes.Count; i++)
+        {
+            if (!_lines.TryGetValue(recipes[i].Id, out var line))
+                _lines[recipes[i].Id] = line = new CraftLine(recipes[i]);
+            line.Recipe = recipes[i];
+            sorted.Add(line);
+            changed |= i >= _sorted.Count || !ReferenceEquals(_sorted[i], line);
+        }
+        if (changed)
+        {
+            _sorted = sorted;
+            foreach (var gone in _lines.Keys.Where(id => !recipes.Any(recipe => recipe.Id == id)).ToList())
+                _lines.Remove(gone);
+        }
+        return _sorted;
+    }
+
+    public override bool ReservesKey(KeyCombo combo) =>
+        (!combo.HasModifier && (combo.Key == Key.Space || combo.Key == Key.Enter)) || base.ReservesKey(combo);
+
+    protected override bool OnInput(in InputEvent input)
+    {
+        if (Items.Count == 0)
+            return base.OnInput(input);
+        var recipe = Items[SelectedIndex].Recipe;
+        if (input.Kind == InputKind.Activate)
+        {
+            Announce(_crafting.Craft(recipe.Id) ? "Crafted." : "Can't make that now.");
+            return true;
+        }
+        if (input.IsChar(' '))
+        {
+            Announce(recipe.Needs);
+            return true;
+        }
+        return base.OnInput(input);
+    }
+}
+
 /// <summary>The screen behind Escape in a world: the inventory, what
-/// is worn, the powers, and the way out of the world. Each is one tab
-/// stop.</summary>
+/// is worn, what can be made, the powers, and the way out of the world.
+/// Each is one tab stop. Opened on a chest, the chest and what can be
+/// done with it come first.</summary>
 public sealed class PackScreen
 {
     private readonly SruiApp _app;
     private readonly IPack _pack;
     private readonly Action _saveAndExit;
     private readonly PowersScreen? _powers;
+    private readonly ICrafting? _crafting;
     private Dialog? _dialog;
 
     /// <summary>The screen closed, however it closed.</summary>
     public event Action? Closed;
 
-    public PackScreen(SruiApp app, IPack pack, Action saveAndExit, IPowers? powers = null)
+    public PackScreen(SruiApp app, IPack pack, Action saveAndExit, IPowers? powers = null, ICrafting? crafting = null)
     {
+        _crafting = crafting;
         _powers = powers == null ? null : new PowersScreen(app, powers);
         _app = app;
         _pack = pack;
@@ -214,13 +377,34 @@ public sealed class PackScreen
 
     public bool IsOpen => _dialog != null;
 
-    public void Open()
+    private static readonly string[] ChestActions = { "Loot all", "Deposit all", "Quick stack", "Restock", "Rename" };
+
+    public void Open(IChest? chest = null)
     {
         if (_dialog != null)
             return;
         var dialog = _dialog = _app.OpenDialog();
-        _ = new PackList(dialog, _pack);
+        if (chest != null)
+        {
+            _ = new ChestList(dialog, chest);
+            var actions = new ListBox(dialog, "Chest actions",
+                chest.CanRename ? ChestActions : ChestActions[..^1], activateItems: true);
+            actions.Activated += () =>
+            {
+                switch (actions.SelectedIndex)
+                {
+                    case 0: chest.LootAll(); _app.Announce("Looted."); break;
+                    case 1: chest.DepositAll(); _app.Announce("Deposited."); break;
+                    case 2: chest.QuickStack(); _app.Announce("Stacked."); break;
+                    case 3: chest.Restock(); _app.Announce("Restocked."); break;
+                    case 4: Rename(chest); break;
+                }
+            };
+        }
+        _ = new PackList(dialog, _pack, chest);
         _ = new EquipList(dialog, _pack);
+        if (_crafting != null)
+            _ = new CraftList(dialog, _crafting);
         if (_powers is { } powers)
             new Button(dialog, "Powers").Activated += powers.Open;
         var exit = new Button(dialog, "Save and exit");
@@ -238,4 +422,19 @@ public sealed class PackScreen
     }
 
     public void Close() => _dialog?.Close(nested: true);
+
+    private void Rename(IChest chest)
+    {
+        var dialog = _app.OpenDialog();
+        var name = new EditBox(dialog, "Name", chest.Name) { SelectAllOnFocus = true };
+        var rename = new Button(dialog, "Rename");
+        _app.SetPrimary(rename);
+        rename.Activated += () =>
+        {
+            chest.Rename(name.Text.Trim());
+            dialog.Close();
+            _app.Announce("Renamed.");
+        };
+        dialog.AnnounceOpened();
+    }
 }

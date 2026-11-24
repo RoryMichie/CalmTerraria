@@ -60,13 +60,27 @@ Tab moves between the parts of a screen. Escape goes back one step.
 
 # 6. The pack screen
 
-Escape, in a world. Four tab stops: the inventory, the equipment,
-Powers, and Save and exit.
+Escape, in a world. Five tab stops: the inventory, the equipment,
+crafting, Powers, and Save and exit.
 
 - Inventory: Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
   to an item by name.
 - Equipment: Enter takes the piece off.
+- Crafting: what can be made now, from what is carried and what the
+  character stands beside. Enter makes it once. Space says what it
+  uses.
+
+Opening a chest in the world (right bracket on it), or a piggy bank or
+safe, brings the same screen with two tab stops in front:
+
+- The chest's contents, as a list named for the chest. Enter takes
+  all of the item.
+- Chest actions: Loot all, Deposit all, Quick stack, Restock, and
+  Rename for chests in the world.
+
+While a chest is open, Enter in the inventory puts all of the item in
+the chest; Space still holds. Escape closes the chest.
 
 Holding swaps the item into the hand; the number keys still switch
 between the last ten things held.
