@@ -1,5 +1,6 @@
 using CalmTerraria.Host;
 using CalmTerraria.Screens;
+using CalmTerraria.World;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -53,6 +54,9 @@ public sealed class CalmTerrariaMod : Mod
                 _host = new SruiHost(Logger);
                 _shell = new Shell(_host);
                 _autopilot = Autopilot.TryLoad(_host, _shell, Logger);
+                var scanner = new WorldScanner(_host, _shell, Logger);
+                if (_autopilot != null)
+                    scanner.RegisterDebug(_autopilot);
             }
             _autopilot?.Update();
             _shell!.Update();

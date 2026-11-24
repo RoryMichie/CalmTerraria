@@ -60,6 +60,9 @@ internal sealed class Shell
     /// <summary>Raised when a world has loaded and the player is in it.</summary>
     public event Action? EnteredWorld;
 
+    /// <summary>Raised every frame the player is in a world.</summary>
+    public event Action? WorldFrame;
+
     /// <summary>Raised when the player has left a world.</summary>
     public event Action? LeftWorld;
 
@@ -97,7 +100,11 @@ internal sealed class Shell
             : _busy && Main.menuMode == StatusMenuMode ? Place.Busy
             : Place.Elsewhere;
         if (place == _place)
+        {
+            if (place == Place.World)
+                WorldFrame?.Invoke();
             return;
+        }
         var from = _place;
         _place = place;
         if (from == Place.World)

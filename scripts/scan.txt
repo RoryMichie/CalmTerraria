@@ -1,0 +1,47 @@
+# The scanner on the test world: as explored, then fully revealed.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 6000
+do survey
+key end
+key pagedown
+key pagedown
+key shift+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pageup
+log --- revealing
+do reveal
+wait 1000
+key end
+wait 20000
+do survey
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+key pagedown
+key pagedown
+key pagedown
+key shift+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key pagedown
+key ctrl+pagedown
+key pagedown
+key pagedown
+key pagedown
+key pagedown
+key ctrl+pagedown
+quit

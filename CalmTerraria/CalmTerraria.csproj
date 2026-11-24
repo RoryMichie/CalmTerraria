@@ -32,6 +32,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CalmTerraria.Core\CalmTerraria.Core.csproj" />
     <ProjectReference Include="$(SruiDir)Srui\Srui.csproj" />
     <ProjectReference Include="$(SruiDir)Srui.Audio\Srui.Audio.csproj" />
     <ProjectReference Include="$(SruiDir)Srui.Generators\Srui.Generators.csproj"
@@ -49,7 +50,7 @@
 
   <Target Name="StageSrui" AfterTargets="Build">
     <ItemGroup>
-      <SruiManaged Include="$(TargetDir)Srui.dll;$(TargetDir)Srui.Audio.dll" />
+      <SruiManaged Include="$(TargetDir)Srui.dll;$(TargetDir)Srui.Audio.dll;$(TargetDir)CalmTerraria.Core.dll" />
       <SruiNative Include="$(SruiDir)native\out\prism.dll;$(SruiDir)native\out\cosmos.dll;$(SruiDir)native\out\phonon.dll" />
     </ItemGroup>
     <Error Condition="!Exists('%(SruiNative.FullPath)')"

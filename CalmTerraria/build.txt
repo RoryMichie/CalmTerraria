@@ -2,5 +2,5 @@ displayName = CalmTerraria
 author = CalmComputers
 version = 0.0.1
 side = NoSync
-dllReferences = Srui, Srui.Audio
+dllReferences = Srui, Srui.Audio, CalmTerraria.Core
 buildIgnore = *.csproj, *.user, obj\*, bin\*, .vs\*
