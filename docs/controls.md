@@ -175,6 +175,14 @@ be bought back.
 Holding swaps the item into the hand; the number keys still switch
 between the last ten things held.
 
+How many: wherever more than one of something could be moved - taking
+from or storing in a chest, selling, buying something that stacks,
+giving from Powers - Enter brings up a box asking how many. It opens
+on the usual answer, selected: everything for a chest or a sale, one
+for a purchase, a full stack for a gift. Enter alone accepts that;
+typing a number replaces it; Escape moves nothing. One of something is
+moved without asking.
+
 # 7. Status and what the game shows
 
 - Backspace: health, mana, defense, and each effect on the character

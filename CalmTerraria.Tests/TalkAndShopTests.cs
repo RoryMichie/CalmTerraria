@@ -10,7 +10,7 @@ internal sealed class FakeShop : IShop
     public bool PackFull { get; set; }
     public List<ShopItem> Stock { get; } = new()
     {
-        new ShopItem(0, "Torch", 1, "50 copper"),
+        new ShopItem(0, "Torch", 1, "50 copper", 9999),
         new ShopItem(1, "Mining Helmet", 1, "4 gold"),
     };
     public List<int> Sold { get; } = new();
@@ -31,15 +31,19 @@ internal sealed class FakeShop : IShop
         return BuyResult.Bought;
     }
 
-    public bool Sell(int packSlot)
+    public int Sell(int packSlot, int count)
     {
-        var stack = _pack.Inventory.Single(s => s.Slot == packSlot);
+        var index = _pack.Inventory.FindIndex(s => s.Slot == packSlot);
+        var stack = _pack.Inventory[index];
         if (stack.Name == "Acorn")
-            return false;
-        _pack.Inventory.Remove(stack);
+            return 0;
+        if (count >= stack.Count)
+            _pack.Inventory.RemoveAt(index);
+        else
+            _pack.Inventory[index] = stack with { Count = stack.Count - count };
         Sold.Add(packSlot);
         Coins += 10;
-        return true;
+        return count;
     }
 
     public string Money() => $"{Coins} copper";
@@ -111,11 +115,20 @@ public class ShopTests
         ui.Press("down");
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Bought. 450 copper left.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Bought. 450 copper left.", ui.Spoken());
         Assert.Contains(pack.Inventory, s => s.Name == "Torch");
+        ui.Press("enter");
+        ui.Type("3");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Bought. 300 copper left.", ui.Spoken());
         shop.PackFull = true;
         ui.Press("enter");
-        ui.Expect("No room in the inventory.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("No room in the inventory.", ui.Spoken());
     }
 
     [Fact]
@@ -125,11 +138,15 @@ public class ShopTests
         ui.Press("tab");
         ui.Expect("Inventory list Acorn, 5");
         ui.Press("enter");
-        ui.Expect("Can't sell that.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Can't sell that.", ui.Spoken());
         ui.Press("end");
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Sold. 520 copper.", "Acorn, 5");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Sold. 520 copper.", ui.Spoken());
         Assert.Equal(2, shop.Sold.Count);
         Assert.DoesNotContain(pack.Inventory, s => s.Name == "Wood");
     }

@@ -24,24 +24,32 @@ internal sealed class FakeChest : IChest
 
     public IReadOnlyList<PackStack> Stacks() => Contents;
 
-    public bool Take(int slot)
+    public int Take(int slot, int count)
     {
         if (PackFull)
-            return false;
-        var stack = Contents.Single(s => s.Slot == slot);
-        Contents.Remove(stack);
-        _pack.Add(stack.Name, stack.Count);
-        return true;
+            return 0;
+        var index = Contents.FindIndex(s => s.Slot == slot);
+        var stack = Contents[index];
+        if (count >= stack.Count)
+            Contents.RemoveAt(index);
+        else
+            Contents[index] = stack with { Count = stack.Count - count };
+        _pack.Add(stack.Name, count);
+        return count;
     }
 
-    public bool Deposit(int packSlot)
+    public int Deposit(int packSlot, int count)
     {
         if (Full)
-            return false;
-        var stack = _pack.Inventory.Single(s => s.Slot == packSlot);
-        _pack.Inventory.Remove(stack);
-        Add(stack.Name, stack.Count);
-        return true;
+            return 0;
+        var index = _pack.Inventory.FindIndex(s => s.Slot == packSlot);
+        var stack = _pack.Inventory[index];
+        if (count >= stack.Count)
+            _pack.Inventory.RemoveAt(index);
+        else
+            _pack.Inventory[index] = stack with { Count = stack.Count - count };
+        Add(stack.Name, count);
+        return count;
     }
 
     public void LootAll() => Did.Add("loot");
@@ -121,7 +129,9 @@ public class ChestTests
         var (ui, pack, chest) = Open();
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Taken.", "Spear");
+        ui.Drain();
+        ui.Press("enter");
+        ui.Expect("Taken.", "Chest list Spear");
         Assert.Equal(15, pack.Inventory.Where(s => s.Name == "Gold Bar").Sum(s => s.Count));
         Assert.Single(chest.Contents);
     }
@@ -133,7 +143,9 @@ public class ChestTests
         chest.PackFull = true;
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("No room in the inventory.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("No room in the inventory.", ui.Spoken());
     }
 
     [Fact]
@@ -158,7 +170,9 @@ public class ChestTests
         ui.Press("end");
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Deposited.", "Acorn, 5");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Deposited.", ui.Spoken());
         Assert.DoesNotContain(pack.Inventory, s => s.Name == "Wood");
         Assert.Equal(347, chest.Contents.Where(s => s.Name == "Wood").Sum(s => s.Count));
     }
@@ -172,7 +186,48 @@ public class ChestTests
         ui.Press("tab");
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("No room in the chest.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("No room in the chest.", ui.Spoken());
+    }
+
+    [Fact]
+    public void ANumberTypedIntoTheBoxTakesThatManyAndTheRestStay()
+    {
+        var (ui, pack, chest) = Open();
+        ui.Press("enter");
+        ui.Expect("How many, up to 15 edit selected 15");
+        ui.Type("4");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Taken.", ui.Spoken());
+        Assert.Equal(4, pack.Inventory.Where(s => s.Name == "Gold Bar").Sum(s => s.Count));
+        Assert.Equal(11, chest.Contents.Where(s => s.Name == "Gold Bar").Sum(s => s.Count));
+    }
+
+    [Fact]
+    public void TheBoxRefusesWhatIsNotANumberInRangeAndEscapeMovesNothing()
+    {
+        var (ui, pack, chest) = Open();
+        ui.Press("enter");
+        ui.Type("99");
+        ui.Drain();
+        ui.Press("enter");
+        ui.Expect("A number from 1 to 15.");
+        ui.Press("escape");
+        Assert.Equal(15, chest.Contents.Where(s => s.Name == "Gold Bar").Sum(s => s.Count));
+        Assert.DoesNotContain(pack.Inventory, s => s.Name == "Gold Bar");
+    }
+
+    [Fact]
+    public void OneOfSomethingIsNotAskedAbout()
+    {
+        var (ui, pack, _) = Open();
+        ui.Press("down");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Taken.", ui.Spoken());
+        Assert.Contains(pack.Inventory, s => s.Name == "Spear");
     }
 
     [Fact]

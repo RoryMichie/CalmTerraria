@@ -60,29 +60,49 @@ internal sealed class TerrariaChest : IChest
         return stacks;
     }
 
-    public bool Take(int slot)
+    public int Take(int slot, int count)
     {
         if (!IsOpen)
-            return false;
+            return 0;
         var items = Contents(out var sync);
         var player = Player;
-        items[slot].position = player.Center;
-        items[slot] = player.GetItem(Main.myPlayer, items[slot], GetItemSettings.LootAllSettings);
+        var stack = items[slot];
+        if (stack.IsAir)
+            return 0;
+        count = Math.Min(count, stack.stack);
+        // The part that is going, as a stack of its own.
+        var going = stack.Clone();
+        going.stack = count;
+        going.position = player.Center;
+        var left = player.GetItem(Main.myPlayer, going, GetItemSettings.LootAllSettings);
+        var moved = count - (left.IsAir ? 0 : left.stack);
+        stack.stack -= moved;
+        if (stack.stack <= 0)
+            stack.TurnToAir();
         if (sync)
             NetMessage.SendData(SyncChestItem, -1, -1, null, player.chest, slot);
         Recipe.FindRecipes();
-        return items[slot].IsAir;
+        return moved;
     }
 
-    public bool Deposit(int packSlot)
+    public int Deposit(int packSlot, int count)
     {
         if (!IsOpen)
-            return false;
-        var item = Player.inventory[packSlot];
+            return 0;
+        var stack = Player.inventory[packSlot];
+        if (stack.IsAir)
+            return 0;
+        count = Math.Min(count, stack.stack);
+        var going = stack.Clone();
+        going.stack = count;
         // The game's shift-click on an inventory item with a chest open.
-        ChestUI.TryPlacingInChest(item, justCheck: false, ItemSlot.Context.InventoryItem);
+        ChestUI.TryPlacingInChest(going, justCheck: false, ItemSlot.Context.InventoryItem);
+        var moved = count - (going.IsAir ? 0 : going.stack);
+        stack.stack -= moved;
+        if (stack.stack <= 0)
+            stack.TurnToAir();
         Recipe.FindRecipes();
-        return item.IsAir;
+        return moved;
     }
 
     public string Describe(int slot) => IsOpen ? ItemText.Describe(Contents(out _)[slot]) : "";

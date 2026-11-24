@@ -67,12 +67,10 @@ internal sealed class TerrariaPowers : IPowers
         return _itemNames;
     }
 
-    public void Give(string item)
-    {
-        var type = _items![item];
-        Main.LocalPlayer.QuickSpawnItem(
-            new EntitySource_DebugCommand("CalmTerraria powers"), type, ContentSamples.ItemsByType[type].maxStack);
-    }
+    public int FullStack(string item) => ContentSamples.ItemsByType[_items![item]].maxStack;
+
+    public void Give(string item, int count) =>
+        Main.LocalPlayer.QuickSpawnItem(new EntitySource_DebugCommand("CalmTerraria powers"), _items![item], count);
 
     public IReadOnlyList<string> Creatures()
     {

@@ -174,21 +174,27 @@ public sealed class PackList : ListBox<PackLine>
         {
             if (_shop != null)
             {
-                // Every stack of it, as with a chest. The shop keeps
-                // what it is sold, to be bought back.
-                var any = false;
-                foreach (var stack in line.Stacks.ToList())
-                    any |= _shop.Sell(stack.Slot);
-                Announce(any ? $"Sold. {_shop.Money()}." : "Can't sell that.");
+                // The shop keeps what it is sold, to be bought back.
+                var shop = _shop;
+                Quantity.Ask(App, line.Count, line.Count, count =>
+                {
+                    var sold = Quantity.Over(line.Stacks, count, shop.Sell);
+                    Announce(sold == count ? $"Sold. {shop.Money()}."
+                        : sold > 0 ? $"Sold {sold}. {shop.Money()}."
+                        : "Can't sell that.");
+                });
                 return true;
             }
             if (_chest != null)
             {
-                // Every stack of it. The line leaves for the other list.
-                var all = true;
-                foreach (var stack in line.Stacks.ToList())
-                    all &= _chest.Deposit(stack.Slot);
-                Announce(all ? "Deposited." : "No room in the chest.");
+                var chest = _chest;
+                Quantity.Ask(App, line.Count, line.Count, count =>
+                {
+                    var stored = Quantity.Over(line.Stacks, count, chest.Deposit);
+                    Announce(stored == count ? "Deposited."
+                        : stored > 0 ? $"Deposited {stored}. No room in the chest."
+                        : "No room in the chest.");
+                });
                 return true;
             }
             if (!line.Equippable)
@@ -280,13 +286,13 @@ public interface IChest
     string Name { get; }
     IReadOnlyList<PackStack> Stacks();
 
-    /// <summary>Move a stack to the inventory. False when it did not
-    /// all fit.</summary>
-    bool Take(int slot);
+    /// <summary>Move that many of a stack to the inventory. How many
+    /// went: fewer when they did not all fit.</summary>
+    int Take(int slot, int count);
 
-    /// <summary>Move an inventory stack here. False when it did not
-    /// all fit.</summary>
-    bool Deposit(int packSlot);
+    /// <summary>Move that many of an inventory stack here. How many
+    /// went.</summary>
+    int Deposit(int packSlot, int count);
 
     string Describe(int slot);
 
@@ -339,10 +345,14 @@ public sealed class ChestList : ListBox<PackLine>
         }
         if (input.Kind != InputKind.Activate)
             return base.OnInput(input);
-        var all = true;
-        foreach (var stack in Items[SelectedIndex].Stacks.ToList())
-            all &= _chest.Take(stack.Slot);
-        Announce(all ? "Taken." : "No room in the inventory.");
+        var line = Items[SelectedIndex];
+        Quantity.Ask(App, line.Count, line.Count, count =>
+        {
+            var taken = Quantity.Over(line.Stacks, count, _chest.Take);
+            Announce(taken == count ? "Taken."
+                : taken > 0 ? $"Taken {taken}. No room in the inventory."
+                : "No room in the inventory.");
+        });
         return true;
     }
 }
@@ -526,7 +536,9 @@ public sealed record Talk(string Speaker, string Text, IReadOnlyList<string> Opt
 
 /// <summary>Something a shop sells.</summary>
 /// <param name="Price">As words: "1 gold 50 silver".</param>
-public sealed record ShopItem(int Slot, string Name, int Count, string Price);
+/// <param name="Most">The most worth asking for at once: one for
+/// what does not stack.</param>
+public sealed record ShopItem(int Slot, string Name, int Count, string Price, int Most = 1);
 
 public enum BuyResult { Bought, CantAfford, NoRoom, Refused }
 
@@ -537,9 +549,9 @@ public interface IShop
     /// <summary>Buy one, into the inventory.</summary>
     BuyResult Buy(int slot);
 
-    /// <summary>Sell an inventory stack. False when the shop will
-    /// not take it.</summary>
-    bool Sell(int packSlot);
+    /// <summary>Sell that many of an inventory stack. How many were
+    /// sold: none when the shop will not take it.</summary>
+    int Sell(int packSlot, int count);
 
     /// <summary>What the player has to spend, as words.</summary>
     string Money();
@@ -608,12 +620,22 @@ public sealed class ShopList : ListBox<ShopLine>
         }
         if (input.Kind != InputKind.Activate)
             return base.OnInput(input);
-        Announce(_shop.Buy(item.Slot) switch
+        Quantity.Ask(App, 1, item.Most, count =>
         {
-            BuyResult.Bought => $"Bought. {_shop.Money()} left.",
-            BuyResult.CantAfford => $"Not enough money. You have {_shop.Money()}.",
-            BuyResult.NoRoom => "No room in the inventory.",
-            _ => "Can't buy that.",
+            var bought = 0;
+            var result = BuyResult.Bought;
+            while (bought < count && (result = _shop.Buy(item.Slot)) == BuyResult.Bought)
+                bought++;
+            var why = result switch
+            {
+                BuyResult.Bought => "",
+                BuyResult.CantAfford => $"Not enough money. You have {_shop.Money()}.",
+                BuyResult.NoRoom => "No room in the inventory.",
+                _ => "Can't buy that.",
+            };
+            Announce(bought == count ? $"Bought. {_shop.Money()} left."
+                : bought > 0 ? $"Bought {bought}. {why}"
+                : why);
         });
         return true;
     }

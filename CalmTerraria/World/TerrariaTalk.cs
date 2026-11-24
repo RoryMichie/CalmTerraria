@@ -114,7 +114,9 @@ internal sealed class TerrariaShop : IShop
         for (var slot = 0; slot < stock.Length; slot++)
         {
             if (!stock[slot].IsAir)
-                items.Add(new ShopItem(slot, stock[slot].AffixName(), stock[slot].stack, Price(stock[slot])));
+                items.Add(new ShopItem(slot, stock[slot].AffixName(), stock[slot].stack, Price(stock[slot]),
+                    // Something sold once is limited to what the shop has of it.
+                    stock[slot].buyOnce ? stock[slot].stack : stock[slot].maxStack));
         }
         return items;
     }
@@ -206,14 +208,34 @@ internal sealed class TerrariaShop : IShop
     [System.Runtime.CompilerServices.UnsafeAccessor(System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = "HandleShopSlot")]
     private static extern void HandleShopSlot(ItemSlot? type, Item[] inv, int slot, bool rightClickIsValid, bool leftClickIsValid);
 
-    public bool Sell(int packSlot)
+    public int Sell(int packSlot, int count)
     {
         var inventory = Main.LocalPlayer.inventory;
         var item = inventory[packSlot];
         // Outside a shop the same call trashes, and coins are not sold.
         if (!IsOpen || item.IsAir || item.favorited || item.type is >= ItemID.CopperCoin and <= ItemID.PlatinumCoin)
-            return false;
+            return 0;
+        count = Math.Min(count, item.stack);
+        // The game sells a whole stack: the part being kept is set
+        // aside while it does, and put back after.
+        var kept = item.stack - count;
+        Item? rest = null;
+        if (kept > 0)
+        {
+            rest = item.Clone();
+            rest.stack = kept;
+            item.stack = count;
+        }
         ItemSlot.SellOrTrash(inventory, ItemSlot.Context.InventoryItem, packSlot);
-        return inventory[packSlot].IsAir;
+        var sold = inventory[packSlot].IsAir;
+        if (rest != null)
+        {
+            if (sold)
+                inventory[packSlot] = rest;
+            else
+                inventory[packSlot].stack += kept;
+        }
+        Recipe.FindRecipes();
+        return sold ? count : 0;
     }
 }

@@ -20,6 +20,8 @@ heard Items
 type dirt
 wait 600
 key enter
+heard How many
+key enter
 heard Given
 key escape
 key escape

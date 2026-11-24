@@ -19,8 +19,13 @@ heard Items
 type acorn
 wait 600
 key enter
+heard How many
+key enter
+wait 300
 type wood
 wait 600
+key enter
+heard How many
 key enter
 key escape
 key escape

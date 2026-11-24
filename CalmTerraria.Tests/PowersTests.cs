@@ -13,7 +13,14 @@ internal sealed class FakePowers : IPowers
     public bool? Day { get; private set; }
 
     public IReadOnlyList<string> Items() => new[] { "Acorn", "Copper Pickaxe", "Dirt Block", "Torch" };
-    public void Give(string item) => Given.Add(item);
+    public List<int> Counts { get; } = new();
+    public int FullStack(string item) => item == "Copper Pickaxe" ? 1 : 9999;
+
+    public void Give(string item, int count)
+    {
+        Given.Add(item);
+        Counts.Add(count);
+    }
     public IReadOnlyList<string> Creatures() => new[] { "Blue Slime", "Zombie" };
 
     public bool Spawn(string creature)
@@ -97,12 +104,19 @@ public class PowersScreenTests
         ui.Type("to");
         ui.Expect("Torch");
         ui.Press("enter");
-        ui.Expect("Given.");
-        ui.Press("up");
-        ui.Expect("Dirt Block");
+        ui.Expect("How many, up to 9999 edit selected 9999");
+        ui.Type("20");
+        ui.Drain();
         ui.Press("enter");
-        ui.Expect("Given.");
+        Assert.Contains("Given.", ui.Spoken());
+        ui.Press("up");
+        ui.Drain();
+        ui.Press("enter");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Given.", ui.Spoken());
         Assert.Equal(new[] { "Torch", "Dirt Block" }, powers.Given);
+        Assert.Equal(new[] { 20, 9999 }, powers.Counts);
     }
 
     [Fact]

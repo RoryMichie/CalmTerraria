@@ -16,8 +16,11 @@ public interface IPowers
     /// <summary>Every item's name, alphabetical.</summary>
     IReadOnlyList<string> Items();
 
-    /// <summary>A full stack of the item, into the inventory.</summary>
-    void Give(string item);
+    /// <summary>That many of the item, into the inventory.</summary>
+    void Give(string item, int count);
+
+    /// <summary>How many of the item make a full stack.</summary>
+    int FullStack(string item);
 
     /// <summary>Every creature's name, alphabetical.</summary>
     IReadOnlyList<string> Creatures();
@@ -68,8 +71,13 @@ public sealed class PowersScreen
         new Button(dialog, "Give item").Activated += () =>
             Pick("Items", _powers.Items(), item =>
             {
-                _powers.Give(item);
-                return "Given.";
+                var full = _powers.FullStack(item);
+                CalmTerraria.Pack.Quantity.Ask(_app, full, full, count =>
+                {
+                    _powers.Give(item, count);
+                    _app.Announce("Given.");
+                });
+                return null;
             });
         new Button(dialog, "Spawn creature").Activated += () =>
             Pick("Creatures", _powers.Creatures(), creature => _powers.Spawn(creature) ? "Spawned." : Refused);
@@ -96,14 +104,15 @@ public sealed class PowersScreen
 
     /// <summary>A long list to choose from, again and again: Enter
     /// acts and the list stays, Escape goes back.</summary>
-    private void Pick(string title, IReadOnlyList<string> names, Func<string, string> act)
+    private void Pick(string title, IReadOnlyList<string> names, Func<string, string?> act)
     {
         var dialog = _app.OpenDialog();
         var list = new ListBox(dialog, title, names, activateItems: true);
         list.Activated += () =>
         {
-            if (names.Count > 0)
-                _app.Announce(act(names[list.SelectedIndex]));
+            // Null when the action speaks for itself, later.
+            if (names.Count > 0 && act(names[list.SelectedIndex]) is { } said)
+                _app.Announce(said);
         };
         dialog.AnnounceOpened();
     }

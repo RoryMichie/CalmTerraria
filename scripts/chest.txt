@@ -19,10 +19,14 @@ heard Inventory
 type torch
 wait 600
 key enter
+heard How many
+key enter
 heard Deposited
 key shift+tab
 key shift+tab
 wait 300
+key enter
+heard How many
 key enter
 heard Taken
 key tab
