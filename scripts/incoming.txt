@@ -1,0 +1,21 @@
+# Something that shoots: the loop on what flies at the player.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do spawn Hornet 8 -6
+wait 2500
+do flight
+wait 2500
+do flight
+wait 2500
+do flight
+wait 2500
+do flight
+do clear
+wait 3000
+do flight
+quit

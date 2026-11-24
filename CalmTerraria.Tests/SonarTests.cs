@@ -108,6 +108,26 @@ public class TonesTests
         Assert.True(samples.Length <= Tones.SampleRate / 5, $"{name} is longer than a fifth of a second");
     }
 
+    public static TheoryData<string, float[]> Loops => new()
+    {
+        { "yoyo", Tones.Yoyo() },
+        { "incoming", Tones.Incoming() },
+    };
+
+    /// <summary>A loop is quiet, and its end meets its start: the step
+    /// from the last sample round to the first is no bigger than any
+    /// step inside it.</summary>
+    [Theory]
+    [MemberData(nameof(Loops))]
+    public void EveryLoopIsQuietAndSeamless(string name, float[] samples)
+    {
+        Assert.True(Tones.Peak(samples) <= Tones.Level, $"{name} peaks at {Tones.Peak(samples)}");
+        var largest = 0f;
+        for (var i = 1; i < samples.Length; i++)
+            largest = MathF.Max(largest, MathF.Abs(samples[i] - samples[i - 1]));
+        Assert.True(MathF.Abs(samples[0] - samples[^1]) <= largest * 1.05f, $"{name} clicks where it loops");
+    }
+
     [Theory]
     [MemberData(nameof(All))]
     public void EveryToneStartsAndEndsAtSilence(string name, float[] samples)

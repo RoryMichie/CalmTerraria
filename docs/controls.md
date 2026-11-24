@@ -235,6 +235,11 @@ moved without asking.
   spikes, traps, boulders, explosives, pressure plates.
 - Low health is a heartbeat: under three tenths of full health, two
   soft thumps, quicker the less is left.
+- The character's own yoyo wavers softly from where it is, for as
+  long as it is out. Things flying at the character - arrows,
+  fireballs - make a higher, quicker waver from where they are, the
+  nearest four of them. Both are to the side they are on, higher in
+  pitch above the character and lower below, louder the nearer.
 - Jumping and landing each have a sound; the landing is louder the
   faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they

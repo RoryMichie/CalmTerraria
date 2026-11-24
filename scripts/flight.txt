@@ -1,0 +1,28 @@
+# The yoyo's loop while it is out, and the loop on things flying at the player.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do hold WoodYoyo
+wait 300
+do spawn Zombie 10 0
+wait 1500
+do flight
+down [
+wait 1500
+do flight
+wait 1500
+up [
+wait 1500
+do flight
+do clear
+do spawn FireImp 12 0
+wait 8000
+do flight
+do clear
+wait 1500
+do flight
+quit

@@ -36,6 +36,32 @@ public static class Tones
         return first.Concat(gap).Concat(second).ToArray();
     }
 
+    /// <summary>A tone that wavers, made to be played round and
+    /// round: its length holds a whole number of the tone's cycles
+    /// and of its wavers, so the end runs into the start without a
+    /// click. It has no fade, being a loop.</summary>
+    private static float[] Wobble(float frequency, float wavers, float depth, float seconds, float level)
+    {
+        var samples = new float[(int)(SampleRate * seconds)];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var t = i / (double)SampleRate;
+            // The pitch sways and the loudness with it.
+            var phase = 2.0 * Math.PI * frequency * t + depth * Math.Sin(2.0 * Math.PI * wavers * t);
+            var swell = 0.75 + 0.25 * Math.Cos(2.0 * Math.PI * wavers * t);
+            samples[i] = (float)(Math.Sin(phase) * swell * level);
+        }
+        return samples;
+    }
+
+    /// <summary>The player's own yoyo, out on its string: a soft
+    /// waver, to be heard where the yoyo is.</summary>
+    public static float[] Yoyo() => Wobble(frequency: 340f, wavers: 6f, depth: 2.2f, seconds: 0.5f, level: Level * 0.7f);
+
+    /// <summary>Something flying at the player: higher and quicker,
+    /// so it is never taken for the yoyo.</summary>
+    public static float[] Incoming() => Wobble(frequency: 760f, wavers: 14f, depth: 1.4f, seconds: 0.5f, level: Level * 0.7f);
+
     private static float[] Blip(float frequency, float fall, float seconds, float decay, float harmonics)
     {
         var samples = new float[(int)(SampleRate * seconds)];
