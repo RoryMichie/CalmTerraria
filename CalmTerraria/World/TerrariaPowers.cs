@@ -105,6 +105,23 @@ internal sealed class TerrariaPowers : IPowers
         return true;
     }
 
+    private static IEnumerable<Player> Others() =>
+        Main.player.Where(player => player is { active: true } && player.whoAmI != Main.myPlayer);
+
+    public IReadOnlyList<string> Players() =>
+        Others().Select(player => player.name).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
+
+    public bool TeleportTo(string player)
+    {
+        var target = Others().FirstOrDefault(other => other.name == player);
+        if (target == null || target.dead)
+            return false;
+        // The game's own player-to-player teleport, as a wormhole
+        // potion does it: it is the server that moves the character.
+        Main.LocalPlayer.UnityTeleport(target.position);
+        return true;
+    }
+
     public bool SetTime(bool day)
     {
         if (Main.netMode != NetmodeID.SinglePlayer)

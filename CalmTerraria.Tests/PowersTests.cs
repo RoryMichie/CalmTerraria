@@ -23,6 +23,16 @@ internal sealed class FakePowers : IPowers
         return !OnServer;
     }
 
+    public List<string> Others { get; } = new();
+    public string? WentTo { get; private set; }
+    public IReadOnlyList<string> Players() => Others;
+
+    public bool TeleportTo(string player)
+    {
+        WentTo = player;
+        return true;
+    }
+
     public bool SetTime(bool day)
     {
         if (!OnServer)
@@ -62,6 +72,8 @@ public class PowersScreenTests
         ui.Expect("Give item button");
         ui.Press("tab");
         ui.Expect("Spawn creature button");
+        ui.Press("tab");
+        ui.Expect("Teleport to player button");
         ui.Press("tab");
         ui.Expect("Make it day button");
         ui.Press("tab");
@@ -104,10 +116,27 @@ public class PowersScreenTests
     }
 
     [Fact]
+    public void TeleportingListsTheOtherPlayersOrSaysThereAreNone()
+    {
+        var (ui, powers) = Open();
+        for (var i = 0; i < 4; i++)
+            ui.Press("tab");
+        ui.Drain();
+        ui.Press("enter");
+        ui.Expect("No other players.");
+        powers.Others.Add("Austin");
+        ui.Press("enter");
+        ui.Expect("Players list Austin");
+        ui.Press("enter");
+        ui.Expect("Teleported.");
+        Assert.Equal("Austin", powers.WentTo);
+    }
+
+    [Fact]
     public void TheTimeButtonsSayWhatItIsNow()
     {
         var (ui, powers) = Open();
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < 6; i++)
             ui.Press("tab");
         ui.Drain();
         ui.Press("enter");

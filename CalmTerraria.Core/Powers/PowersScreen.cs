@@ -26,12 +26,19 @@ public interface IPowers
     /// character faces. False where the game does not allow it.</summary>
     bool Spawn(string creature);
 
+    /// <summary>The other players in the world, by name.</summary>
+    IReadOnlyList<string> Players();
+
+    /// <summary>Go to where the player is. False where it could not
+    /// be done.</summary>
+    bool TeleportTo(string player);
+
     /// <summary>Dawn or dusk, now. False where the game does not allow it.</summary>
     bool SetTime(bool day);
 }
 
 /// <summary>The powers: what a journey-mode character has and more,
-/// for any character. Two switches and four actions; the two long
+/// for any character. Two switches and five actions; the two long
 /// lists are found in by typing the start of a name.</summary>
 public sealed class PowersScreen
 {
@@ -61,6 +68,14 @@ public sealed class PowersScreen
             });
         new Button(dialog, "Spawn creature").Activated += () =>
             Pick("Creatures", _powers.Creatures(), creature => _powers.Spawn(creature) ? "Spawned." : Refused);
+        new Button(dialog, "Teleport to player").Activated += () =>
+        {
+            var players = _powers.Players();
+            if (players.Count == 0)
+                _app.Announce("No other players.");
+            else
+                Pick("Players", players, player => _powers.TeleportTo(player) ? "Teleported." : "Couldn't teleport.");
+        };
         new Button(dialog, "Make it day").Activated += () => _app.Announce(_powers.SetTime(day: true) ? "Day." : Refused);
         new Button(dialog, "Make it night").Activated += () => _app.Announce(_powers.SetTime(day: false) ? "Night." : Refused);
         dialog.AnnounceOpened();

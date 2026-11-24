@@ -58,6 +58,13 @@ Factorio Access's keys.
 
 Tab moves between the parts of a screen. Escape goes back one step.
 
+In a world, the world is one stop in a ring with the rest: Tab from
+the world goes to the inventory and on round, Shift+Tab goes round the
+other way, and tabbing past either end is back in the world. The game
+runs on while this is done. Enter goes straight to the message box.
+Escape opens the same ring with the game paused for as long as it is
+up, in single player; a server cannot be paused.
+
 The title menu has Single player, Join by address, and Exit. Join by
 address asks for a character, then an address and a port (7777 unless
 changed; "host:port" typed into the address works too), starting from
@@ -67,8 +74,8 @@ refusal is read out before the title menu returns.
 
 # 6. The pack screen
 
-Escape, in a world. Five tab stops: the inventory, the equipment,
-crafting, Powers, and Save and exit.
+Tab or Escape, in a world. The stops: the inventory, the equipment,
+crafting, the chat list, the message box, Powers, and Save and exit.
 
 - Inventory: Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
@@ -76,6 +83,9 @@ crafting, Powers, and Save and exit.
   slot and what was there takes its place. F1 reads the item's
   description.
 - Equipment: Enter takes the piece off.
+- Chat: the game's messages and what players have said, newest last.
+- Message: type and press Enter to send; the box empties and stays.
+  A line starting with a slash is a command, as in the game's chat.
 - Crafting: what can be made now, from what is carried and what the
   character stands beside. Enter makes it once. Space says what it
   uses. F1 reads the description of what is made.
@@ -127,6 +137,8 @@ has and more, for any character.
   gives a full stack. The list stays open for more.
 - Spawn creature: the same for creatures; one appears twelve tiles
   off on the side the character faces. Single player only.
+- Teleport to player: a list of the other players; Enter goes to
+  that one, the way a wormhole potion does.
 - Make it day, Make it night. Single player only.
 
 # 9. Keys taken from the game

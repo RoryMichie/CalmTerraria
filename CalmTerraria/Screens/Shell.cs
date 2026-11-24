@@ -45,9 +45,19 @@ internal sealed class Shell
         {
             BeginBusy("Saving.");
             WorldGen.SaveAndQuit();
-        }, new World.TerrariaPowers(), new World.TerrariaCrafting());
+        }, new World.TerrariaPowers(), new World.TerrariaCrafting(), ChatLog, new World.TerrariaChat());
+        // The world's screens are stops beside the world: Tab goes
+        // round to them and the game runs on. Enter is the message box.
+        WorldCommands[KeyCombo.Plain(Key.Tab)] = () => OpenPack(focus: PackFocus.First);
+        WorldCommands[KeyCombo.WithShift(Key.Tab)] = () => OpenPack(focus: PackFocus.Last);
+        WorldCommands[KeyCombo.Plain(Key.Enter)] = () => OpenPack(focus: PackFocus.Chat);
         _pack.Closed += () =>
         {
+            if (_paused)
+            {
+                _paused = false;
+                Main.autoPause = _autoPauseWas;
+            }
             Main.playerInventory = false;
             if (World.TerrariaChest.IsOpen)
             {
@@ -82,7 +92,7 @@ internal sealed class Shell
                 return false;
             if (combo == KeyCombo.Plain(Key.Escape))
             {
-                OpenPack();
+                OpenPack(paused: true);
                 return true;
             }
             if (!WorldCommands.TryGetValue(combo, out var command))
@@ -92,18 +102,33 @@ internal sealed class Shell
         };
     }
 
-    /// <summary>Escape, in a world: the inventory, what is worn, and
-    /// the way out. The game is told its own inventory is open, so a
-    /// sighted onlooker sees it and the game's autopause setting
-    /// applies as it would for anyone.</summary>
-    private void OpenPack(bool onChest = false, string? notice = null)
+    /// <summary>The game's messages, for the chat list.</summary>
+    public ChatLog ChatLog { get; } = new();
+
+    private bool _paused;
+    private bool _autoPauseWas;
+
+    /// <summary>The inventory and the rest. From Tab or Enter the game
+    /// runs on underneath. From Escape, in single player, it is paused
+    /// for as long as the screen is up, whatever the game's own
+    /// autopause setting says: the game is told its inventory is open
+    /// and to pause for that. A server cannot be paused.</summary>
+    private void OpenPack(bool onChest = false, string? notice = null,
+        PackFocus focus = PackFocus.First, bool paused = false)
     {
         if (_pack.IsOpen)
             return;
         _host.TakeKeyboard();
-        Main.playerInventory = true;
+        if (paused && Main.netMode == Terraria.ID.NetmodeID.SinglePlayer)
+        {
+            _paused = true;
+            _autoPauseWas = Main.autoPause;
+            Main.autoPause = true;
+            Main.playerInventory = true;
+            _host.App.Announce("Paused.");
+        }
         Recipe.FindRecipes();
-        _pack.Open(onChest ? new World.TerrariaChest() : null, notice);
+        _pack.Open(onChest ? new World.TerrariaChest() : null, notice, focus);
         _onChest = onChest;
     }
 

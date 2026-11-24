@@ -45,6 +45,8 @@ internal static partial class ItemText
             {
                 "i" or "item" => int.TryParse(body, out var type) && type > 0 ? Lang.GetItemNameValue(type) : "",
                 "g" or "glyph" => "",
+                // Who said it, at the head of a chat line.
+                "n" or "name" => body + ":",
                 _ => body,
             };
         }).Trim();

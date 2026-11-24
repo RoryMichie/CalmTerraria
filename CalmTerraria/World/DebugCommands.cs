@@ -92,6 +92,8 @@ internal static class DebugCommands
             }
             log.Info($"Ambience: tile {checker.GetProperty("TileId")!.GetValue(null)} should {checker.GetProperty("ShouldStep")!.GetValue(null)}; " + string.Join("; ", lines));
         });
+        // clock - the world's time, to see whether it is running.
+        autopilot.Register("clock", _ => log.Info($"Clock: {Main.time:0} paused {Main.gamePaused}"));
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

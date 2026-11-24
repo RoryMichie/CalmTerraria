@@ -431,6 +431,83 @@ public sealed class CraftList : ListBox<CraftLine>
     }
 }
 
+/// <summary>Sends what the player types to the game's chat.</summary>
+public interface IChat
+{
+    void Send(string text);
+}
+
+public sealed partial class ChatLine : Element
+{
+    public ChatLine(string text) => Value = text;
+
+    [Field]
+    public string Value { get; }
+}
+
+/// <summary>The game's messages, kept: chat, deaths, events. Oldest
+/// first; the oldest go once there are too many.</summary>
+public sealed class ChatLog
+{
+    private const int Kept = 200;
+    private List<ChatLine> _lines = new();
+
+    public IReadOnlyList<ChatLine> Lines => _lines;
+
+    public void Add(string text)
+    {
+        // A new list each time: the framework tells change by identity.
+        var lines = new List<ChatLine>(_lines.Skip(Math.Max(0, _lines.Count + 1 - Kept))) { new(text) };
+        _lines = lines;
+    }
+
+    public void Clear() => _lines = new();
+}
+
+/// <summary>Where a message is typed. Enter sends it and empties the
+/// box; there is no send button.</summary>
+public sealed class ChatBox : EditBox
+{
+    private readonly IChat _chat;
+
+    public ChatBox(IWidgetContainer parent, IChat chat) : base(parent, "Message") => _chat = chat;
+
+    public override bool ReservesKey(KeyCombo combo) =>
+        (!combo.HasModifier && combo.Key == Key.Enter) || base.ReservesKey(combo);
+
+    protected override bool OnInput(in InputEvent input)
+    {
+        if (input.Kind != InputKind.Activate)
+            return base.OnInput(input);
+        var text = Text.Trim();
+        if (text.Length > 0)
+        {
+            _chat.Send(text);
+            Text = "";
+        }
+        return true;
+    }
+}
+
+/// <summary>The world itself, as a stop in the ring: tabbing onto it
+/// puts the screen away and gives the keys back to the game.</summary>
+internal sealed class WorldStop : CustomWidget
+{
+    private readonly Action _leave;
+    public bool Armed { get; set; }
+
+    public WorldStop(IWidgetContainer parent, Action leave) : base(parent, "World") => _leave = leave;
+
+    protected override void OnFocusGained()
+    {
+        if (Armed)
+            Post(_leave);
+    }
+}
+
+/// <summary>Which stop a freshly opened pack screen starts on.</summary>
+public enum PackFocus { First, Last, Chat }
+
 /// <summary>The screen behind Escape in a world: the inventory, what
 /// is worn, what can be made, the powers, and the way out of the world.
 /// Each is one tab stop. Opened on a chest, the chest and what can be
@@ -442,13 +519,18 @@ public sealed class PackScreen
     private readonly Action _saveAndExit;
     private readonly PowersScreen? _powers;
     private readonly ICrafting? _crafting;
+    private readonly ChatLog? _chatLog;
+    private readonly IChat? _chat;
     private Dialog? _dialog;
 
     /// <summary>The screen closed, however it closed.</summary>
     public event Action? Closed;
 
-    public PackScreen(SruiApp app, IPack pack, Action saveAndExit, IPowers? powers = null, ICrafting? crafting = null)
+    public PackScreen(SruiApp app, IPack pack, Action saveAndExit, IPowers? powers = null, ICrafting? crafting = null,
+        ChatLog? chatLog = null, IChat? chat = null)
     {
+        _chatLog = chatLog;
+        _chat = chat;
         _crafting = crafting;
         _powers = powers == null ? null : new PowersScreen(app, powers);
         _app = app;
@@ -463,16 +545,28 @@ public sealed class PackScreen
     /// <param name="notice">Why something the player reached for
     /// did not open - a chest someone else has open. It stands first,
     /// as a tab stop that does nothing, where the chest would be.</param>
-    public void Open(IChest? chest = null, string? notice = null)
+    public void Open(IChest? chest = null, string? notice = null, PackFocus focus = PackFocus.First)
     {
         if (_dialog != null)
             return;
         var dialog = _dialog = _app.OpenDialog();
+        // The ring runs from the world round to the world: past either
+        // end is back in the game.
+        var world = new WorldStop(dialog, () =>
+        {
+            // The screen is gone before its last stop could be read.
+            _app.Announce("World");
+            dialog.Close();
+        });
+        Widget? first = null;
+        ChatBox? box = null;
         if (notice != null)
-            _ = new CustomWidget(dialog, notice);
+            first = new CustomWidget(dialog, notice);
         if (chest != null)
         {
-            _ = new ChestList(dialog, chest);
+            first ??= new ChestList(dialog, chest);
+            if (first is not ChestList)
+                _ = new ChestList(dialog, chest);
             var actions = new ListBox(dialog, "Chest actions",
                 chest.CanRename ? ChestActions : ChestActions[..^1], activateItems: true);
             actions.Activated += () =>
@@ -487,10 +581,20 @@ public sealed class PackScreen
                 }
             };
         }
-        _ = new PackList(dialog, _pack, chest);
+        var pack = new PackList(dialog, _pack, chest);
+        first ??= pack;
         _ = new EquipList(dialog, _pack);
         if (_crafting != null)
             _ = new CraftList(dialog, _crafting);
+        if (_chatLog != null && _chat != null)
+        {
+            var log = _chatLog;
+            var messages = new ListBox<ChatLine>(dialog, "Chat", Array.Empty<ChatLine>());
+            messages.BindItems(() => log.Lines);
+            // The newest is the one worth landing on.
+            messages.SelectedIndex = int.MaxValue;
+            box = new ChatBox(dialog, _chat);
+        }
         if (_powers is { } powers)
             new Button(dialog, "Powers").Activated += powers.Open;
         var exit = new Button(dialog, "Save and exit");
@@ -504,7 +608,15 @@ public sealed class PackScreen
             _dialog = null;
             Closed?.Invoke();
         };
+        Widget start = focus switch
+        {
+            PackFocus.Last => exit,
+            PackFocus.Chat when box != null => box,
+            _ => first,
+        };
+        start.Focus();
         dialog.AnnounceOpened();
+        world.Armed = true;
     }
 
     public void Close() => _dialog?.Close(nested: true);

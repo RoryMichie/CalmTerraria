@@ -43,9 +43,12 @@ internal sealed class Feedback
     private bool? _smartCursor;
     private bool _dead;
 
+    private readonly CalmTerraria.Pack.ChatLog _log;
+
     public Feedback(SruiHost host, Shell shell)
     {
         _host = host;
+        _log = shell.ChatLog;
         On_Main.NewText_string_byte_byte_byte += (orig, text, r, g, b) =>
         {
             orig(text, r, g, b);
@@ -102,6 +105,7 @@ internal sealed class Feedback
             _smartCursor = null;
             _dead = false;
             _messages.Clear();
+            _log.Clear();
         };
         shell.WorldFrame += Update;
         shell.WorldCommands[KeyCombo.Plain(Key.Backspace)] = () => Say(Status());
@@ -115,7 +119,10 @@ internal sealed class Feedback
         {
             var text = ItemText.Clean(message ?? "");
             if (text.Length > 0)
+            {
+                _log.Add(text);
                 Say(text);
+            }
         }
 
         string? pickups = null;

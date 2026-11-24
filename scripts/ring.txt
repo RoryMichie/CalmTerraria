@@ -1,0 +1,41 @@
+# The world's tab ring, chat, and the pausing Escape.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+key tab
+heard Inventory
+key shift+tab
+heard World
+wait 300
+key shift+tab
+heard Save and exit
+key tab
+heard World
+wait 300
+key enter
+heard Message
+type hello there
+key enter
+wait 500
+key shift+tab
+heard Chat
+key escape
+wait 300
+log --- escape pauses: the clock should not move
+key escape
+heard Inventory
+do clock
+wait 1500
+do clock
+key escape
+wait 300
+key tab
+heard Inventory
+do clock
+wait 1500
+do clock
+key escape
+quit
