@@ -5,7 +5,7 @@ heard Ready
 do godmode
 wait 1000
 key escape
-heard Inventory
+heard Carried
 key down
 key down
 key down

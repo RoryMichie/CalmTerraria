@@ -9,7 +9,7 @@ do godmode
 do clearing
 wait 2500
 key tab
-heard Inventory
+heard Carried
 type dirt
 wait 600
 key space

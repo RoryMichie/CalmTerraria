@@ -33,7 +33,7 @@ heard Ready
 wait 2000
 key backspace
 key tab
-heard Inventory
+heard Carried
 key escape
 key shift+tab
 key shift+tab

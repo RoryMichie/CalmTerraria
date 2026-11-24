@@ -153,7 +153,7 @@ public sealed class PackList : ListBox<PackLine>
     private readonly IShop? _shop;
 
     public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null, IShop? shop = null)
-        : base(parent, "Inventory", Array.Empty<PackLine>())
+        : base(parent, "Carried", Array.Empty<PackLine>())
     {
         _pack = pack;
         _chest = chest;

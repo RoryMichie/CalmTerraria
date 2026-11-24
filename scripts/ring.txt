@@ -6,7 +6,7 @@ wait 3000
 do time day
 do clear
 key tab
-heard Inventory
+heard Carried
 key shift+tab
 heard World
 wait 300
@@ -28,14 +28,14 @@ key escape
 wait 300
 log --- escape pauses: the clock should not move
 key escape
-heard Inventory
+heard Carried
 do clock
 wait 1500
 do clock
 key escape
 wait 300
 key tab
-heard Inventory
+heard Carried
 do clock
 wait 1500
 do clock

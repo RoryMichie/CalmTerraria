@@ -28,7 +28,7 @@ key escape
 key escape
 wait 2000
 key tab
-heard Inventory
+heard Carried
 type dirt
 wait 600
 key space

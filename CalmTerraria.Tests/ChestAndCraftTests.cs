@@ -118,7 +118,7 @@ public class ChestTests
         ui.Press("tab");
         ui.Expect("Chest actions list Loot all");
         ui.Press("tab");
-        ui.Expect("Inventory list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5");
         ui.Press("tab");
         ui.Expect("Equipment list Head, empty");
     }
@@ -271,7 +271,7 @@ public class ChestTests
         ui.Press("enter");
         ui.ExpectNoSpeech();
         ui.Press("tab");
-        ui.Expect("Inventory list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5");
     }
 
     [Fact]

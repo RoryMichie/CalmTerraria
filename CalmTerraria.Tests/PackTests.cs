@@ -70,7 +70,7 @@ public class PackScreenTests
     public void OpensOnTheInventoryAlphabeticalWithStacksMerged()
     {
         var (ui, _, _) = Open();
-        ui.Expect("Inventory list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5");
         ui.Press("down");
         ui.Expect("Copper Helmet");
         ui.Press("down");
@@ -159,7 +159,7 @@ public class PackScreenTests
         var (ui, _, _) = Open(_ => { });
         var spoken = ui.Spoken();
         Assert.Single(spoken);
-        Assert.StartsWith("Inventory list", spoken[0]);
+        Assert.StartsWith("Carried list", spoken[0]);
     }
 
     [Fact]

@@ -16,7 +16,7 @@ wait 400
 key backspace
 wait 300
 key escape
-heard Inventory
+heard Carried
 key f1
 wait 300
 type torch

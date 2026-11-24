@@ -37,7 +37,7 @@ heard list
 up ]
 key tab
 key tab
-heard Inventory
+heard Carried
 type gel
 wait 600
 key enter
@@ -77,7 +77,7 @@ type 5
 key enter
 heard Bought
 key tab
-heard Inventory
+heard Carried
 type gel
 wait 600
 key enter

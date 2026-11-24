@@ -42,6 +42,7 @@ internal sealed class BuildTool : IBuild
 
     private readonly SruiHost _host;
     private readonly Cursor _cursor;
+    private readonly WorldScanner _scanner;
     private (int X, int Y)? _a, _b;
     private readonly Dictionary<int, Job> _offered = new();
 
@@ -57,6 +58,7 @@ internal sealed class BuildTool : IBuild
     {
         _host = host;
         _cursor = cursor;
+        _scanner = scanner;
         // Shift+X: the area is whatever the scanner is on - the whole
         // vein, the whole pool, the whole run of spikes.
         shell.WorldCommands[KeyCombo.WithShift(Key.Char('x'))] = () =>
@@ -150,7 +152,10 @@ internal sealed class BuildTool : IBuild
     {
         _offered.Clear();
         var options = new List<BuildOption>();
-        if (_a == null || _b == null || _job != null)
+        if (_job != null)
+            return options;
+        OfferPath(Offer);
+        if (_a == null || _b == null)
             return options;
         var (left, top, right, bottom) = Area();
         left = Math.Max(left, 1);
@@ -292,7 +297,70 @@ internal sealed class BuildTool : IBuild
     }
 
     /// <summary>Clearing: what would come out, and what stands in the way.</summary>
-    private void OfferClear(List<(int X, int Y)> all, int lava, Action<Job, string, string> offer)
+    /// <summary>The way to what the scanner is on, as a walkable
+    /// cut through the ground: a stair, one tile along for each tile
+    /// up or down - which a character climbs without jumping - and
+    /// level once the height is right. Where the thing is straight
+    /// above or below, the stair doubles back on itself, never a
+    /// shaft to fall down.</summary>
+    private static List<(int X, int Y)> Route((int X, int Y) from, (int X, int Y) to, int sway)
+    {
+        var steps = new List<(int X, int Y)>();
+        var (x, y) = from;
+        var away = 0;
+        while ((x, y) != to && steps.Count < 2000)
+        {
+            int dx = to.X - x, dy = to.Y - y;
+            if (dy == 0)
+                x += Math.Sign(dx);
+            else
+            {
+                if (away == 0 && dx == 0)
+                    away = Math.Min(6, (Math.Abs(dy) + 1) / 2);
+                if (away > 0)
+                {
+                    x += sway;
+                    away--;
+                }
+                else
+                    x += Math.Sign(dx);
+                y += Math.Sign(dy);
+            }
+            steps.Add((x, y));
+        }
+        return steps;
+    }
+
+    private void OfferPath(Action<Job, string, string> offer)
+    {
+        if (_scanner.Selected is not { } feature)
+            return;
+        var (px, py) = WorldScanner.PlayerTile();
+        var target = feature.Nearest(px, py);
+        // From the feet, to standing where the thing is.
+        var from = (X: px, Y: py + 1);
+        var distance = Math.Abs(target.X - from.X) + Math.Abs(target.Y - from.Y);
+        if (distance < 3 || distance > 800)
+            return;
+        var steps = Route(from, target, Main.LocalPlayer.direction);
+        var tiles = new List<(int X, int Y)>();
+        var seen = new HashSet<(int X, int Y)>();
+        // Each step is the height of the character and one more, the
+        // headroom a stair needs.
+        foreach (var (x, y) in steps)
+            for (var row = y - 3; row <= y; row++)
+                if (WorldGen.InWorld(x, row, 2) && seen.Add((x, row)))
+                    tiles.Add((x, row));
+        var open = steps.Count(step => WorldGen.InWorld(step.X, step.Y + 1, 2)
+            && !WorldGen.SolidTile(step.X, step.Y + 1) && !seen.Contains((step.X, step.Y + 1)));
+        var lava = tiles.Count(t => IsLava(t.X, t.Y));
+        var intro = $"A stair to {feature.DisplayName}, {Directions.Offset(target.X - px, target.Y - py)}, {steps.Count} steps. "
+            + (open > 0 ? $"{open} steps of it have nothing underfoot: mind the drop. " : "");
+        OfferClear(tiles, lava, offer, $"Clear path to {feature.DisplayName}", intro, keepOrder: true, walls: false);
+    }
+
+    private void OfferClear(List<(int X, int Y)> all, int lava, Action<Job, string, string> offer,
+        string? title = null, string? intro = null, bool keepOrder = false, bool walls = true)
     {
         var player = Main.LocalPlayer;
         var pick = Best(item => item.pick);
@@ -358,12 +426,17 @@ internal sealed class BuildTool : IBuild
         if (lava > 0)
             plan.Add($"Lava in the area, {lava} tiles: opening it up lets it run.");
         if (targets.Count == 0)
-            plan.Insert(0, "Nothing here can be cleared.");
+            plan.Insert(0, title == null ? "Nothing here can be cleared." : "Nothing on the way can be cleared.");
         // Trees first and from the bottom: one cut at the foot brings
         // down everything above it, which is then already done.
-        var ordered = targets.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
-            .Concat(targets.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList();
-        offer(new Job(Kind.Clear, 0, "Clearing", "cleared", ordered), $"Clear, {ordered.Count} tiles", string.Join(" ", plan));
+        // A path is cut in the order it is walked.
+        var ordered = keepOrder ? targets
+            : targets.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
+                .Concat(targets.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList();
+        offer(new Job(Kind.Clear, 0, "Clearing", "cleared", ordered), $"{title ?? "Clear"}, {ordered.Count} tiles",
+            (intro ?? "") + string.Join(" ", plan));
+        if (!walls)
+            return;
 
         // Walls come off with a hammer, from their open edge inwards.
         if (Best(item => item.hammer) >= 0)

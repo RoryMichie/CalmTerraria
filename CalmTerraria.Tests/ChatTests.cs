@@ -76,7 +76,7 @@ public class ChatAndRingTests
     {
         var (ui, screen, _, _) = Make();
         screen.Open();
-        ui.Expect("Inventory list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5");
         ui.Press("shift+tab");
         ui.Expect("World");
         Assert.False(screen.IsOpen);

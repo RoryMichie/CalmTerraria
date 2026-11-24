@@ -59,6 +59,6 @@ public class BuildListTests
         var build = new FakeBuild();
         build.Jobs.Clear();
         new PackScreen(ui.App, new FakePack().Add("Acorn", 5), () => { }).Open(build: build);
-        ui.Expect("Inventory list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5");
     }
 }

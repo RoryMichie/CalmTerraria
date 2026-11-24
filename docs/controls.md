@@ -78,6 +78,13 @@ Work on an area:
 - The work is called out as it goes, a run of one thing at a time:
   "There goes a tree." "Off go 13 Dirt Block." "In go 15 Stone Block."
 - X stops a job. The area stays marked for the next one.
+- With the scanner on something, the Build list also has Clear path
+  to it, area or no area: a stair cut through the ground from the
+  character to the thing, one tile along for each tile up or down so
+  it can be walked without jumping, doubling back where the thing is
+  straight above or below. Its plan says how long it is, what would
+  come out, and what is in the way; it is cut in the order it is
+  walked, and carries on as the character follows it.
 
 # 4. The scanner
 
@@ -137,7 +144,7 @@ crafting, Powers, Save and exit, then the chat list and the message
 box - chat is last, so from the world it is Shift+Tab away and the
 things done with the hands are forwards.
 
-- Inventory: Enter wears what can be worn and holds anything else.
+- Carried (the inventory): Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
   to an item by name. A digit, 1 to 0, puts the item in that hotbar
   slot and what was there takes its place. F1 reads the item's

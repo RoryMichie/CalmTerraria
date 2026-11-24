@@ -15,7 +15,7 @@ up ]
 key tab
 heard Chest actions
 key tab
-heard Inventory
+heard Carried
 type torch
 wait 600
 key enter
@@ -47,7 +47,7 @@ key escape
 wait 500
 log --- crafting
 key escape
-heard Inventory
+heard Carried
 key tab
 key tab
 heard Crafting

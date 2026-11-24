@@ -1,0 +1,27 @@
+# Clear a path to what the scanner is on.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+wait 300
+key tab
+heard Build
+key enter
+wait 800
+key tab
+heard Start
+key enter
+heard Done
+wait 500
+key end
+hold A 4000
+wait 500
+key end
+key x
+quit
