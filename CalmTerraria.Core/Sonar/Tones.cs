@@ -8,6 +8,9 @@ public static class Tones
 {
     public const int SampleRate = 48000;
 
+    /// <summary>The loudest any tone gets, of full scale.</summary>
+    public const float Level = 0.35f;
+
     /// <summary>A contact: a soft blip that falls a little in pitch,
     /// round enough to hear many times a second.</summary>
     public static float[] Contact() => Blip(frequency: 620f, fall: 0.85f, seconds: 0.07f, decay: 55f, harmonics: 0.15f);
@@ -31,7 +34,7 @@ public static class Tones
             var attack = Math.Min(1f, t / 0.003f);
             var envelope = attack * MathF.Exp(-decay * t);
             var tone = Math.Sin(phase) + harmonics * Math.Sin(2.0 * phase) + harmonics * 0.5 * Math.Sin(3.0 * phase);
-            samples[i] = (float)(tone * envelope * 0.25 / (1.0 + 1.5 * harmonics));
+            samples[i] = (float)(tone * envelope * Level / (1.0 + 1.5 * harmonics));
         }
         // And a short fade at the end, for the same reason.
         var fade = Math.Min(samples.Length, SampleRate / 500);

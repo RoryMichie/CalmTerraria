@@ -69,7 +69,7 @@ ground is low-passed. One the held melee weapon would reach changes
 tone. The five nearest sound.
 
 Every number is in `SonarSettings`. The two tones are synthesized
-placeholders, kept under a quarter of full scale by a test, waiting to
+placeholders, kept to about a third of full scale by a test, waiting to
 be replaced with designed sounds.
 
 # 6. Order

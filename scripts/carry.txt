@@ -1,0 +1,26 @@
+# The cursor travels with the player while within reach, and stays put beyond it.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+key ctrl+k
+key l
+key l
+do state
+hold D 1200
+wait 300
+do state
+key k
+log --- pinned far away: it should not follow
+key end
+key home
+do state
+hold A 1200
+wait 300
+do state
+down [
+wait 200
+up [
+key ctrl+k
+do state
+quit

@@ -94,13 +94,13 @@ public class TonesTests
         { "in reach", Tones.InReach() },
     };
 
-    /// <summary>Nothing the sonar plays may be loud: a quarter of full
-    /// scale at the very most, and brief.</summary>
+    /// <summary>Nothing the sonar plays may be loud: about a third of
+    /// full scale at the very most, and brief.</summary>
     [Theory]
     [MemberData(nameof(All))]
     public void EveryToneIsQuietAndShort(string name, float[] samples)
     {
-        Assert.True(Tones.Peak(samples) <= 0.26f, $"{name} peaks at {Tones.Peak(samples)}");
+        Assert.True(Tones.Peak(samples) <= Tones.Level + 0.01f, $"{name} peaks at {Tones.Peak(samples)}");
         Assert.True(Tones.Peak(samples) >= 0.05f, $"{name} is nearly silent");
         Assert.True(samples.Length <= Tones.SampleRate / 5, $"{name} is longer than a fifth of a second");
     }

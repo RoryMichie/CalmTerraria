@@ -15,8 +15,11 @@ namespace CalmTerraria.World;
 /// to be - so the held item is used there, and the two bracket keys
 /// are the two mouse buttons.
 ///
-/// It stays where it is put while the player walks; Ctrl+K brings it
-/// back to the player.</summary>
+/// While it is within the player's reach it travels with the player,
+/// keeping its place relative to them: the tile ahead stays the tile
+/// ahead. Sent beyond reach - by the scanner, or by walking it there -
+/// it stays on that spot in the world, for looking around, until it is
+/// moved back within reach or Ctrl+K brings it home.</summary>
 internal sealed class Cursor
 {
     /// <summary>How far a skim looks for something different.</summary>
@@ -26,6 +29,10 @@ internal sealed class Cursor
     private readonly Shell _shell;
     private int _x, _y;
     private bool _placed;
+    /// <summary>Whether the cursor travels with the player, and where
+    /// it sits relative to them when it does.</summary>
+    private bool _carried;
+    private int _offsetX, _offsetY;
     private bool _left, _right;
 
     public Cursor(SruiHost host, Shell shell)
@@ -38,6 +45,7 @@ internal sealed class Cursor
             _left = _right = false;
         };
         shell.LeftWorld += () => _left = _right = false;
+        shell.WorldFrame += Carry;
         shell.WorldKeyReleased += key =>
         {
             if (key == Key.Char('['))
@@ -59,9 +67,8 @@ internal sealed class Cursor
         commands[KeyCombo.Plain(Key.Char('k'))] = ReadWhere;
         commands[KeyCombo.WithCtrl(Key.Char('k'))] = () =>
         {
-            (_x, _y) = WorldScanner.PlayerTile();
-            _placed = true;
-            Say(TileReader.Describe(_x, _y));
+            var (px, py) = WorldScanner.PlayerTile();
+            MoveTo(px, py);
         };
         commands[KeyCombo.Plain(Key.Char('['))] = () => Press(ref _left);
         commands[KeyCombo.Plain(Key.Char(']'))] = () => Press(ref _right);
@@ -80,8 +87,8 @@ internal sealed class Cursor
         {
             if (!_placed)
             {
-                (_x, _y) = WorldScanner.PlayerTile();
-                _placed = true;
+                var (px, py) = WorldScanner.PlayerTile();
+                Place(px, py);
             }
             return (_x, _y);
         }
@@ -90,10 +97,33 @@ internal sealed class Cursor
     /// <summary>Put the cursor on a tile and say what is there.</summary>
     public void MoveTo(int x, int y)
     {
+        Place(x, y);
+        Say(TileReader.Describe(_x, _y));
+    }
+
+    private void Place(int x, int y)
+    {
         _x = Math.Clamp(x, 0, Main.maxTilesX - 1);
         _y = Math.Clamp(y, 0, Main.maxTilesY - 1);
         _placed = true;
-        Say(TileReader.Describe(_x, _y));
+        var (px, py) = WorldScanner.PlayerTile();
+        _offsetX = _x - px;
+        _offsetY = _y - py;
+        _carried = InReach(_x, _y);
+    }
+
+    private static bool InReach(int x, int y) =>
+        Main.LocalPlayer.IsInTileInteractionRange(x, y, TileReachCheckSettings.Simple);
+
+    /// <summary>Each frame: a cursor within reach goes where the
+    /// player goes. Silently - the player moved, not the cursor.</summary>
+    private void Carry()
+    {
+        if (!_placed || !_carried)
+            return;
+        var (px, py) = WorldScanner.PlayerTile();
+        _x = Math.Clamp(px + _offsetX, 0, Main.maxTilesX - 1);
+        _y = Math.Clamp(py + _offsetY, 0, Main.maxTilesY - 1);
     }
 
     private void Move(int dx, int dy)
@@ -134,9 +164,11 @@ internal sealed class Cursor
         if (button)
             return;
         var (x, y) = Tile;
-        if (!Main.LocalPlayer.IsInTileInteractionRange(x, y, TileReachCheckSettings.Simple)
-            && UsesReach(Main.LocalPlayer.HeldItem))
-            Say("Out of reach.");
+        if (!InReach(x, y) && UsesReach(Main.LocalPlayer.HeldItem))
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            Say($"Out of reach, {Directions.Offset(x - px, y - py)}.");
+        }
         button = true;
     }
 
@@ -153,7 +185,7 @@ internal sealed class Cursor
     public string DebugState()
     {
         var player = Main.LocalPlayer;
-        return $"cursor {Tile}, player {WorldScanner.PlayerTile()}, held '{player.HeldItem.Name}' slot {player.selectedItem}, "
+        return $"cursor {Tile}{(_carried ? " carried" : " pinned")}, player {WorldScanner.PlayerTile()}, held '{player.HeldItem.Name}' slot {player.selectedItem}, "
             + $"focus {Main.hasFocus} active {Main.instance.IsActive}, mouse {Main.mouseX},{Main.mouseY} left {Main.mouseLeft} "
             + $"brackets {_left}/{_right}, target {Player.tileTargetX},{Player.tileTargetY}, "
             + $"useItem {player.controlUseItem} animation {player.itemAnimation} dead {player.dead}";

@@ -27,7 +27,11 @@ direction, and what is under it is said as it lands.
 - K says what is under the cursor and where that is from the player.
 - Ctrl+K brings the cursor back to the player.
 
-The cursor stays where it is put while the player walks.
+While the cursor is within reach it travels with the player and keeps
+its place relative to them: put it one tile ahead and it stays one tile
+ahead. Beyond reach - after Home in the scanner, or after moving it
+there - it stays on that spot in the world until it is moved back
+within reach or Ctrl+K brings it home.
 
 # 3. Clicking
 
