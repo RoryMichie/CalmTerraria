@@ -70,6 +70,13 @@ internal static class DebugCommands
             }
             throw new InvalidOperationException("nowhere to stand a chest");
         });
+        // die - the test character is killed.
+        autopilot.Register("die", _ =>
+        {
+            RequireTestWorld();
+            TerrariaPowers.GodModeOn = false;
+            Main.LocalPlayer.KillMe(PlayerDeathReason.ByCustomReason("calmtest was slain by a test."), 9999, 0);
+        });
         // godmode - the test character cannot be hurt.
         autopilot.Register("godmode", _ =>
         {

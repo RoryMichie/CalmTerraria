@@ -49,6 +49,16 @@ internal sealed class FakeChest : IChest
     public void QuickStack() => Did.Add("stack");
     public void Restock() => Did.Add("restock");
     public void Rename(string name) => Name = name;
+    public string Describe(int slot) => "Material";
+    public List<(int Slot, int Hotbar)> Hotbarred { get; } = new();
+
+    public bool ToHotbar(int slot, int hotbar)
+    {
+        if (PackFull)
+            return false;
+        Hotbarred.Add((slot, hotbar));
+        return true;
+    }
 }
 
 internal sealed class FakeCrafting : ICrafting
@@ -62,6 +72,8 @@ internal sealed class FakeCrafting : ICrafting
     public bool Refuse { get; set; }
 
     public IReadOnlyList<Craftable> Recipes() => Available;
+
+    public string Describe(int id) => "Provides light";
 
     public bool Craft(int id)
     {
@@ -121,6 +133,19 @@ public class ChestTests
         chest.PackFull = true;
         ui.Drain();
         ui.Press("enter");
+        ui.Expect("No room in the inventory.");
+    }
+
+    [Fact]
+    public void ADigitTakesStraightToTheHotbarOrSaysThereIsNoRoom()
+    {
+        var (ui, _, chest) = Open();
+        ui.Drain();
+        ui.Type('1');
+        ui.Expect("Hotbar 1.");
+        Assert.Equal(0, chest.Hotbarred.Single().Hotbar);
+        chest.PackFull = true;
+        ui.Type('2');
         ui.Expect("No room in the inventory.");
     }
 

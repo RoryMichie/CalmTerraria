@@ -79,6 +79,7 @@ public sealed class CalmTerrariaMod : Mod
                 scanner.JumpRequested += target => cursor.MoveTo(target.X, target.Y);
                 _autopilot?.Register("state", _ => Logger.Info($"State: {cursor.DebugState()}"));
                 _autopilot?.Register("cursor-last", _ => cursor.MoveTo(DebugCommands.LastPlaced.X, DebugCommands.LastPlaced.Y));
+                _ = new Feedback(_host, _shell);
                 var sonar = new EnemySonar(_host, _shell, Logger);
                 _autopilot?.Register("sonar-log", _ => sonar.LogPulses = !sonar.LogPulses);
                 if (_autopilot != null)

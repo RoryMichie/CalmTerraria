@@ -37,6 +37,9 @@ internal sealed class FakePack : IPack
     }
 
     public void Trash(int slot) => Inventory.RemoveAll(s => s.Slot == slot);
+    public string Describe(int slot) => Inventory.Single(s => s.Slot == slot).Name == "Acorn" ? "" : "7 melee damage. Material";
+    public List<(int Slot, int Hotbar)> Hotbarred { get; } = new();
+    public void ToHotbar(int slot, int hotbar) => Hotbarred.Add((slot, hotbar));
 
     public bool Unequip(int index)
     {
@@ -157,6 +160,33 @@ public class PackScreenTests
         var spoken = ui.Spoken();
         Assert.Single(spoken);
         Assert.StartsWith("Inventory list", spoken[0]);
+    }
+
+    [Fact]
+    public void ADigitPutsTheLargestStackInThatHotbarSlot()
+    {
+        var (ui, pack, _) = Open();
+        ui.Press("end");
+        ui.Drain();
+        ui.Type('3');
+        ui.Expect("Hotbar 3.");
+        ui.Type('0');
+        ui.Expect("Hotbar 0.");
+        var wood = pack.Inventory.Single(s => s.Count == 300).Slot;
+        Assert.Equal(new[] { (wood, 2), (wood, 9) }, pack.Hotbarred);
+    }
+
+    [Fact]
+    public void F1DescribesAndSaysSoWhenThereIsNothingToSay()
+    {
+        var (ui, _, _) = Open();
+        ui.Drain();
+        ui.Press("f1");
+        ui.Expect("No description.");
+        ui.Press("down");
+        ui.Drain();
+        ui.Press("f1");
+        ui.Expect("7 melee damage. Material");
     }
 
     [Fact]

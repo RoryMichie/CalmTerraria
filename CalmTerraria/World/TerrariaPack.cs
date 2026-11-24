@@ -52,6 +52,16 @@ internal sealed class TerrariaPack : IPack
         SoundEngine.PlaySound(SoundID.Grab);
     }
 
+    public string Describe(int slot) => ItemText.Describe(Player.inventory[slot]);
+
+    public void ToHotbar(int slot, int hotbar)
+    {
+        var inventory = Player.inventory;
+        if (slot != hotbar)
+            Utils.Swap(ref inventory[slot], ref inventory[hotbar]);
+        SoundEngine.PlaySound(SoundID.Grab);
+    }
+
     public bool Equip(int slot)
     {
         var inventory = Player.inventory;

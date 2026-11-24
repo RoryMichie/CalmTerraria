@@ -1,0 +1,35 @@
+# Hotbar, smart cursor, status, descriptions, hotbar digits, dying and coming back.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+hold D2 100
+wait 400
+hold D1 100
+wait 400
+hold V 100
+wait 400
+hold V 100
+wait 400
+key backspace
+wait 300
+key escape
+heard Inventory
+key f1
+wait 300
+type torch
+wait 600
+key f1
+wait 300
+type 4
+wait 300
+key escape
+wait 500
+hold D4 100
+wait 500
+do die
+heard Respawning
+heard Respawned
+quit

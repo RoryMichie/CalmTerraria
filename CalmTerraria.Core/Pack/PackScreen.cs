@@ -26,6 +26,14 @@ public interface IPack
 
     void Trash(int slot);
 
+    /// <summary>What the game's tooltip says about the stack, without
+    /// its name.</summary>
+    string Describe(int slot);
+
+    /// <summary>Put the stack in a hotbar slot, 0 to 9; what was
+    /// there takes the stack's place.</summary>
+    void ToHotbar(int slot, int hotbar);
+
     /// <summary>Take off what is worn in an equipment slot. False
     /// when there is no room for it.</summary>
     bool Unequip(int index);
@@ -102,10 +110,41 @@ internal sealed class StackLines
     }
 }
 
+/// <summary>The keys every list of items shares.</summary>
+internal static class ItemKeys
+{
+    public static readonly Key Describe = Key.F(1);
+
+    public static bool Reserves(KeyCombo combo) =>
+        !combo.HasModifier && (combo.Key == Describe || Hotbar(combo.Key) >= 0);
+
+    private static int Hotbar(Key key)
+    {
+        for (var i = 0; i < 10; i++)
+            if (key == Key.Char((char)('0' + i)))
+                return i;
+        return -1;
+    }
+
+    /// <summary>The hotbar slot a typed digit names, 0 to 9, or -1:
+    /// 1 is the first slot and 0 the tenth, as on the keyboard.</summary>
+    public static int Hotbar(in InputEvent input)
+    {
+        for (var i = 0; i < 10; i++)
+            if (input.IsChar((char)('0' + i)))
+                return (i + 9) % 10;
+        return -1;
+    }
+
+    public static string Said(string description) =>
+        string.IsNullOrWhiteSpace(description) ? "No description." : description;
+}
+
 /// <summary>The inventory: one alphabetical list. Enter does the
 /// natural thing with the item - wears what can be worn, holds
-/// anything else - Space always holds, Delete trashes one stack.
-/// While a chest is open, Enter puts the item in the chest.</summary>
+/// anything else - Space always holds, Delete trashes one stack, a
+/// digit puts it in that hotbar slot, F1 describes it. While a chest
+/// is open, Enter puts the item in the chest.</summary>
 public sealed class PackList : ListBox<PackLine>
 {
     private readonly IPack _pack;
@@ -121,7 +160,7 @@ public sealed class PackList : ListBox<PackLine>
 
     public override bool ReservesKey(KeyCombo combo) =>
         (!combo.HasModifier && (combo.Key == Key.Delete || combo.Key == Key.Space || combo.Key == Key.Enter))
-        || base.ReservesKey(combo);
+        || ItemKeys.Reserves(combo) || base.ReservesKey(combo);
 
     protected override bool OnInput(in InputEvent input)
     {
@@ -148,6 +187,17 @@ public sealed class PackList : ListBox<PackLine>
         }
         if (input.IsChar(' '))
             return Hold(line);
+        if (input.Is(ItemKeys.Describe))
+        {
+            Announce(ItemKeys.Said(_pack.Describe(line.Stacks[^1].Slot)));
+            return true;
+        }
+        if (ItemKeys.Hotbar(input) is >= 0 and var hotbar)
+        {
+            _pack.ToHotbar(line.Stacks[^1].Slot, hotbar);
+            Announce($"Hotbar {(hotbar + 1) % 10}.");
+            return true;
+        }
         if (input.Is(Key.Delete))
         {
             _pack.Trash(line.Stacks[0].Slot);
@@ -225,6 +275,13 @@ public interface IChest
     /// all fit.</summary>
     bool Deposit(int packSlot);
 
+    string Describe(int slot);
+
+    /// <summary>Put the stack in a hotbar slot, 0 to 9; what was
+    /// there goes to the inventory. False, and nothing moved, when
+    /// the inventory has no room for it.</summary>
+    bool ToHotbar(int slot, int hotbar);
+
     void LootAll();
     void DepositAll();
     void QuickStack();
@@ -235,7 +292,8 @@ public interface IChest
     void Rename(string name);
 }
 
-/// <summary>What is in the open chest. Enter takes all of the item.</summary>
+/// <summary>What is in the open chest. Enter takes all of the item,
+/// a digit puts it in that hotbar slot, F1 describes it.</summary>
 public sealed class ChestList : ListBox<PackLine>
 {
     private readonly IChest _chest;
@@ -248,11 +306,25 @@ public sealed class ChestList : ListBox<PackLine>
     }
 
     public override bool ReservesKey(KeyCombo combo) =>
-        (!combo.HasModifier && combo.Key == Key.Enter) || base.ReservesKey(combo);
+        (!combo.HasModifier && combo.Key == Key.Enter) || ItemKeys.Reserves(combo) || base.ReservesKey(combo);
 
     protected override bool OnInput(in InputEvent input)
     {
-        if (input.Kind != InputKind.Activate || Items.Count == 0)
+        if (Items.Count == 0)
+            return base.OnInput(input);
+        if (input.Is(ItemKeys.Describe))
+        {
+            Announce(ItemKeys.Said(_chest.Describe(Items[SelectedIndex].Stacks[^1].Slot)));
+            return true;
+        }
+        if (ItemKeys.Hotbar(input) is >= 0 and var hotbar)
+        {
+            Announce(_chest.ToHotbar(Items[SelectedIndex].Stacks[^1].Slot, hotbar)
+                ? $"Hotbar {(hotbar + 1) % 10}."
+                : "No room in the inventory.");
+            return true;
+        }
+        if (input.Kind != InputKind.Activate)
             return base.OnInput(input);
         var all = true;
         foreach (var stack in Items[SelectedIndex].Stacks.ToList())
@@ -276,6 +348,9 @@ public interface ICrafting
 
     /// <summary>Make it once. False when the game would not.</summary>
     bool Craft(int id);
+
+    /// <summary>What the game's tooltip says about what is made.</summary>
+    string Describe(int id);
 }
 
 public sealed partial class CraftLine : Element
@@ -289,7 +364,7 @@ public sealed partial class CraftLine : Element
 }
 
 /// <summary>What can be made now: one alphabetical list. Enter makes
-/// it once; Space says what it uses.</summary>
+/// it once; Space says what it uses; F1 describes what is made.</summary>
 public sealed class CraftList : ListBox<CraftLine>
 {
     private readonly ICrafting _crafting;
@@ -329,7 +404,8 @@ public sealed class CraftList : ListBox<CraftLine>
     }
 
     public override bool ReservesKey(KeyCombo combo) =>
-        (!combo.HasModifier && (combo.Key == Key.Space || combo.Key == Key.Enter)) || base.ReservesKey(combo);
+        (!combo.HasModifier && (combo.Key == Key.Space || combo.Key == Key.Enter || combo.Key == ItemKeys.Describe))
+        || base.ReservesKey(combo);
 
     protected override bool OnInput(in InputEvent input)
     {
@@ -344,6 +420,11 @@ public sealed class CraftList : ListBox<CraftLine>
         if (input.IsChar(' '))
         {
             Announce(recipe.Needs);
+            return true;
+        }
+        if (input.Is(ItemKeys.Describe))
+        {
+            Announce(ItemKeys.Said(_crafting.Describe(recipe.Id)));
             return true;
         }
         return base.OnInput(input);

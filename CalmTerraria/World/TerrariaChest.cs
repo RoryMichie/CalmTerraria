@@ -85,6 +85,34 @@ internal sealed class TerrariaChest : IChest
         return item.IsAir;
     }
 
+    public string Describe(int slot) => IsOpen ? ItemText.Describe(Contents(out _)[slot]) : "";
+
+    public bool ToHotbar(int slot, int hotbar)
+    {
+        if (!IsOpen)
+            return false;
+        var items = Contents(out var sync);
+        var inventory = Player.inventory;
+        if (!inventory[hotbar].IsAir)
+        {
+            // What was in the hotbar slot goes to the pack, not the chest.
+            var free = -1;
+            for (var i = 10; i < 50 && free < 0; i++)
+                if (inventory[i].IsAir)
+                    free = i;
+            if (free < 0)
+                return false;
+            inventory[free] = inventory[hotbar];
+        }
+        inventory[hotbar] = items[slot];
+        items[slot] = new Item();
+        if (sync)
+            NetMessage.SendData(SyncChestItem, -1, -1, null, Player.chest, slot);
+        Terraria.Audio.SoundEngine.PlaySound(SoundID.Grab);
+        Recipe.FindRecipes();
+        return true;
+    }
+
     public void LootAll()
     {
         ChestUI.LootAll();
@@ -140,6 +168,8 @@ internal sealed class TerrariaCrafting : ICrafting
     private static string Needs(Recipe recipe) =>
         string.Join(", ", recipe.requiredItem.Select(item =>
             $"{item.stack} {(recipe.ProcessGroupsForText(item.type, out var group) ? group : item.Name)}"));
+
+    public string Describe(int id) => ItemText.Describe(Main.recipe[id].createItem);
 
     public bool Craft(int id)
     {

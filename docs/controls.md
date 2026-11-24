@@ -72,17 +72,21 @@ crafting, Powers, and Save and exit.
 
 - Inventory: Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
-  to an item by name.
+  to an item by name. A digit, 1 to 0, puts the item in that hotbar
+  slot and what was there takes its place. F1 reads the item's
+  description.
 - Equipment: Enter takes the piece off.
 - Crafting: what can be made now, from what is carried and what the
   character stands beside. Enter makes it once. Space says what it
-  uses.
+  uses. F1 reads the description of what is made.
 
 Opening a chest in the world (right bracket on it), or a piggy bank or
 safe, brings the same screen with two tab stops in front:
 
 - The chest's contents, as a list named for the chest. Enter takes
-  all of the item.
+  all of the item. A digit takes it straight to that hotbar slot,
+  and what was there goes to the inventory; with no room for it,
+  nothing moves and that is said. F1 reads the description.
 - Chest actions: Loot all, Deposit all, Quick stack, Restock, and
   Rename for chests in the world.
 
@@ -92,7 +96,16 @@ the chest; Space still holds. Escape closes the chest.
 Holding swaps the item into the hand; the number keys still switch
 between the last ten things held.
 
-# 7. Powers
+# 7. Status and what the game shows
+
+- Backspace: health, mana, defense, and each effect on the character
+  with the time it has left.
+- The hotbar: the item is said when the selected slot changes.
+- Smart cursor: said when it goes on or off.
+- The game's own messages - deaths, events, chat - are spoken as they
+  appear. Dying says how long until the respawn; coming back says so.
+
+# 8. Powers
 
 The Powers button on the pack screen: what a journey-mode character
 has and more, for any character.
@@ -107,7 +120,7 @@ has and more, for any character.
   off on the side the character faces. Single player only.
 - Make it day, Make it night. Single player only.
 
-# 8. Keys taken from the game
+# 9. Keys taken from the game
 
 A key the mod uses in a world is hidden from the game, so J (quick
 mana) and M (the full-screen map) no longer reach it. Shift and Control
