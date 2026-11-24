@@ -95,7 +95,7 @@ internal sealed class BuildTool : IBuild
     {
         if (_job != null)
         {
-            var left = _queue.Count + _failed.Count + _far.Count + (_current == null ? 0 : 1);
+            var left = _queue.Count + _failed.Count + _far.Count + _aside.Count + (_current == null ? 0 : 1);
             Shout();
             End();
             Say($"Stopped, {left} left.");
@@ -471,6 +471,8 @@ internal sealed class BuildTool : IBuild
         _queue = new Queue<(int X, int Y)>(job.Targets);
         _failed = new List<(int X, int Y)>();
         _far = new List<(int X, int Y)>();
+        _aside = new List<(int X, int Y)>();
+        _toldAside = false;
         _current = null;
         _progress = _toldFar = false;
         _wait = 0;
@@ -634,6 +636,19 @@ internal sealed class BuildTool : IBuild
                 _far.Add(next);
                 continue;
             }
+            // What cannot go in yet is passed over at once, not tried
+            // for half a second each: a tall outline is mostly tiles
+            // waiting for the one below them.
+            if (Placing && InTheWay(next))
+            {
+                _aside.Add(next);
+                continue;
+            }
+            if (Placing && !Attaches(next))
+            {
+                _failed.Add(next);
+                continue;
+            }
             if (Equip(next) is { Length: > 0 } why)
             {
                 _queue.Enqueue(next);
@@ -658,13 +673,24 @@ internal sealed class BuildTool : IBuild
             _wait--;
             return;
         }
-        if (_failed.Count > 0 && _progress)
+        if ((_failed.Count > 0 || _aside.Count > 0) && _progress)
         {
             // Something went in: what would not attach before may now.
-            _queue = new Queue<(int X, int Y)>(_failed.Concat(_far));
-            _failed = new List<(int X, int Y)>();
-            _far = new List<(int X, int Y)>();
+            Requeue();
             _progress = false;
+            _toldAside = false;
+            return;
+        }
+        if (_aside.Count > 0)
+        {
+            // The game will not put a block where a character is.
+            if (!_toldAside)
+            {
+                _toldAside = true;
+                Say($"Step aside: {_aside.Count} left where you are standing.");
+            }
+            Requeue();
+            _wait = 20;
             return;
         }
         if (_far.Count > 0)
@@ -753,10 +779,53 @@ internal sealed class BuildTool : IBuild
         _tallyAge = 0;
     }
 
+    private List<(int X, int Y)> _aside = new();
+    private bool _toldAside;
+
+    private bool Placing => _job!.Kind is Kind.Fill or Kind.Outline or Kind.Wall;
+
+    /// <summary>Everything not yet done goes round again, in the
+    /// job's own order - for building, from the ground up.</summary>
+    private void Requeue()
+    {
+        var left = new HashSet<(int X, int Y)>(_failed.Concat(_far).Concat(_aside));
+        _queue = new Queue<(int X, int Y)>(_job!.Targets.Where(left.Contains).Concat(left.Except(_job.Targets)));
+        _failed = new List<(int X, int Y)>();
+        _far = new List<(int X, int Y)>();
+        _aside = new List<(int X, int Y)>();
+    }
+
+    /// <summary>A block cannot go where a character stands; a wall can.</summary>
+    private bool InTheWay((int X, int Y) at)
+    {
+        if (_job!.Kind == Kind.Wall)
+            return false;
+        var tile = new Microsoft.Xna.Framework.Rectangle(at.X * 16, at.Y * 16, 16, 16);
+        for (var i = 0; i < Main.maxPlayers; i++)
+            if (Main.player[i] is { active: true, dead: false } player && player.Hitbox.Intersects(tile))
+                return true;
+        return false;
+    }
+
+    /// <summary>The game's rule for where a block or a wall will
+    /// hold: beside a block or a wall, or, for a block, on a wall.</summary>
+    private bool Attaches((int X, int Y) at)
+    {
+        if (_job!.Kind != Kind.Wall && Main.tile[at.X, at.Y].WallType != 0)
+            return true;
+        foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+        {
+            var beside = Main.tile[at.X + dx, at.Y + dy];
+            if (beside.HasTile || beside.WallType != 0)
+                return true;
+        }
+        return false;
+    }
+
     private void Stop(string why)
     {
         Shout();
-        var left = _queue.Count + _failed.Count + _far.Count + (_current == null ? 0 : 1);
+        var left = _queue.Count + _failed.Count + _far.Count + _aside.Count + (_current == null ? 0 : 1);
         End();
         Say($"{why}, {left} to go.");
     }
