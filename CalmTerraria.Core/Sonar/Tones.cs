@@ -20,10 +20,21 @@ public static class Tones
     public static float[] InReach() => Blip(frequency: 930f, fall: 0.9f, seconds: 0.07f, decay: 50f, harmonics: 0.6f);
 
     /// <summary>Leaving the ground: a soft rise.</summary>
-    public static float[] Jump() => Blip(frequency: 260f, fall: 1.7f, seconds: 0.09f, decay: 28f, harmonics: 0.1f);
+    public static float[] Jump() => Blip(frequency: 420f, fall: 1.8f, seconds: 0.11f, decay: 22f, harmonics: 0.25f);
 
     /// <summary>Coming back to it: a low thud that drops away.</summary>
-    public static float[] Land() => Blip(frequency: 120f, fall: 0.55f, seconds: 0.12f, decay: 32f, harmonics: 0.35f);
+    public static float[] Land() => Blip(frequency: 210f, fall: 0.5f, seconds: 0.14f, decay: 26f, harmonics: 0.6f);
+
+    /// <summary>Low health: a heartbeat, two soft thumps, the second a
+    /// little lower. Pitched where small speakers and headphones still
+    /// carry it, not down where a real one sits.</summary>
+    public static float[] Heartbeat()
+    {
+        var first = Blip(frequency: 280f, fall: 0.9f, seconds: 0.05f, decay: 45f, harmonics: 0.2f);
+        var second = Blip(frequency: 245f, fall: 0.9f, seconds: 0.06f, decay: 40f, harmonics: 0.2f);
+        var gap = new float[(int)(SampleRate * 0.075f)];
+        return first.Concat(gap).Concat(second).ToArray();
+    }
 
     private static float[] Blip(float frequency, float fall, float seconds, float decay, float harmonics)
     {

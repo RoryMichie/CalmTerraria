@@ -96,9 +96,9 @@ public sealed class CalmTerrariaMod : Mod
                     throw new InvalidOperationException($"no {name} in the world");
                 });
                 _ = new Waypoints(_host, _shell, scanner, cursor);
-                _ = new BuildTool(_host, _shell, cursor);
+                _ = new BuildTool(_host, _shell, cursor, scanner);
                 _ = new MoveSounds(_host, _shell, Logger);
-                _autopilot?.Register("moves", _ => Logger.Info($"Moves: {MoveSounds.Jumps} jumps, {MoveSounds.Landings} landings"));
+                _autopilot?.Register("moves", _ => Logger.Info($"Moves: {MoveSounds.Jumps} jumps, {MoveSounds.Landings} landings, {MoveSounds.Beats} heartbeats"));
                 _ = new HazardWatch(_host, _shell);
                 _ = new Feedback(_host, _shell);
                 _autopilot?.Register("footsteps", _ => Logger.Info($"Footsteps: {Feedback.FootstepsRaised} raised, last {Feedback.LastFootstep}"));

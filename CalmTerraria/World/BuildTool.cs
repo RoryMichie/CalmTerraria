@@ -53,10 +53,29 @@ internal sealed class BuildTool : IBuild
     private bool _progress, _toldFar, _smartCursorWas;
     private (int X, int Y) _cursorWas;
 
-    public BuildTool(SruiHost host, Shell shell, Cursor cursor)
+    public BuildTool(SruiHost host, Shell shell, Cursor cursor, WorldScanner scanner)
     {
         _host = host;
         _cursor = cursor;
+        // Shift+X: the area is whatever the scanner is on - the whole
+        // vein, the whole pool, the whole run of spikes.
+        shell.WorldCommands[KeyCombo.WithShift(Key.Char('x'))] = () =>
+        {
+            if (_job != null)
+            {
+                Say("A job is running. X stops it.");
+                return;
+            }
+            if (scanner.Selected is not { } feature)
+            {
+                Say("The scanner is not on anything.");
+                return;
+            }
+            var (left, top, right, bottom) = feature.Bounds;
+            _a = (left, top);
+            _b = (right, bottom);
+            Say($"Selected {feature.DisplayName}, {right - left + 1} by {bottom - top + 1}.");
+        };
         shell.Build = this;
         shell.WorldCommands[KeyCombo.Plain(Key.Char('x'))] = Mark;
         shell.WorldFrame += Update;

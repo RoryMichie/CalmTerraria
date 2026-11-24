@@ -15,7 +15,15 @@ internal sealed class MoveSounds
     /// <summary>Frames off the ground before coming back counts as a
     /// landing: stairs and slopes lift the feet for a frame or two.</summary>
     private const int AirborneFrames = 6;
-    private const float Volume = 0.7f;
+    private const float Volume = 1f;
+
+    /// <summary>Health, as a share of the most there can be, under
+    /// which the heart is heard; and how long between beats just
+    /// under it and at the very end.</summary>
+    private const float LowHealth = 0.3f;
+    private const float SlowBeatMs = 1300f, FastBeatMs = 500f;
+    private string? _heartWav;
+    private ulong _nextBeat;
 
     private readonly SruiHost _host;
     private readonly ILog _log;
@@ -27,6 +35,7 @@ internal sealed class MoveSounds
 
     public static int Jumps { get; private set; }
     public static int Landings { get; private set; }
+    public static int Beats { get; private set; }
 
     public MoveSounds(SruiHost host, Shell shell, ILog log)
     {
@@ -45,6 +54,14 @@ internal sealed class MoveSounds
         var player = Main.LocalPlayer;
         if (_broken || player.dead || Main.gamePaused)
             return;
+        // The heart: quicker the less health is left.
+        var health = player.statLifeMax2 > 0 ? player.statLife / (float)player.statLifeMax2 : 1f;
+        if (health < LowHealth && _host.Now >= _nextBeat)
+        {
+            Beats++;
+            Play(ref _heartWav, "heartbeat", Tones.Heartbeat, Volume);
+            _nextBeat = _host.Now + (ulong)(FastBeatMs + (SlowBeatMs - FastBeatMs) * (health / LowHealth));
+        }
         var grounded = player.velocity.Y == 0f;
         if (!grounded)
         {

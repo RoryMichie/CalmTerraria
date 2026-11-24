@@ -1,0 +1,32 @@
+# The heartbeat under low health, and Shift+X on what the scanner is on.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do moves
+do health 30
+wait 3000
+do moves
+do health 5
+wait 3000
+do moves
+do health 120
+wait 1500
+do moves
+hold Space 300
+wait 1500
+do moves
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+wait 300
+key shift+x
+wait 300
+key tab
+wait 500
+key escape
+key x
+quit

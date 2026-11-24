@@ -135,6 +135,12 @@ internal static class DebugCommands
                 }
             log.Info($"Lava: {lava} lava, {water} water, {obsidian} obsidian near the player.");
         });
+        // health 20 - the test character's health, set.
+        autopilot.Register("health", args =>
+        {
+            RequireTestWorld();
+            Main.LocalPlayer.statLife = int.Parse(args.Trim());
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

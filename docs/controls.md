@@ -56,6 +56,8 @@ Work on an area:
 
 - X marks one corner at the cursor, X again the other, and says the
   size. X a third time lets the area go.
+- Shift+X marks the area of whatever the scanner is on: the whole
+  vein of ore, the whole pool of lava, the whole run of spikes.
 - With an area marked, the Tab ring leads with a Build list of what
   can be done to it with what is held:
   - a block: Fill, and Outline (the edge only: the shell of a room);
@@ -202,6 +204,8 @@ moved without asking.
   tiles - "Lava, 3 right 1 down." - and again only after being clear
   of them. The scanner has a Hazards category: lava in any amount,
   spikes, traps, boulders, explosives, pressure plates.
+- Low health is a heartbeat: under three tenths of full health, two
+  soft thumps, quicker the less is left.
 - Jumping and landing each have a sound; the landing is louder the
   faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they
