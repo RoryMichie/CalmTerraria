@@ -72,10 +72,14 @@ public sealed class CalmTerrariaMod : Mod
                 _host = new SruiHost(Logger);
                 _shell = new Shell(_host);
                 _autopilot = Autopilot.TryLoad(_host, _shell, Logger);
+                if (_autopilot != null)
+                    DebugCommands.Register(_autopilot, Logger);
                 var scanner = new WorldScanner(_host, _shell, Logger);
                 var cursor = _cursor = new Cursor(_host, _shell);
                 scanner.JumpRequested += target => cursor.MoveTo(target.X, target.Y);
                 _autopilot?.Register("state", _ => Logger.Info($"State: {cursor.DebugState()}"));
+                var sonar = new EnemySonar(_host, _shell, Logger);
+                _autopilot?.Register("sonar-log", _ => sonar.LogPulses = !sonar.LogPulses);
                 if (_autopilot != null)
                     scanner.RegisterDebug(_autopilot);
             }

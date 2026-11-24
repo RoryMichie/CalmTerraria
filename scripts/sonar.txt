@@ -1,0 +1,25 @@
+# The sonar against enemies put where the script wants them.
+heard Single player
+play calmtest calmtest
+heard Ready
+do godmode
+do time night
+do clear
+hold D2 100
+wait 500
+do sonar-log
+log --- a zombie to the right, walking in until it is in reach
+do spawn Zombie 25 0
+wait 10000
+do clear
+wait 500
+log --- one buried below: occluded
+do spawn Zombie 0 14
+wait 2500
+do clear
+wait 500
+log --- one above and to the left
+do spawn DemonEye -15 -20
+wait 2500
+do sonar-log
+quit
