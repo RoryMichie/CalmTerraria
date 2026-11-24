@@ -124,13 +124,7 @@ internal sealed class Waypoints
         var index = _points.FindIndex(point => point.Name == name);
         if (index < 0)
             return false;
-        var player = Main.LocalPlayer;
-        var to = new Microsoft.Xna.Framework.Vector2(
-            _points[index].X * 16f + 8f - player.width / 2f, _points[index].Y * 16f + 16f - player.height);
-        player.Teleport(to, 1);
-        player.velocity = Microsoft.Xna.Framework.Vector2.Zero;
-        if (Main.netMode == Terraria.ID.NetmodeID.MultiplayerClient)
-            NetMessage.SendData(Terraria.ID.MessageID.TeleportEntity, -1, -1, null, 0, player.whoAmI, to.X, to.Y, 1);
+        Travel.To(_points[index].X, _points[index].Y);
         return true;
     }
 }

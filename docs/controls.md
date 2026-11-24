@@ -90,7 +90,10 @@ Factorio Access's keys.
   changed, and at the first scanner key after five seconds without
   one. It never changes in the middle of a run of key presses. Home
   never refreshes; it goes to what was last read.
-- Home: move the cursor to the selected instance.
+- Home: move the cursor to the selected instance. The character
+  stays where it is.
+- Ctrl+Home: move the character there - a teleport, to the nearest
+  footing beside the thing - and the cursor onto it.
 
 Players are the scanner's second category, after waypoints: everyone
 else in the world, at any distance, each under their own name.

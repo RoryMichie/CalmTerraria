@@ -80,6 +80,21 @@ internal sealed class WorldScanner
         commands[KeyCombo.Plain(Key.PageUp)] = () => Move(list => list.MoveKind(-1));
         commands[KeyCombo.WithShift(Key.PageDown)] = () => Move(list => list.MoveInstance(1));
         commands[KeyCombo.WithShift(Key.PageUp)] = () => Move(list => list.MoveInstance(-1));
+        // Ctrl+Home: the character goes, not the cursor. A power.
+        commands[KeyCombo.WithCtrl(Key.Home)] = () =>
+        {
+            if (!Ready())
+                return;
+            _usedAt = _host.Now;
+            if (_list.Target is not { } target)
+            {
+                _host.App.Announce("Nothing selected.");
+                return;
+            }
+            Travel.To(target.X, target.Y);
+            // The cursor comes too, onto the thing itself.
+            JumpRequested?.Invoke(target);
+        };
         commands[KeyCombo.Plain(Key.Home)] = () =>
         {
             // Never refreshed here: it goes to what was last read.

@@ -1,0 +1,18 @@
+# Ctrl+Home takes the character to what the scanner is on.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do godmode
+key end
+key ctrl+pagedown
+wait 300
+key shift+pagedown
+wait 300
+do state
+key ctrl+home
+wait 800
+do state
+key k
+key end
+quit
