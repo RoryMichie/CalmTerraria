@@ -1,0 +1,1 @@
+CalmTerraria makes Terraria playable without sight, through speech and spatial audio.

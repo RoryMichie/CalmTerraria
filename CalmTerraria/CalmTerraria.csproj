@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Where tModLoader is installed. Override with the TML_DIR
+       environment variable on a machine where Steam lives elsewhere. -->
+  <PropertyGroup>
+    <TmlDir Condition="'$(TML_DIR)' != ''">$(TML_DIR)\</TmlDir>
+    <TmlDir Condition="'$(TmlDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\tModLoader\</TmlDir>
+    <!-- SRUI is a sibling clone, as the knowledge base lays repos out. -->
+    <SruiDir>$(MSBuildThisFileDirectory)..\..\srui\</SruiDir>
+  </PropertyGroup>
+
+  <!-- References tModLoader and its libraries. Its own packaging step
+       is switched off because it runs whatever dotnet is on the PATH,
+       and tModLoader needs the .NET 8 runtime it carries with it; the
+       PackageMod target below does the same thing with that one. -->
+  <PropertyGroup>
+    <BuildMod>false</BuildMod>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <Import Project="$(TmlDir)tMLMod.targets" />
+
+  <!-- SRUI's [Field] properties are partial properties, which C# 12
+       does not have. Language features that need no runtime support
+       are fine on the .NET 8 the loader runs. -->
+  <PropertyGroup>
+    <AssemblyName>CalmTerraria</AssemblyName>
+    <RootNamespace>CalmTerraria</RootNamespace>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(SruiDir)Srui\Srui.csproj" />
+    <ProjectReference Include="$(SruiDir)Srui.Audio\Srui.Audio.csproj" />
+    <ProjectReference Include="$(SruiDir)Srui.Generators\Srui.Generators.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Staged copies, never sources: the packager takes managed
+       libraries from lib/ (build.txt names them) and everything else in
+       the folder as a plain file, which is how the native DLLs travel
+       inside the .tmod. Both folders are gitignored. -->
+  <ItemGroup>
+    <Compile Remove="lib\**;native\**" />
+    <AdditionalFiles Remove="lib\**;native\**" />
+  </ItemGroup>
+
+  <Target Name="StageSrui" AfterTargets="Build">
+    <ItemGroup>
+      <SruiManaged Include="$(TargetDir)Srui.dll;$(TargetDir)Srui.Audio.dll" />
+      <SruiNative Include="$(SruiDir)native\out\prism.dll;$(SruiDir)native\out\cosmos.dll;$(SruiDir)native\out\phonon.dll" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(SruiNative.FullPath)')"
+           Text="Missing %(SruiNative.FullPath). Run native/build-native.ps1 in the srui clone." />
+    <Copy SourceFiles="@(SruiManaged)" DestinationFolder="$(ProjectDir)lib" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SruiNative)" DestinationFolder="$(ProjectDir)native" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Packages the mod into the tModLoader Mods folder. The compiled
+       assembly is handed over as-is, so this project's compiler (and
+       SRUI's source generator) is the one that ran, not tModLoader's
+       own. The folder's name is the mod's name. -->
+  <Target Name="PackageMod" AfterTargets="StageSrui">
+    <Exec Command="&quot;$(TmlDir)dotnet\dotnet.exe&quot; tModLoader.dll -server -build &quot;$(MSBuildProjectDirectory)&quot; -eac &quot;$(TargetPath)&quot; -define &quot;$(DefineConstants)&quot; -unsafe true"
+          WorkingDirectory="$(TmlDir)" />
+  </Target>
+
+</Project>

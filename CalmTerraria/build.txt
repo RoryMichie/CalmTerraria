@@ -1,0 +1,6 @@
+displayName = CalmTerraria
+author = CalmComputers
+version = 0.0.1
+side = NoSync
+dllReferences = Srui, Srui.Audio
+buildIgnore = *.csproj, *.user, obj\*, bin\*, .vs\*
