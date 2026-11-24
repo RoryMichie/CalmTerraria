@@ -92,6 +92,8 @@ public class TonesTests
     {
         { "contact", Tones.Contact() },
         { "in reach", Tones.InReach() },
+        { "jump", Tones.Jump() },
+        { "land", Tones.Land() },
     };
 
     /// <summary>Nothing the sonar plays may be loud: about a third of

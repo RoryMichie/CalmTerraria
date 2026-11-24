@@ -205,6 +205,20 @@ internal sealed class Shell
         _pack.Open(chest, talk: talk, choose: index => _talk.Press(buttons[index]), shop: shop);
     }
 
+    /// <summary>A dialog of someone else's over the world: the keys
+    /// are the mod's until it closes.</summary>
+    public Dialog OpenOverWorld()
+    {
+        _host.TakeKeyboard();
+        var dialog = _host.App.OpenDialog();
+        dialog.Closed += () =>
+        {
+            if (!_pack.IsOpen && !_busy && _place == Place.World)
+                _host.ReleaseKeyboard();
+        };
+        return dialog;
+    }
+
     /// <summary>A key came up while the player is in a world.</summary>
     public event Action<Key>? WorldKeyReleased;
 

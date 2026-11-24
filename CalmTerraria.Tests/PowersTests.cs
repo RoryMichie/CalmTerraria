@@ -33,6 +33,9 @@ internal sealed class FakePowers : IPowers
         return true;
     }
 
+    public IReadOnlyList<string> Waypoints() => new[] { "Home" };
+    public bool TeleportToWaypoint(string waypoint) => true;
+
     public bool SetTime(bool day)
     {
         if (!OnServer)
@@ -74,6 +77,8 @@ public class PowersScreenTests
         ui.Expect("Spawn creature button");
         ui.Press("tab");
         ui.Expect("Teleport to player button");
+        ui.Press("tab");
+        ui.Expect("Teleport to waypoint button");
         ui.Press("tab");
         ui.Expect("Make it day button");
         ui.Press("tab");
@@ -136,7 +141,7 @@ public class PowersScreenTests
     public void TheTimeButtonsSayWhatItIsNow()
     {
         var (ui, powers) = Open();
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 7; i++)
             ui.Press("tab");
         ui.Drain();
         ui.Press("enter");

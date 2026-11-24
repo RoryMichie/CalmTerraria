@@ -35,6 +35,20 @@ internal sealed class WorldScanner
     /// <summary>The player asked to go to the selected entry.</summary>
     public event Action<(int X, int Y)>? JumpRequested;
 
+    /// <summary>Features from outside the world itself: waypoints.</summary>
+    public Func<IEnumerable<Feature>>? Extra { get; set; }
+
+    /// <summary>What the scanner is on.</summary>
+    public Feature? Selected => _taken ? _list.Current : null;
+
+    /// <summary>Take the list again, silently, because something in
+    /// it was added or removed.</summary>
+    public void Retake()
+    {
+        if (_latest != null)
+            Take(_facingOnly);
+    }
+
     public WorldScanner(SruiHost host, Shell shell, ILog log)
     {
         _host = host;
@@ -138,6 +152,8 @@ internal sealed class WorldScanner
         _facingOnly = facingOnly;
         _usedAt = _host.Now;
         IEnumerable<Feature> features = _latest!.Concat(Creatures());
+        if (Extra != null)
+            features = features.Concat(Extra());
         if (facingOnly)
         {
             var (px, py) = PlayerTile();

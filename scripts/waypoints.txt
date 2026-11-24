@@ -1,0 +1,53 @@
+# Waypoints: name one, find it in the scanner, teleport to it, delete it. Jumps and landings.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+key ctrl+k
+key \
+heard Waypoint name
+type Base camp
+key enter
+heard Saved
+wait 300
+hold D 2000
+wait 500
+key end
+key ctrl+pageup
+key ctrl+pageup
+wait 300
+key home
+wait 300
+hold Space 300
+wait 1500
+hold Space 300
+wait 1500
+do moves
+key shift+tab
+key shift+tab
+key shift+tab
+key shift+tab
+heard Powers
+key enter
+heard Omniscience
+key shift+tab
+key shift+tab
+key shift+tab
+heard Teleport to waypoint
+key enter
+heard Waypoints
+key enter
+heard Teleported
+key escape
+key escape
+key escape
+wait 500
+key end
+wait 300
+key delete
+wait 300
+key end
+quit

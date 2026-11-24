@@ -33,12 +33,17 @@ public interface IPowers
     /// be done.</summary>
     bool TeleportTo(string player);
 
+    /// <summary>The player's waypoints in this world, by name.</summary>
+    IReadOnlyList<string> Waypoints();
+
+    bool TeleportToWaypoint(string waypoint);
+
     /// <summary>Dawn or dusk, now. False where the game does not allow it.</summary>
     bool SetTime(bool day);
 }
 
 /// <summary>The powers: what a journey-mode character has and more,
-/// for any character. Two switches and five actions; the two long
+/// for any character. Two switches and six actions; the two long
 /// lists are found in by typing the start of a name.</summary>
 public sealed class PowersScreen
 {
@@ -75,6 +80,14 @@ public sealed class PowersScreen
                 _app.Announce("No other players.");
             else
                 Pick("Players", players, player => _powers.TeleportTo(player) ? "Teleported." : "Couldn't teleport.");
+        };
+        new Button(dialog, "Teleport to waypoint").Activated += () =>
+        {
+            var waypoints = _powers.Waypoints();
+            if (waypoints.Count == 0)
+                _app.Announce("No waypoints.");
+            else
+                Pick("Waypoints", waypoints, waypoint => _powers.TeleportToWaypoint(waypoint) ? "Teleported." : "Couldn't teleport.");
         };
         new Button(dialog, "Make it day").Activated += () => _app.Announce(_powers.SetTime(day: true) ? "Day." : Refused);
         new Button(dialog, "Make it night").Activated += () => _app.Announce(_powers.SetTime(day: false) ? "Night." : Refused);

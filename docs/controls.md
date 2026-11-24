@@ -58,6 +58,14 @@ Factorio Access's keys.
   never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance.
 
+Waypoints are the scanner's first category: places the player has
+named, kept per world.
+
+- Backslash: name the tile under the cursor. Type the name, Enter.
+- Delete: remove the waypoint the scanner is on.
+- Everything else is the scanner's: it says how far and which way,
+  and Home puts the cursor there. Powers has Teleport to waypoint.
+
 # 5. Screens
 
 Tab moves between the parts of a screen. Escape goes back one step.
@@ -138,6 +146,8 @@ between the last ten things held.
 - A chest that will not open says why: "Locked.", "Out of reach", or,
   for one another player has open, the pack screen with "Chest, in
   use by" and their name where the chest's list would be.
+- Jumping and landing each have a sound; the landing is louder the
+  faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they
   appear. Dying says how long until the respawn; coming back says so.
 
@@ -156,6 +166,7 @@ has and more, for any character.
   off on the side the character faces. Single player only.
 - Teleport to player: a list of the other players; Enter goes to
   that one, the way a wormhole potion does.
+- Teleport to waypoint: the same for the world's waypoints.
 - Make it day, Make it night. Single player only.
 
 # 9. Keys taken from the game

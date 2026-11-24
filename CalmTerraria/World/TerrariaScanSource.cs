@@ -17,6 +17,7 @@ namespace CalmTerraria.World;
 internal sealed class TerrariaScanSource : IScanSource
 {
     public const string Containers = "Containers";
+    public const string Waypoints = World.Waypoints.Category;
     public const string Treasure = "Treasure";
     public const string Ores = "Ores";
     public const string Gems = "Gems";
@@ -30,7 +31,7 @@ internal sealed class TerrariaScanSource : IScanSource
 
     public static readonly string[] CategoryOrder =
     {
-        Containers, Treasure, Ores, Gems, Stations, Plants, Liquids, Places, People, Enemies, Items,
+        Waypoints, Containers, Treasure, Ores, Gems, Stations, Plants, Liquids, Places, People, Enemies, Items,
     };
 
     private readonly List<ScanKind> _kinds = new();

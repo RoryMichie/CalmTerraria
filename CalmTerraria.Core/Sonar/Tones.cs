@@ -19,6 +19,12 @@ public static class Tones
     /// brighter and higher, so it reads as the same thing made urgent.</summary>
     public static float[] InReach() => Blip(frequency: 930f, fall: 0.9f, seconds: 0.07f, decay: 50f, harmonics: 0.6f);
 
+    /// <summary>Leaving the ground: a soft rise.</summary>
+    public static float[] Jump() => Blip(frequency: 260f, fall: 1.7f, seconds: 0.09f, decay: 28f, harmonics: 0.1f);
+
+    /// <summary>Coming back to it: a low thud that drops away.</summary>
+    public static float[] Land() => Blip(frequency: 120f, fall: 0.55f, seconds: 0.12f, decay: 32f, harmonics: 0.35f);
+
     private static float[] Blip(float frequency, float fall, float seconds, float decay, float harmonics)
     {
         var samples = new float[(int)(SampleRate * seconds)];

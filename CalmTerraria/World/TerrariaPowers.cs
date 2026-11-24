@@ -122,6 +122,11 @@ internal sealed class TerrariaPowers : IPowers
         return true;
     }
 
+    public IReadOnlyList<string> Waypoints() =>
+        World.Waypoints.Instance?.Points.Select(point => point.Name).ToList() ?? new List<string>();
+
+    public bool TeleportToWaypoint(string waypoint) => World.Waypoints.Instance?.TeleportTo(waypoint) == true;
+
     public bool SetTime(bool day)
     {
         if (Main.netMode != NetmodeID.SinglePlayer)
