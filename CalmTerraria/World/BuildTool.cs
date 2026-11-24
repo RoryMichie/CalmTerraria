@@ -34,7 +34,11 @@ internal sealed class BuildTool : IBuild
 
     private enum Kind { Fill, Outline, Wall, Clear, Unwall, Soak, Pour }
 
-    private sealed record Job(Kind Kind, int Item, string Doing, string Failed, List<(int X, int Y)> Targets);
+    /// <param name="More">For work that makes more work - water poured
+    /// on lava uncovers the lava beneath: called when the targets run
+    /// out, for the next ones. Empty when there is nothing left.</param>
+    private sealed record Job(Kind Kind, int Item, string Doing, string Failed, List<(int X, int Y)> Targets,
+        Func<List<(int X, int Y)>>? More = null);
 
     private readonly SruiHost _host;
     private readonly Cursor _cursor;
@@ -45,7 +49,7 @@ internal sealed class BuildTool : IBuild
     private Queue<(int X, int Y)> _queue = new();
     private List<(int X, int Y)> _failed = new(), _far = new();
     private (int X, int Y)? _current;
-    private int _budget, _wait;
+    private int _budget, _wait, _rounds;
     private bool _progress, _toldFar, _smartCursorWas;
     private (int X, int Y) _cursorWas;
 
@@ -221,14 +225,51 @@ internal sealed class BuildTool : IBuild
             }
             if (held.type is ItemID.WaterBucket or ItemID.BottomlessBucket && lava > 0)
             {
-                var hot = Down().Where(t => Main.tile[t.X, t.Y] is { LiquidAmount: > 0 } tile && tile.LiquidType == LiquidID.Lava).ToList();
-                Offer(new Job(Kind.Pour, held.type, "Pouring on", "quenched", hot),
-                    $"Pour water on lava, {hot.Count} tiles",
-                    $"{hot.Count} tiles of lava. Water on lava makes obsidian, which can then be mined. "
-                    + (held.type == ItemID.WaterBucket ? Supply(hot.Count, held.type, held.Name) : "The bottomless bucket is never used up."));
+                // The game will not pour water into lava, only into an
+                // empty tile: so it goes in beside the lava, above it
+                // for choice, and runs onto it.
+                List<(int X, int Y)> Beside()
+                {
+                    var spots = new HashSet<(int X, int Y)>();
+                    foreach (var (x, y) in Down())
+                    {
+                        if (!IsLava(x, y))
+                            continue;
+                        foreach (var spot in new[] { (x, y - 1), (x - 1, y), (x + 1, y) })
+                        {
+                            if (Pourable(spot.Item1, spot.Item2))
+                            {
+                                spots.Add(spot);
+                                break;
+                            }
+                        }
+                    }
+                    return spots.OrderBy(spot => spot.Y).ThenBy(spot => spot.X).ToList();
+                }
+                var first = Beside();
+                Offer(new Job(Kind.Pour, held.type, "Pouring water at", "poured", first, Beside),
+                    $"Pour water on lava, {lava} tiles of lava",
+                    $"{lava} tiles of lava. Water goes in beside it and runs onto it: thick lava turns to obsidian,"
+                    + " which a good pickaxe can then clear, and a thin film just goes. It leaves water behind. "
+                    + (first.Count == 0 ? "There is no open tile beside the lava to pour into. " : "")
+                    + (held.type == ItemID.WaterBucket ? Supply(first.Count, held.type, held.Name) : "The bottomless bucket is never used up."));
             }
         }
         return options;
+    }
+
+    private static bool IsLava(int x, int y) =>
+        WorldGen.InWorld(x, y) && Main.tile[x, y] is { LiquidAmount: > 0 } tile && tile.LiquidType == LiquidID.Lava;
+
+    /// <summary>The game's own rule for where a bucket of water may
+    /// be emptied: nothing solid there and no liquid yet.</summary>
+    private static bool Pourable(int x, int y)
+    {
+        if (!WorldGen.InWorld(x, y, 2))
+            return false;
+        var tile = Main.tile[x, y];
+        return tile.LiquidAmount == 0
+            && !(tile.HasTile && !tile.IsActuated && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType]);
     }
 
     /// <summary>Clearing: what would come out, and what stands in the way.</summary>
@@ -329,7 +370,7 @@ internal sealed class BuildTool : IBuild
 
     public void Start(int id)
     {
-        if (!_offered.TryGetValue(id, out var job) || job.Targets.Count == 0)
+        if (!_offered.TryGetValue(id, out var job) || (job.Targets.Count == 0 && job.More == null))
         {
             Say("Nothing to do.");
             return;
@@ -343,6 +384,7 @@ internal sealed class BuildTool : IBuild
         _wait = 0;
         _tally = _tallyAge = 0;
         _tallyName = "";
+        _rounds = 0;
         _cursorWas = _cursor.Tile;
         _smartCursorWas = Main.SmartCursorWanted_Mouse;
         // Smart cursor chooses its own tile; this work chooses each one.
@@ -374,7 +416,9 @@ internal sealed class BuildTool : IBuild
             Kind.Unwall => tile.WallType == 0,
             // A bucket cannot lift the last of a puddle.
             Kind.Soak => tile.LiquidAmount < (_job.Item == ItemID.EmptyBucket ? (byte)200 : (byte)1),
-            Kind.Pour => tile.LiquidAmount == 0 || tile.LiquidType != LiquidID.Lava,
+            // Poured, or the lava it was for has gone.
+            Kind.Pour => tile.LiquidAmount > 0
+                || !(IsLava(at.X, at.Y + 1) || IsLava(at.X - 1, at.Y) || IsLava(at.X + 1, at.Y)),
             _ => true,
         };
     }
@@ -545,6 +589,18 @@ internal sealed class BuildTool : IBuild
             _wait = 30;
             return;
         }
+        // Work that makes more work: give what was poured a moment to
+        // run, then look again.
+        if (_job.More != null && _failed.Count == 0 && _rounds++ < 60)
+        {
+            var more = _job.More();
+            if (more.Count > 0)
+            {
+                _queue = new Queue<(int X, int Y)>(more);
+                _wait = 45;
+                return;
+            }
+        }
         var failed = _failed.Count;
         var done = _job.Failed;
         Shout();
@@ -567,7 +623,8 @@ internal sealed class BuildTool : IBuild
             Kind.Clear => Main.tileAxe[tile.TileType] ? Tree : TileNames.At(at.X, at.Y, tile),
             Kind.Unwall => "walls",
             Kind.Wall or Kind.Fill or Kind.Outline => Main.LocalPlayer.HeldItem.Name,
-            Kind.Soak or Kind.Pour => $"tiles of {LiquidNames[Math.Clamp(tile.LiquidType, 0, LiquidNames.Length - 1)]}",
+            Kind.Soak => $"tiles of {LiquidNames[Math.Clamp(tile.LiquidType, 0, LiquidNames.Length - 1)]}",
+            Kind.Pour => "buckets of water",
             _ => "tiles",
         };
     }
@@ -596,7 +653,7 @@ internal sealed class BuildTool : IBuild
                 Kind.Clear when name == Tree => "There goes a tree.",
                 Kind.Clear or Kind.Unwall => _tally == 1 && name != "walls" ? $"Off goes {name}." : $"Off go {_tally} {name}.",
                 Kind.Wall => $"Up go {_tally} {name}.",
-                Kind.Soak or Kind.Pour => $"Away go {_tally} {name}.",
+                Kind.Soak => $"Away go {_tally} {name}.",
                 _ => $"In go {_tally} {name}.",
             });
         }
