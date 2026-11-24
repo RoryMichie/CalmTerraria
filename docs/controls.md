@@ -60,7 +60,8 @@ Work on an area:
   can be done to it with what is held:
   - a block: Fill, and Outline (the edge only: the shell of a room);
   - a wall: Wall;
-  - always: Clear, using the best pickaxe and axe carried;
+  - always: Clear, using the best pickaxe and axe carried, trees
+    first and from the foot; and, with a hammer carried, Remove walls;
   - an empty bucket or a sponge: Soak up the liquid;
   - a water bucket, where there is lava: Pour water on lava.
 - Enter on a job reads its plan first - how many tiles, how much is
@@ -72,6 +73,8 @@ Work on an area:
   anything on screen. Tiles further than that are said - "Walk
   closer: 12 left, nearest 48 right" - and it carries on as the
   character comes nearer.
+- The work is called out as it goes, a run of one thing at a time:
+  "There goes a tree." "Off go 13 Dirt Block." "In go 15 Stone Block."
 - X stops a job. The area stays marked for the next one.
 
 # 4. The scanner

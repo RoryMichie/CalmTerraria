@@ -32,7 +32,7 @@ internal sealed class BuildTool : IBuild
     /// hand changing tools is not read out.</summary>
     public static bool Working { get; private set; }
 
-    private enum Kind { Fill, Outline, Wall, Clear, Soak, Pour }
+    private enum Kind { Fill, Outline, Wall, Clear, Unwall, Soak, Pour }
 
     private sealed record Job(Kind Kind, int Item, string Doing, string Failed, List<(int X, int Y)> Targets);
 
@@ -71,6 +71,7 @@ internal sealed class BuildTool : IBuild
         if (_job != null)
         {
             var left = _queue.Count + _failed.Count + _far.Count + (_current == null ? 0 : 1);
+            Shout();
             End();
             Say($"Stopped, {left} left.");
             return;
@@ -298,7 +299,21 @@ internal sealed class BuildTool : IBuild
             plan.Add($"Lava in the area, {lava} tiles: opening it up lets it run.");
         if (targets.Count == 0)
             plan.Insert(0, "Nothing here can be cleared.");
-        offer(new Job(Kind.Clear, 0, "Clearing", "cleared", targets), $"Clear, {targets.Count} tiles", string.Join(" ", plan));
+        // Trees first and from the bottom: one cut at the foot brings
+        // down everything above it, which is then already done.
+        var ordered = targets.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
+            .Concat(targets.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList();
+        offer(new Job(Kind.Clear, 0, "Clearing", "cleared", ordered), $"Clear, {ordered.Count} tiles", string.Join(" ", plan));
+
+        // Walls come off with a hammer, from their open edge inwards.
+        if (Best(item => item.hammer) >= 0)
+        {
+            var walled = all.Where(t => Main.tile[t.X, t.Y].WallType != 0).ToList();
+            if (walled.Count > 0)
+                offer(new Job(Kind.Unwall, 0, "Taking down", "taken down", walled), $"Remove walls, {walled.Count} tiles",
+                    $"{walled.Count} tiles of wall. A wall only comes off where it has an open edge, so they go from the outside in;"
+                    + " walls behind solid ground all round cannot be reached.");
+        }
     }
 
     /// <summary>The slot of the best tool by some measure, or -1.</summary>
@@ -326,6 +341,8 @@ internal sealed class BuildTool : IBuild
         _current = null;
         _progress = _toldFar = false;
         _wait = 0;
+        _tally = _tallyAge = 0;
+        _tallyName = "";
         _cursorWas = _cursor.Tile;
         _smartCursorWas = Main.SmartCursorWanted_Mouse;
         // Smart cursor chooses its own tile; this work chooses each one.
@@ -354,6 +371,7 @@ internal sealed class BuildTool : IBuild
             Kind.Fill or Kind.Outline => tile.HasTile,
             Kind.Wall => tile.WallType != 0,
             Kind.Clear => !tile.HasTile,
+            Kind.Unwall => tile.WallType == 0,
             // A bucket cannot lift the last of a puddle.
             Kind.Soak => tile.LiquidAmount < (_job.Item == ItemID.EmptyBucket ? (byte)200 : (byte)1),
             Kind.Pour => tile.LiquidAmount == 0 || tile.LiquidType != LiquidID.Lava,
@@ -370,14 +388,24 @@ internal sealed class BuildTool : IBuild
         return screen.X >= 16f && screen.Y >= 16f && screen.X < Main.screenWidth - 16f && screen.Y < Main.screenHeight - 16f;
     }
 
+    /// <summary>The hand is still swinging the last tool: wait.</summary>
+    private const string Switching = "";
+
     /// <summary>Put what this tile needs in the hand. Null when it is
-    /// there; otherwise why the job cannot go on.</summary>
+    /// there, <see cref="Switching"/> while the last swing finishes,
+    /// otherwise why the job cannot go on.</summary>
     private string? Equip((int X, int Y) at)
     {
         var player = Main.LocalPlayer;
         var inventory = player.inventory;
         int slot;
-        if (_job!.Kind == Kind.Clear)
+        if (_job!.Kind == Kind.Unwall)
+        {
+            slot = Best(item => item.hammer);
+            if (slot < 0)
+                return "The hammer is gone";
+        }
+        else if (_job.Kind == Kind.Clear)
         {
             slot = Main.tileAxe[Main.tile[at.X, at.Y].TileType] ? Best(item => item.axe) : Best(item => item.pick);
             if (slot < 0)
@@ -394,8 +422,11 @@ internal sealed class BuildTool : IBuild
         }
         if (slot == player.selectedItem)
             return null;
+        // A tool cannot be changed mid-swing, and with the button
+        // held the swinging never stops: the wrong tool would flail
+        // at the tile to no effect. Button up until the hand is free.
         if (player.itemAnimation > 0)
-            return null;
+            return Switching;
         if (player.selectedItem >= 10)
             player.selectedItem = 0;
         if (slot < 10)
@@ -421,6 +452,8 @@ internal sealed class BuildTool : IBuild
             End();
             return;
         }
+        if (_tally > 0 && ++_tallyAge >= 240)
+            Shout();
         if (_current is { } now)
         {
             if (Done(now))
@@ -428,6 +461,7 @@ internal sealed class BuildTool : IBuild
                 _progress = true;
                 _toldFar = false;
                 _current = null;
+                Tally(_currentName);
             }
             else if (--_budget <= 0 || !Reachable(now))
             {
@@ -436,7 +470,14 @@ internal sealed class BuildTool : IBuild
             }
             else
             {
-                if (Equip(now) is { } why)
+                var why = Equip(now);
+                if (why == Switching)
+                {
+                    _budget++;
+                    _cursor.Drive(now, false);
+                    return;
+                }
+                if (why != null)
                 {
                     Stop(why);
                     return;
@@ -457,16 +498,17 @@ internal sealed class BuildTool : IBuild
                 _far.Add(next);
                 continue;
             }
-            if (Equip(next) is { } why)
+            if (Equip(next) is { Length: > 0 } why)
             {
                 _queue.Enqueue(next);
                 Stop(why);
                 return;
             }
             _current = next;
+            _currentName = Name(next);
             _budget = _job.Kind switch
             {
-                Kind.Clear => 300,
+                Kind.Clear or Kind.Unwall => 300,
                 Kind.Soak or Kind.Pour => 48,
                 _ => 30,
             };
@@ -505,12 +547,66 @@ internal sealed class BuildTool : IBuild
         }
         var failed = _failed.Count;
         var done = _job.Failed;
+        Shout();
         End();
         Say(failed == 0 ? "Done." : $"Done. {failed} could not be {done}.");
     }
 
+    private const string Tree = "tree";
+    private string _currentName = "";
+    private string _tallyName = "";
+    private int _tally, _tallyAge;
+
+    /// <summary>What a tile is called in the running commentary,
+    /// taken before the work changes it.</summary>
+    private string Name((int X, int Y) at)
+    {
+        var tile = Main.tile[at.X, at.Y];
+        return _job!.Kind switch
+        {
+            Kind.Clear => Main.tileAxe[tile.TileType] ? Tree : TileNames.At(at.X, at.Y, tile),
+            Kind.Unwall => "walls",
+            Kind.Wall or Kind.Fill or Kind.Outline => Main.LocalPlayer.HeldItem.Name,
+            Kind.Soak or Kind.Pour => $"tiles of {LiquidNames[Math.Clamp(tile.LiquidType, 0, LiquidNames.Length - 1)]}",
+            _ => "tiles",
+        };
+    }
+
+    /// <summary>The foreman. Work is called out as it goes, a run of
+    /// one thing at a time: when the thing changes, every few seconds
+    /// of the same, and at the end.</summary>
+    private void Tally(string name)
+    {
+        if (name != _tallyName)
+            Shout();
+        _tallyName = name;
+        _tally++;
+        // A tree is an event; nobody counts trees in runs.
+        if (name == Tree)
+            Shout();
+    }
+
+    private void Shout()
+    {
+        if (_tally > 0 && _job != null)
+        {
+            var name = _tallyName;
+            Say(_job.Kind switch
+            {
+                Kind.Clear when name == Tree => "There goes a tree.",
+                Kind.Clear or Kind.Unwall => _tally == 1 && name != "walls" ? $"Off goes {name}." : $"Off go {_tally} {name}.",
+                Kind.Wall => $"Up go {_tally} {name}.",
+                Kind.Soak or Kind.Pour => $"Away go {_tally} {name}.",
+                _ => $"In go {_tally} {name}.",
+            });
+        }
+        _tally = 0;
+        _tallyAge = 0;
+    }
+
     private void Stop(string why)
     {
+        Shout();
         var left = _queue.Count + _failed.Count + _far.Count + (_current == null ? 0 : 1);
         End();
         Say($"{why}, {left} to go.");
