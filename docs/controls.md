@@ -69,10 +69,21 @@ between the last ten things held.
 
 # 7. Keys taken from the game
 
-A key the mod uses in a world is hidden from the game. With the game's
-default bindings that costs two things: J was quick mana, and M was the
-full-screen map. Quick mana needs a new home.
+A key the mod uses in a world is hidden from the game, so J (quick
+mana) and M (the full-screen map) no longer reach it. Shift and Control
+are not hidden, and the game's defaults put two things on them that
+fight the mod's own Shift and Control commands. The game's bindings
+should be changed to:
 
-The old accessibility mod left its own bindings in the game's input
-profile: the game's left and right mouse buttons are on I and P there.
-CalmTerraria does not depend on that, and I is the cursor's.
+- Quick mana: G, since J is the cursor's.
+- Auto select: F, not Left Shift. Otherwise skimming with Shift swaps
+  the held item for as long as Shift is down.
+- Smart cursor: V, not Left Control. Otherwise every Control command
+  toggles it, and a tool stops aiming at the cursor's tile.
+- The mouse buttons: the real mouse buttons. The old accessibility mod
+  put them on I and P.
+
+They live in the Custom profile of `input profiles.json` in the
+tModLoader save folder, or under Controls in the game's settings. A
+binding removed from that file comes back as the game's default, so
+these are moved, not removed.
