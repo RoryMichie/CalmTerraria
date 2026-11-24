@@ -1,0 +1,24 @@
+# Time every step of making a large world. Delete calmtestbig afterwards.
+heard Single player
+key down
+key down
+key down
+key enter
+heard Name
+type calmtestbig
+key tab
+heard Size
+key end
+key enter
+heard Creating
+heard 10 percent
+heard 20 percent
+heard 30 percent
+heard 40 percent
+heard 50 percent
+heard 60 percent
+heard 70 percent
+heard 80 percent
+heard 90 percent
+heard created
+quit

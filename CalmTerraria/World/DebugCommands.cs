@@ -15,6 +15,15 @@ internal static class DebugCommands
 
     public static void Register(Autopilot autopilot, ILog log)
     {
+        // Under the autopilot only: how long each step of making a
+        // world takes, for when the question is where the time goes.
+        Terraria.WorldBuilding.On_GenPass.Apply += (orig, self, progress, configuration) =>
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            orig(self, progress, configuration);
+            log.Info($"GenPass: {clock.ElapsedMilliseconds} ms {self.Name}");
+        };
+
         // spawn Zombie 12 0 - an NPC by its internal name, that many
         // tiles right of and below the player.
         autopilot.Register("spawn", args =>
