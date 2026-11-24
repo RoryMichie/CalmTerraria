@@ -96,16 +96,20 @@ internal sealed class Shell
     /// the way out. The game is told its own inventory is open, so a
     /// sighted onlooker sees it and the game's autopause setting
     /// applies as it would for anyone.</summary>
-    private void OpenPack(bool onChest = false)
+    private void OpenPack(bool onChest = false, string? notice = null)
     {
         if (_pack.IsOpen)
             return;
         _host.TakeKeyboard();
         Main.playerInventory = true;
         Recipe.FindRecipes();
-        _pack.Open(onChest ? new World.TerrariaChest() : null);
+        _pack.Open(onChest ? new World.TerrariaChest() : null, notice);
         _onChest = onChest;
     }
+
+    /// <summary>The pack screen, opened on the reason a chest did not
+    /// open.</summary>
+    public void OpenPackOnNotice(string notice) => OpenPack(notice: notice);
 
     private bool _onChest;
 

@@ -1,0 +1,13 @@
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+hold D 1500
+do footsteps
+hold A 3000
+do footsteps
+do ambience
+do state
+quit

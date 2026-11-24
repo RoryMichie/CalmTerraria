@@ -1,0 +1,32 @@
+# Picking things up is said once per burst; footsteps are brought up.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+key escape
+heard Inventory
+key shift+tab
+key shift+tab
+heard Powers
+key enter
+heard Omniscience
+key tab
+key tab
+key enter
+heard Items
+type acorn
+wait 600
+key enter
+type wood
+wait 600
+key enter
+key escape
+key escape
+key escape
+wait 2500
+hold D 2500
+wait 300
+do footsteps
+quit

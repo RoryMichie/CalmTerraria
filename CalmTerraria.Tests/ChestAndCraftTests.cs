@@ -208,6 +208,18 @@ public class ChestTests
     }
 
     [Fact]
+    public void AChestSomeoneElseHasOpenIsATabStopThatSaysSoAndDoesNothing()
+    {
+        var ui = new TestApp();
+        new PackScreen(ui.App, new FakePack().Add("Acorn", 5), () => { }).Open(notice: "Chest, in use by Austin");
+        ui.Expect("Chest, in use by Austin");
+        ui.Press("enter");
+        ui.ExpectNoSpeech();
+        ui.Press("tab");
+        ui.Expect("Inventory list Acorn, 5");
+    }
+
+    [Fact]
     public void APiggyBankHasNoRename()
     {
         var ui = new TestApp();

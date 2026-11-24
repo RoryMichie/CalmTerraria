@@ -18,6 +18,27 @@ internal sealed class Feedback
     /// <summary>The game writes messages from wherever it is; they
     /// are spoken from the frame.</summary>
     private readonly ConcurrentQueue<string> _messages = new();
+    /// <summary>What has been picked up and not yet said: a tree's
+    /// worth of wood arrives as a dozen pickups in a second, and is
+    /// one thing to hear.</summary>
+    private readonly Dictionary<string, int> _picked = new();
+    private readonly List<string> _pickedOrder = new();
+    private ulong _pickedAt;
+    /// <summary>How long pickups must stop for before they are said.</summary>
+    private const ulong PickupQuietMs = 350;
+
+    private const string FootstepPath = "TerrariaAmbience/Sounds/Custom/steps/";
+    private const string ClothingPath = FootstepPath + "armor/";
+    /// <summary>About ten decibels up, and never below a level that
+    /// can be heard under the game.</summary>
+    private const float FootstepGain = 3f;
+    private const float FootstepFloor = 0.35f;
+
+    /// <summary>For autopilot scripts: how many footsteps have been
+    /// brought up, and the last of them.</summary>
+    public static int FootstepsRaised { get; private set; }
+    public static string LastFootstep { get; private set; } = "";
+
     private int _selected = -1;
     private bool? _smartCursor;
     private bool _dead;
@@ -35,8 +56,48 @@ internal sealed class Feedback
             orig(text, force, color, width);
             _messages.Enqueue(text);
         };
+        On_PopupText.NewText_PopupTextContext_Item_int_bool_bool += (orig, context, item, stack, noStack, longText) =>
+        {
+            if (context is PopupTextContext.RegularItemPickup or PopupTextContext.ItemPickupToVoidContainer
+                && item != null && !item.IsAir && stack > 0)
+            {
+                lock (_picked)
+                {
+                    var name = item.AffixName();
+                    _picked[name] = _picked.GetValueOrDefault(name) + stack;
+                    if (!_pickedOrder.Contains(name))
+                        _pickedOrder.Add(name);
+                    _pickedAt = _host.Now;
+                }
+            }
+            return orig(context, item, stack, noStack, longText);
+        };
+        // Terraria Ambience's footsteps are made for a player who is
+        // also watching; brought up to where they can be walked by.
+        // Hooked where the sound is played and not at the game's
+        // public entry, which is small enough to be compiled into its
+        // callers, where no hook reaches it.
+        Terraria.Audio.On_SoundPlayer.Play +=
+            (Terraria.Audio.On_SoundPlayer.orig_Play orig, Terraria.Audio.SoundPlayer self,
+                ref Terraria.Audio.SoundStyle style, Vector2? position, Terraria.Audio.SoundUpdateCallback callback) =>
+            {
+                if (style.Volume <= 0f || style.SoundPath?.StartsWith(FootstepPath, StringComparison.Ordinal) != true)
+                    return orig(self, ref style, position, callback);
+                // The floor is for the ground underfoot. Armour and
+                // clothing are a layer over it, meant to stay under it.
+                var floor = style.SoundPath.StartsWith(ClothingPath, StringComparison.Ordinal) ? 0f : FootstepFloor;
+                var louder = style with { Volume = Math.Clamp(style.Volume * FootstepGain, floor, 1f) };
+                FootstepsRaised++;
+                LastFootstep = $"{style.SoundPath} {style.Volume:0.00} to {louder.Volume:0.00}";
+                return orig(self, ref louder, position, callback);
+            };
         shell.EnteredWorld += () =>
         {
+            lock (_picked)
+            {
+                _picked.Clear();
+                _pickedOrder.Clear();
+            }
             _selected = -1;
             _smartCursor = null;
             _dead = false;
@@ -56,6 +117,20 @@ internal sealed class Feedback
             if (text.Length > 0)
                 Say(text);
         }
+
+        string? pickups = null;
+        lock (_picked)
+        {
+            if (_pickedOrder.Count > 0 && _host.Now - _pickedAt >= PickupQuietMs)
+            {
+                pickups = string.Join(". ", _pickedOrder.Select(name =>
+                    _picked[name] > 1 ? $"{name}, {_picked[name]}" : name));
+                _picked.Clear();
+                _pickedOrder.Clear();
+            }
+        }
+        if (pickups != null)
+            Say(pickups);
 
         var player = Main.LocalPlayer;
         if (player.dead != _dead)

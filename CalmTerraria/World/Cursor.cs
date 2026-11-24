@@ -119,6 +119,20 @@ internal sealed class Cursor
     /// player goes. Silently - the player moved, not the cursor.</summary>
     private void Carry()
     {
+        if (_lockWatch is { } watch)
+        {
+            // A key in the pack opens it on the click; without one
+            // the game does nothing at all.
+            if (!Chest.IsLocked(watch.X, watch.Y))
+                _lockWatch = null;
+            else if (watch.Frames <= 0)
+            {
+                _lockWatch = null;
+                Say("Locked.");
+            }
+            else
+                _lockWatch = (watch.X, watch.Y, watch.Frames - 1);
+        }
         if (!_placed || !_carried)
             return;
         var (px, py) = WorldScanner.PlayerTile();
@@ -159,11 +173,50 @@ internal sealed class Cursor
         Say($"{TileReader.Describe(x, y)}, {Directions.Offset(x - px, y - py)}");
     }
 
+    /// <summary>A locked chest that was just reached for, and how many
+    /// frames it has to come unlocked before that is said.</summary>
+    private (int X, int Y, int Frames)? _lockWatch;
+
+    /// <summary>The right button on a chest: the cases where the game
+    /// does nothing and shows nothing. Out of reach and locked are
+    /// said. A chest another player has open brings the pack screen
+    /// with that reason where the chest would be. True when the click
+    /// should not be sent.</summary>
+    private bool ChestRefused(int x, int y)
+    {
+        var tile = Main.tile[x, y];
+        if (!tile.HasTile || !Terraria.ID.TileID.Sets.BasicChest[tile.TileType])
+            return false;
+        var player = Main.LocalPlayer;
+        var (px, py) = WorldScanner.PlayerTile();
+        if (!InReach(x, y))
+        {
+            Say($"Out of reach, {Directions.Offset(x - px, y - py)}.");
+            return true;
+        }
+        var index = Chest.FindChestByGuessing(x, y);
+        if (index >= 0)
+        {
+            var user = Chest.UsingChest(index);
+            if (user >= 0 && user != Main.myPlayer)
+            {
+                _shell.OpenPackOnNotice($"{TileNames.At(x, y, tile)}, in use by {Main.player[user].name}");
+                return true;
+            }
+            var chest = Main.chest[index];
+            if (Chest.IsLocked(chest.x, chest.y))
+                _lockWatch = (chest.x, chest.y, 30);
+        }
+        return false;
+    }
+
     private void Press(ref bool button)
     {
         if (button)
             return;
         var (x, y) = Tile;
+        if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _right) && ChestRefused(x, y))
+            return;
         if (!InReach(x, y) && UsesReach(Main.LocalPlayer.HeldItem))
         {
             var (px, py) = WorldScanner.PlayerTile();

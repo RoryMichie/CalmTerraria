@@ -70,6 +70,28 @@ internal static class DebugCommands
             }
             throw new InvalidOperationException("nowhere to stand a chest");
         });
+        // ambience - what Terraria Ambience's footsteps think is going on.
+        autopilot.Register("ambience", _ =>
+        {
+            if (!Terraria.ModLoader.ModLoader.TryGetMod("TerrariaAmbienceAPI", out var api))
+            {
+                log.Info("Ambience: the API mod is not loaded.");
+                return;
+            }
+            var code = api.Code;
+            var checker = code.GetTypes().First(t => t.Name == "PlayerTileChecker");
+            var sound = code.GetTypes().First(t => t.Name == "FootstepSound");
+            var sounds = (System.Collections.IEnumerable)sound.GetField("FootstepSounds")!.GetValue(null)!;
+            var lines = new List<string>();
+            foreach (var one in sounds)
+            {
+                object? Get(string name) => sound.GetProperty(name)?.GetValue(one) ?? sound.GetField(name)?.GetValue(one);
+                var tiles = Get("TileIds") as System.Collections.ICollection;
+                var styles = Get("SoundStyles") as Array;
+                lines.Add($"{Get("Name")} handle {Get("HandleByDefault")} tiles {tiles?.Count} styles {styles?.Length} step {Get("StepVolume")} mult {Get("VolumeMultiplier")} any {Get("UseAnyTile")}");
+            }
+            log.Info($"Ambience: tile {checker.GetProperty("TileId")!.GetValue(null)} should {checker.GetProperty("ShouldStep")!.GetValue(null)}; " + string.Join("; ", lines));
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

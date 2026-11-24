@@ -80,6 +80,7 @@ public sealed class CalmTerrariaMod : Mod
                 _autopilot?.Register("state", _ => Logger.Info($"State: {cursor.DebugState()}"));
                 _autopilot?.Register("cursor-last", _ => cursor.MoveTo(DebugCommands.LastPlaced.X, DebugCommands.LastPlaced.Y));
                 _ = new Feedback(_host, _shell);
+                _autopilot?.Register("footsteps", _ => Logger.Info($"Footsteps: {Feedback.FootstepsRaised} raised, last {Feedback.LastFootstep}"));
                 var sonar = new EnemySonar(_host, _shell, Logger);
                 _autopilot?.Register("sonar-log", _ => sonar.LogPulses = !sonar.LogPulses);
                 if (_autopilot != null)

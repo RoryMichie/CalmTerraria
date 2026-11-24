@@ -460,11 +460,16 @@ public sealed class PackScreen
 
     private static readonly string[] ChestActions = { "Loot all", "Deposit all", "Quick stack", "Restock", "Rename" };
 
-    public void Open(IChest? chest = null)
+    /// <param name="notice">Why something the player reached for
+    /// did not open - a chest someone else has open. It stands first,
+    /// as a tab stop that does nothing, where the chest would be.</param>
+    public void Open(IChest? chest = null, string? notice = null)
     {
         if (_dialog != null)
             return;
         var dialog = _dialog = _app.OpenDialog();
+        if (notice != null)
+            _ = new CustomWidget(dialog, notice);
         if (chest != null)
         {
             _ = new ChestList(dialog, chest);

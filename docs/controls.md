@@ -102,6 +102,15 @@ between the last ten things held.
   with the time it has left.
 - The hotbar: the item is said when the selected slot changes.
 - Smart cursor: said when it goes on or off.
+- Picking things up: said once the pickups stop for a moment, with
+  the total of each item - "Wood, 14. Acorn, 2." - and never one
+  message per item.
+- Footsteps: with the Terraria Ambience mod enabled, its footsteps,
+  which differ by what is walked on, are brought up about ten
+  decibels. Without that mod there are none.
+- A chest that will not open says why: "Locked.", "Out of reach", or,
+  for one another player has open, the pack screen with "Chest, in
+  use by" and their name where the chest's list would be.
 - The game's own messages - deaths, events, chat - are spoken as they
   appear. Dying says how long until the respawn; coming back says so.
 
