@@ -190,6 +190,10 @@ between the last ten things held.
 - A chest that will not open says why: "Locked.", "Out of reach", or,
   for one another player has open, the pack screen with "Chest, in
   use by" and their name where the chest's list would be.
+- Lava or spikes close by are said once as they come within a few
+  tiles - "Lava, 3 right 1 down." - and again only after being clear
+  of them. The scanner has a Hazards category: lava in any amount,
+  spikes, traps, boulders, explosives, pressure plates.
 - Jumping and landing each have a sound; the landing is louder the
   faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they

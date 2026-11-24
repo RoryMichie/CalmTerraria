@@ -24,6 +24,7 @@ internal sealed class TerrariaScanSource : IScanSource
     public const string Stations = "Crafting stations";
     public const string Plants = "Plants";
     public const string Liquids = "Liquids";
+    public const string Hazards = "Hazards";
     public const string Places = "Places";
     public const string Players = "Players";
     public const string People = "People";
@@ -32,7 +33,7 @@ internal sealed class TerrariaScanSource : IScanSource
 
     public static readonly string[] CategoryOrder =
     {
-        Waypoints, Players, Containers, Treasure, Ores, Gems, Stations, Plants, Liquids, Places, People, Enemies, Items,
+        Waypoints, Players, Containers, Treasure, Ores, Gems, Stations, Plants, Liquids, Hazards, Places, People, Enemies, Items,
     };
 
     private readonly List<ScanKind> _kinds = new();
@@ -43,6 +44,7 @@ internal sealed class TerrariaScanSource : IScanSource
     /// <summary>Kinds already made, by the map's legend entry.</summary>
     private readonly Dictionary<int, int> _kindOfLookup = new();
     private readonly int[] _liquidKinds;
+    private readonly int _lava;
     private readonly int _spiderNest;
 
     public TerrariaScanSource()
@@ -71,6 +73,8 @@ internal sealed class TerrariaScanSource : IScanSource
         Mark(Treasure, TileID.Heart, TileID.ManaCrystal, TileID.LifeFruit, TileID.ShadowOrbs,
             TileID.PlanteraBulb, TileID.Larva);
         Mark(Plants, TileID.MatureHerbs, TileID.BloomingHerbs, TileID.DyePlants);
+        Mark(Hazards, TileID.Spikes, TileID.WoodenSpikes, TileID.Traps, TileID.Boulder, TileID.Explosives,
+            TileID.PressurePlates, TileID.GeyserTrap, TileID.LandMine);
 
         Place("Dungeon", 200, TileID.BlueDungeonBrick, TileID.GreenDungeonBrick, TileID.PinkDungeonBrick);
         Place("Jungle temple", 100, TileID.LihzahrdBrick);
@@ -91,6 +95,10 @@ internal sealed class TerrariaScanSource : IScanSource
         _liquidKinds = new[] { "Water", "Lava", "Honey", "Shimmer" }
             .Select(name => Add(new ScanKind(name, Liquids, CellSize: 2, MinTiles: 40)))
             .ToArray();
+        // Lava is a hazard before it is a liquid: any of it burns, a
+        // film on the floor as much as a lake, so none is too small
+        // or too shallow to list.
+        _lava = Add(new ScanKind("Lava", Hazards, CellSize: 2, MinTiles: 1));
     }
 
     private void Mark(string category, params int[] types)
@@ -137,6 +145,8 @@ internal sealed class TerrariaScanSource : IScanSource
             if (Main.tileSolid[type] && !Main.tileSolidTop[type])
                 return -1;
         }
+        if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Lava)
+            return _lava;
         if (tile.LiquidAmount >= 128)
             return _liquidKinds[Math.Min(tile.LiquidType, _liquidKinds.Length - 1)];
         return tile.WallType == WallID.SpiderUnsafe ? _spiderNest : -1;
@@ -144,9 +154,10 @@ internal sealed class TerrariaScanSource : IScanSource
 
     private int ThingAt(int x, int y, Tile tile, int type, string category)
     {
-        // Ores and gems are veins; everything else here is an object,
+        // Ores and gems are veins, and spikes and traps come in runs;
+        // everything else here is an object,
         // reported at its top-left tile only.
-        var gathers = category is Ores or Gems;
+        var gathers = category is Ores or Gems or Hazards;
         var data = gathers ? null : TileObjectData.GetTileData(tile);
         if (data != null
             && (tile.TileFrameX % data.CoordinateFullWidth != 0 || tile.TileFrameY % data.CoordinateFullHeight != 0))
