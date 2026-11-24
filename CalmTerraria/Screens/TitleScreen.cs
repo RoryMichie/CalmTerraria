@@ -28,13 +28,15 @@ internal sealed class TitleScreen
     {
         if (_menu == null)
         {
-            _menu = new ListBox(_app, "Terraria", new[] { "Single player", "Exit" }, activateItems: true);
+            _menu = new ListBox(_app, "Terraria", new[] { "Single player", "Join by address", "Exit" }, activateItems: true);
             _menu.Activated += () =>
             {
-                if (_menu.SelectedIndex == 0)
-                    ChooseCharacter();
-                else
-                    QuitGame(Main.instance);
+                switch (_menu.SelectedIndex)
+                {
+                    case 0: ChooseCharacter(ChooseWorld); break;
+                    case 1: ChooseCharacter(AskAddress); break;
+                    default: QuitGame(Main.instance); break;
+                }
             };
         }
         _menu.Hidden = false;
@@ -51,11 +53,103 @@ internal sealed class TitleScreen
         // nothing to restore to.
         if (_menu != null)
             _menu.Hidden = true;
+        _password?.Close(nested: true);
+        _password = null;
         _characters?.Close(nested: true);
         _characters = null;
     }
 
-    private void ChooseCharacter()
+    private const int DefaultPort = 7777;
+    private string? _address;
+    private Dialog? _password;
+
+    /// <summary>Where to join: an address and a port, starting from
+    /// the last server joined. "host:port" in the address is taken
+    /// apart.</summary>
+    private void AskAddress(PlayerFileData player)
+    {
+        var recentPort = Main.recentPort is { Length: > 0 } ports && ports[0] > 0 ? ports[0] : DefaultPort;
+        var recentAddress = Main.recentIP is { Length: > 0 } addresses ? addresses[0] : null;
+        var dialog = _app.OpenDialog();
+        var address = new EditBox(dialog, "Address", _address ?? recentAddress ?? "") { SelectAllOnFocus = true };
+        var port = new EditBox(dialog, "Port", recentPort.ToString()) { SelectAllOnFocus = true };
+        var join = new Button(dialog, "Join");
+        _app.SetPrimary(join);
+        join.Activated += () =>
+        {
+            var host = address.Text.Trim();
+            var portText = port.Text.Trim();
+            var colon = host.LastIndexOf(':');
+            // One colon is host:port; more is an IPv6 address.
+            if (colon > 0 && host.IndexOf(':') == colon)
+            {
+                portText = host[(colon + 1)..];
+                host = host[..colon];
+            }
+            if (host.Length == 0)
+            {
+                _app.Announce("An address is needed.");
+                return;
+            }
+            if (!int.TryParse(portText, out var number) || number < 1 || number > 65535)
+            {
+                _app.Announce("The port must be a number from 1 to 65535.");
+                return;
+            }
+            _address = host;
+            Join(player, host, number);
+        };
+        dialog.AnnounceOpened();
+    }
+
+    /// <summary>What the game's own menus do between picking a
+    /// character for multiplayer and the connection starting.</summary>
+    public void Join(PlayerFileData player, string host, int port)
+    {
+        Main.menuMultiplayer = true;
+        Main.ServerSideCharacter = false;
+        Main.myPlayer = 0;
+        player.SetAsActive();
+        Main.autoPass = false;
+        // Left set by the last connection; it is how the end of this
+        // one will be known.
+        Netplay.Disconnect = false;
+        Netplay.ListenPort = port;
+        Main.getIP = host;
+        Main.menuMode = Shell.ConnectingMenuMode;
+        Main.statusText = Terraria.Localization.Language.GetTextValue("Net.ConnectingTo", host);
+        _shell.BeginBusy($"Connecting to {host}.", connecting: true);
+        Netplay.SetRemoteIPAsync(host, Main.StartClientGameplay);
+    }
+
+    /// <summary>The server wants its password.</summary>
+    public void AskPassword()
+    {
+        if (_password != null)
+            return;
+        var dialog = _password = _app.OpenDialog();
+        var sent = false;
+        var password = new EditBox(dialog, "Server password") { Password = true };
+        var join = new Button(dialog, "Join");
+        _app.SetPrimary(join);
+        join.Activated += () =>
+        {
+            sent = true;
+            Netplay.ServerPassword = password.Text;
+            NetMessage.SendData(Terraria.ID.MessageID.SendPassword);
+            Main.menuMode = Shell.ConnectingMenuMode;
+            _shell.BeginBusy("Connecting.", connecting: true);
+        };
+        dialog.Closed += () =>
+        {
+            _password = null;
+            if (!sent)
+                Shell.Disconnect();
+        };
+        dialog.AnnounceOpened();
+    }
+
+    private void ChooseCharacter(Action<PlayerFileData> then)
     {
         Main.LoadPlayers();
         var players = Main.PlayerList.ToList();
@@ -68,7 +162,7 @@ internal sealed class TitleScreen
         var names = players.Select(p =>
             p.Player.difficulty == JourneyDifficulty ? $"{p.Name}, journey" : p.Name).ToList();
         var list = new ListBox(dialog, "Characters", names, activateItems: true);
-        list.Activated += () => ChooseWorld(players[list.SelectedIndex]);
+        list.Activated += () => then(players[list.SelectedIndex]);
         dialog.AnnounceOpened();
     }
 

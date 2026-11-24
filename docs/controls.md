@@ -58,6 +58,13 @@ Factorio Access's keys.
 
 Tab moves between the parts of a screen. Escape goes back one step.
 
+The title menu has Single player, Join by address, and Exit. Join by
+address asks for a character, then an address and a port (7777 unless
+changed; "host:port" typed into the address works too), starting from
+the last server joined. Escape gives up on a connection that is taking
+too long. A server's password is asked for when the server asks, and a
+refusal is read out before the title menu returns.
+
 # 6. The pack screen
 
 Escape, in a world. Five tab stops: the inventory, the equipment,

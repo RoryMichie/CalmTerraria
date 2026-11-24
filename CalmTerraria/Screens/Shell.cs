@@ -17,17 +17,25 @@ namespace CalmTerraria.Screens;
 /// starts loading.</summary>
 internal sealed class Shell
 {
-    private enum Place { Unknown, Title, Busy, World, Elsewhere }
+    private enum Place { Unknown, Title, Busy, Password, World, Elsewhere }
 
     private const int TitleMenuMode = 0;
     /// <summary>The game's status-text screen: loading, saving.</summary>
     private const int StatusMenuMode = 10;
+    /// <summary>The game's status screen while a connection is made.</summary>
+    public const int ConnectingMenuMode = 14;
+    /// <summary>The game's screen for a connection that ended: its
+    /// reason is the status text.</summary>
+    private const int NetErrorMenuMode = 15;
+    /// <summary>The game's screen asking for a server's password.</summary>
+    private const int PasswordMenuMode = 31;
 
     private readonly SruiHost _host;
     private readonly TitleScreen _title;
     private readonly PackScreen _pack;
     private Place _place = Place.Unknown;
     private bool _busy;
+    private bool _connecting;
 
     public Shell(SruiHost host)
     {
@@ -54,7 +62,19 @@ internal sealed class Shell
                 _host.ReleaseKeyboard();
         };
         // Loading and saving take the keys nowhere.
-        host.App.InputFilter = _ => _busy;
+        host.App.InputFilter = input =>
+        {
+            if (!_busy)
+                return false;
+            // A connection can wait forever on a wrong address:
+            // Escape gives up on it.
+            if (_connecting && input.Kind == InputKind.Dismiss)
+            {
+                Disconnect();
+                _host.App.Announce("Cancelled.");
+            }
+            return true;
+        };
         host.KeyReleasedWhileGameOwns = key => WorldKeyReleased?.Invoke(key);
         host.KeyWhileGameOwns = combo =>
         {
@@ -132,6 +152,17 @@ internal sealed class Shell
 
     public void Quit() => _title.Quit();
 
+    /// <summary>Joins a server with this character.</summary>
+    public void Join(Terraria.IO.PlayerFileData player, string host, int port) => _title.Join(player, host, port);
+
+    /// <summary>Gives up on a connection, as the game's own Cancel does.</summary>
+    public static void Disconnect()
+    {
+        Netplay.Disconnect = true;
+        Netplay.ServerPassword = "";
+        Main.menuMode = TitleMenuMode;
+    }
+
     private string? _renameWorldTo;
 
     /// <summary>True from the moment the mod starts a load or a save
@@ -140,9 +171,10 @@ internal sealed class Shell
 
     /// <summary>The mod has asked the game for something slow. Says
     /// so once, and stops taking input until the game arrives.</summary>
-    public void BeginBusy(string announcement)
+    public void BeginBusy(string announcement, bool connecting = false)
     {
         _busy = true;
+        _connecting = connecting;
         _title.Hide();
         _host.App.Announce(announcement);
         _host.TakeKeyboard();
@@ -153,8 +185,23 @@ internal sealed class Shell
     {
         var place = !Main.gameMenu ? Place.World
             : Main.menuMode == TitleMenuMode ? Place.Title
-            : _busy && Main.menuMode == StatusMenuMode ? Place.Busy
+            : _busy && (Main.menuMode == StatusMenuMode || Main.menuMode == ConnectingMenuMode) ? Place.Busy
+            : Main.menuMode == PasswordMenuMode ? Place.Password
             : Place.Elsewhere;
+        // A connection that was refused, lost or ended by the server:
+        // say why, and go back to the title rather than leave the
+        // game's own notice up. The game shows the reason on its
+        // connecting screen, with the connection already closed.
+        var ended = Main.gameMenu && (Main.menuMode == NetErrorMenuMode
+            || (Main.menuMode == ConnectingMenuMode && Netplay.Disconnect && Main.netMode == Terraria.ID.NetmodeID.SinglePlayer));
+        // Not while this mod's own Save and exit is on its way out.
+        if (ended && (!_busy || _connecting))
+        {
+            _busy = _connecting = false;
+            _host.App.Announce(string.IsNullOrWhiteSpace(Main.statusText) ? "Disconnected." : Main.statusText);
+            Main.menuMode = TitleMenuMode;
+            return;
+        }
         if (place == _place)
         {
             if (place == Place.World)
@@ -170,14 +217,19 @@ internal sealed class Shell
             LeftWorld?.Invoke();
         switch (place)
         {
+            case Place.Password:
+                _busy = _connecting = false;
+                _host.TakeKeyboard();
+                _title.AskPassword();
+                break;
             case Place.Title:
-                _busy = false;
+                _busy = _connecting = false;
                 _pack.Close();
                 _host.TakeKeyboard();
                 _title.Show();
                 break;
             case Place.World:
-                _busy = false;
+                _busy = _connecting = false;
                 _title.Hide();
                 _host.ReleaseKeyboard();
                 if (_renameWorldTo != null)

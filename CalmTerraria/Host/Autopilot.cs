@@ -166,6 +166,20 @@ internal sealed class Autopilot
                 Play(parts[0], parts[1]);
                 break;
             }
+            case "join":
+            {
+                // join calmtest 127.0.0.1 7777
+                var parts = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                _heardThisStep.Clear();
+                if (!parts[0].StartsWith(TestPrefix, StringComparison.OrdinalIgnoreCase)
+                    || (parts[1] != "127.0.0.1" && parts[1] != "localhost"))
+                    throw new InvalidOperationException("the autopilot only joins this machine, as a test character");
+                Main.LoadPlayers();
+                var player = Main.PlayerList.FirstOrDefault(p => FileName(p.Path) == parts[0])
+                    ?? throw new FileNotFoundException($"no character file {parts[0]}");
+                _shell.Join(player, parts[1], int.Parse(parts[2]));
+                break;
+            }
             case "do":
             {
                 var nameEnd = rest.IndexOf(' ');

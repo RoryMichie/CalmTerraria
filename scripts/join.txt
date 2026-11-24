@@ -1,0 +1,14 @@
+# Join a server on this machine, look around, open the pack, leave.
+heard Single player
+join calmtest 127.0.0.1 7778
+heard Ready
+wait 3000
+key end
+key k
+key escape
+heard Inventory
+key shift+tab
+heard Save and exit
+key enter
+heard Single player
+quit
