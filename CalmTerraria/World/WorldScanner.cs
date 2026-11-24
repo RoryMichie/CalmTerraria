@@ -284,6 +284,18 @@ internal sealed class WorldScanner
                 Live = () => tracked.active && tracked.name == name ? TileOf(tracked.Center) : null,
             });
         }
+        // A summoned piggy bank or void lens: a container that floats.
+        foreach (var projectile in Main.ActiveProjectiles)
+        {
+            if (!TileReader.IsFloatingContainer(projectile))
+                continue;
+            var (x, y) = TileOf(projectile.Center);
+            var (tracked, type) = (projectile, projectile.type);
+            found.Add(new Feature(Kind(projectile.Name, TerrariaScanSource.Containers), x, y)
+            {
+                Live = () => tracked.active && tracked.type == type ? TileOf(tracked.Center) : null,
+            });
+        }
         foreach (var item in Main.ActiveItems)
         {
             if (!OnScreen(item.Center, out var x, out var y))

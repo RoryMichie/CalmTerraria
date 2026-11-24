@@ -154,6 +154,10 @@ safe, brings the same screen with two tab stops in front:
 - Chest actions: Loot all, Deposit all, Quick stack, Restock, and
   Rename for chests in the world.
 
+A flying piggy bank or a void lens, once summoned, is a container that
+hangs in the air: the scanner lists it under Containers, the cursor
+reads it, and right bracket within a couple of tiles of it opens it.
+
 While a chest is open, Enter in the inventory puts all of the item in
 the chest; Space still holds. Escape closes the chest.
 

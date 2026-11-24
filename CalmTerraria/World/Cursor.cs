@@ -293,12 +293,39 @@ internal sealed class Cursor
         return false;
     }
 
+    /// <summary>A floating container the right button is being held
+    /// on: the game opens it only with the mouse exactly on it, and it
+    /// bobs about, so the mouse rides on it for as long as the button
+    /// is down.</summary>
+    private Projectile? _riding;
+
+    /// <summary>The right button near a flying piggy bank or a void
+    /// lens. Within a couple of tiles counts as on it. True when it
+    /// is too far to open, which is said.</summary>
+    private bool FloatingTooFar(int x, int y)
+    {
+        _riding = null;
+        var near = new Rectangle(x * 16 - 32, y * 16 - 32, 80, 80);
+        if (TileReader.Floating(near) is not { } floating)
+            return false;
+        var player = Main.LocalPlayer;
+        var from = player.Center;
+        if (!player.IsProjectileInteractibleAndInInteractionRange(floating, ref from))
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            Say($"Out of reach, {Directions.Offset((int)(floating.Center.X / 16f) - px, (int)(floating.Center.Y / 16f) - py)}.");
+            return true;
+        }
+        _riding = floating;
+        return false;
+    }
+
     private void Press(ref bool button)
     {
         if (button)
             return;
         var (x, y) = Tile;
-        if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _right) && (ChestRefused(x, y) || PersonTooFar(x, y)))
+        if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _right) && (ChestRefused(x, y) || PersonTooFar(x, y) || FloatingTooFar(x, y)))
             return;
         if (!InReach(x, y) && UsesReach(Main.LocalPlayer.HeldItem))
         {
@@ -359,6 +386,8 @@ internal sealed class Cursor
         if (!_placed)
             return;
         var world = new Vector2(_x * 16f + 8f, _y * 16f + 8f);
+        if (_right && _riding is { active: true } riding)
+            world = riding.Center;
         var screen = Vector2.Transform(world - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);
         PlayerInput.MouseX = (int)Math.Clamp(screen.X, 0f, Main.screenWidth - 1f);
         PlayerInput.MouseY = (int)Math.Clamp(screen.Y, 0f, Main.screenHeight - 1f);

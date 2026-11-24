@@ -9,6 +9,23 @@ namespace CalmTerraria.World;
 /// the wall behind. A tile the map has not revealed is unknown.</summary>
 internal static class TileReader
 {
+    /// <summary>The things a player summons that hang in the air and
+    /// are opened like a chest: the money trough's flying piggy bank
+    /// and the void lens.</summary>
+    public static bool IsFloatingContainer(Projectile projectile) =>
+        projectile.active && projectile.type is Terraria.ID.ProjectileID.FlyingPiggyBank or Terraria.ID.ProjectileID.VoidLens;
+
+    /// <summary>A floating container touching an area of the world.</summary>
+    public static Projectile? Floating(Rectangle area)
+    {
+        foreach (var projectile in Main.ActiveProjectiles)
+        {
+            if (IsFloatingContainer(projectile) && projectile.Hitbox.Intersects(area))
+                return projectile;
+        }
+        return null;
+    }
+
     public static string Describe(int x, int y)
     {
         if (!WorldGen.InWorld(x, y))
@@ -21,6 +38,8 @@ internal static class TileReader
             if (npc.Hitbox.Intersects(area))
                 return npc.GivenOrTypeName;
         }
+        if (Floating(area) is { } floating)
+            return floating.Name;
         foreach (var item in Main.ActiveItems)
         {
             if (item.Hitbox.Intersects(area))
