@@ -180,9 +180,35 @@ internal sealed class TerrariaCrafting : ICrafting
         {
             var id = Main.availableRecipe[i];
             var recipe = Main.recipe[id];
-            recipes.Add(new Craftable(id, recipe.createItem.Name, recipe.createItem.stack, Needs(recipe)));
+            recipes.Add(new Craftable(id, recipe.createItem.Name, recipe.createItem.stack, Needs(recipe), Most(recipe)));
         }
         return recipes;
+    }
+
+    /// <summary>How many times over the ingredients to hand would
+    /// make it: what is carried, and what is in a chest that is open,
+    /// which the game crafts from too. An estimate - the game has the
+    /// last word, one crafting at a time.</summary>
+    private static int Most(Recipe recipe)
+    {
+        var player = Main.LocalPlayer;
+        IEnumerable<Item> hand = player.inventory.Take(58);
+        if (TerrariaChest.IsOpen)
+        {
+            ChestUI.GetContainerUsageInfo(out _, out var chest);
+            hand = hand.Concat(chest);
+        }
+        var items = hand.Where(item => !item.IsAir).ToList();
+        var most = 9999;
+        foreach (var needed in recipe.requiredItem)
+        {
+            if (needed.IsAir || needed.stack <= 0)
+                continue;
+            var have = items.Where(item => item.type == needed.type || recipe.AcceptedByItemGroups(item.type, needed.type))
+                .Sum(item => (long)item.stack);
+            most = (int)Math.Min(most, have / needed.stack);
+        }
+        return Math.Max(1, most);
     }
 
     private static string Needs(Recipe recipe) =>

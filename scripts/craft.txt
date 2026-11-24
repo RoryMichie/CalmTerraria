@@ -1,0 +1,22 @@
+# Crafting asks how many.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 2000
+key tab
+heard Carried
+key tab
+key tab
+heard Crafting
+key space
+wait 300
+key enter
+heard How many
+type 2
+key enter
+heard Crafted
+wait 300
+key shift+tab
+key shift+tab
+wait 300
+quit

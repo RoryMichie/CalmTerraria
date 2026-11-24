@@ -54,6 +54,10 @@ heard Crafting
 key space
 wait 300
 key enter
+heard How many
+type 2
+key enter
+heard Crafted
 wait 300
 key escape
 quit

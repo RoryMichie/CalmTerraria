@@ -361,7 +361,9 @@ public sealed class ChestList : ListBox<PackLine>
 /// <param name="Id">The game's recipe, for making it.</param>
 /// <param name="Count">How many one crafting makes.</param>
 /// <param name="Needs">The ingredients, as words.</param>
-public sealed record Craftable(int Id, string Name, int Count, string Needs);
+/// <param name="Most">How many times over it could be made with
+/// what is to hand.</param>
+public sealed record Craftable(int Id, string Name, int Count, string Needs, int Most = 1);
 
 public interface ICrafting
 {
@@ -387,7 +389,7 @@ public sealed partial class CraftLine : Element
 }
 
 /// <summary>What can be made now: one alphabetical list. Enter makes
-/// it once; Space says what it uses; F1 describes what is made.</summary>
+/// it, asking how many times where it could be made more than once; Space says what it uses; F1 describes what is made.</summary>
 public sealed class CraftList : ListBox<CraftLine>
 {
     private readonly ICrafting _crafting;
@@ -437,7 +439,15 @@ public sealed class CraftList : ListBox<CraftLine>
         var recipe = Items[SelectedIndex].Recipe;
         if (input.Kind == InputKind.Activate)
         {
-            Announce(_crafting.Craft(recipe.Id) ? "Crafted." : "Can't make that now.");
+            Quantity.Ask(App, 1, recipe.Most, count =>
+            {
+                var made = 0;
+                while (made < count && _crafting.Craft(recipe.Id))
+                    made++;
+                Announce(made == count ? "Crafted."
+                    : made > 0 ? $"Crafted {made}. Can't make more."
+                    : "Can't make that now.");
+            });
             return true;
         }
         if (input.IsChar(' '))

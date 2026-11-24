@@ -74,7 +74,7 @@ internal sealed class FakeCrafting : ICrafting
     public List<Craftable> Available { get; } = new()
     {
         new Craftable(7, "Work Bench", 1, "10 Wood"),
-        new Craftable(3, "Torch", 3, "1 Wood, 1 Gel"),
+        new Craftable(3, "Torch", 3, "1 Wood, 1 Gel", 4),
     };
     public List<int> Made { get; } = new();
     public bool Refuse { get; set; }
@@ -325,8 +325,24 @@ public class CraftTests
         var (ui, crafting) = Open();
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Crafted.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Crafted.", ui.Spoken());
         Assert.Equal(new[] { 3 }, crafting.Made);
+    }
+
+    [Fact]
+    public void WhatCouldBeMadeSeveralTimesAsksHowManyStartingAtOne()
+    {
+        var (ui, crafting) = Open();
+        ui.Drain();
+        ui.Press("enter");
+        ui.Expect("How many, up to 4 edit selected 1");
+        ui.Type("3");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Crafted.", ui.Spoken());
+        Assert.Equal(new[] { 3, 3, 3 }, crafting.Made);
     }
 
     [Fact]
@@ -336,6 +352,8 @@ public class CraftTests
         crafting.Refuse = true;
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Can't make that now.");
+        ui.Drain();
+        ui.Press("enter");
+        Assert.Contains("Can't make that now.", ui.Spoken());
     }
 }
