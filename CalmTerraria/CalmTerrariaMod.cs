@@ -1,5 +1,5 @@
 using CalmTerraria.Host;
-using CalmTerraria.Spike;
+using CalmTerraria.Screens;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -8,6 +8,7 @@ namespace CalmTerraria;
 public sealed class CalmTerrariaMod : Mod
 {
     private SruiHost? _host;
+    private Shell? _shell;
     private bool _failed;
 
     public override void Load()
@@ -26,6 +27,7 @@ public sealed class CalmTerrariaMod : Mod
         On_Main.DoUpdate_HandleInput -= AfterGameReadsInput;
         var host = _host;
         _host = null;
+        _shell = null;
         if (host == null)
             return;
         // Mods unload off the main thread. SDL must stop calling into
@@ -47,8 +49,9 @@ public sealed class CalmTerrariaMod : Mod
                 // Built here, not in Load: mods load off the main
                 // thread, and speech belongs to the thread that speaks.
                 _host = new SruiHost(Logger);
-                _ = new SpikeScreen(_host);
+                _shell = new Shell(_host);
             }
+            _shell!.Update();
             _host.Frame();
         }
         catch (Exception e)

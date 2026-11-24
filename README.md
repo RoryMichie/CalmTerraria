@@ -5,8 +5,8 @@ built on SRUI: the mod hosts a headless SRUI app inside the game, so
 its screens are ordinary SRUI widgets spoken through Prism, and its
 sound goes through Srui.Audio.
 
-It is at the spike stage. What exists proves the foundation and nothing
-else: see section 3.
+It is early. What exists is the foundation and the way from the title
+screen into a world: see section 3.
 
 # 1. Layout
 
@@ -14,8 +14,9 @@ else: see section 3.
   - `Host/` - the SRUI app's life inside the game: native libraries,
     the keyboard, the per-frame tick. Knows nothing about Terraria's
     rules.
-  - `Spike/` - the test screen. Deleted when the first real screen
-    exists.
+  - `Screens/` - what the player uses: the shell that decides who has
+    the keyboard, the title screen, the game menu.
+- `docs/design.md` - what is being built and the decisions behind it.
 - `docs/controls.md` - the control scheme as decided so far.
 
 # 2. Building
@@ -33,22 +34,20 @@ enabled. Close the game first: a loaded mod's file is locked.
 tModLoader is expected at the default Steam path; set `TML_DIR` where
 it is not.
 
-# 3. The spike
+# 3. What works
 
-With the mod enabled, the game says "CalmTerraria loaded" once it
-reaches the title screen. F2 opens a test screen and Escape closes it.
-While it is open the game receives no keys at all.
+The mod is meant to run without any other accessibility mod.
 
-- Tab moves between the widgets.
-- Speech backend: says which screen reader Prism found.
-- Sound on the left, sound on the right: a ping through HRTF.
-- Typing: an edit box, for checking that letters reach it and not the
-  game, and that arrows review what was typed.
+- **Title screen.** A list: Single player, Exit. The game's own menu
+  is not used.
+- **Single player.** Pick a character, then a world; Escape goes back
+  one step. Creating either is not built yet.
+- **In a world.** "Ready." when the world has loaded. Nothing else
+  speaks yet. Escape opens the game menu, whose one command is Save
+  and exit; Escape again closes it.
 
-What it proves: SRUI loads on the game's .NET 8 runtime, the native
-libraries load from inside a mod file, the keyboard has exactly one
-owner, and the Escape that closes a screen does not also reach the
-game.
+Everything spoken is also written to tModLoader's `client.log`, on
+lines starting `Spoke:`.
 
 # 4. How the host works
 

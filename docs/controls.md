@@ -1,6 +1,6 @@
 # Controls
 
-Decisions so far. Nothing here is implemented yet.
+Decisions so far. Only section 6 is implemented.
 
 # 1. Principle
 
@@ -27,7 +27,21 @@ Left bracket and right bracket are the two mouse buttons, as in
 Factorio Access: left bracket is the left button (use), right bracket
 is the right button (interact).
 
-# 4. Categories
+# 4. The scanner
 
-Ctrl+Page Up and Ctrl+Page Down move between categories. The brackets
-are not used for this.
+Factorio Access's keys.
+
+- Ctrl+Page Up and Ctrl+Page Down: category.
+- Page Up and Page Down: kind within the category.
+- Shift+Page Up and Shift+Page Down: instance of that kind, nearest
+  first.
+- End: refresh the scan. Shift+End: refresh, facing direction only.
+- Home: move the cursor to the selected instance.
+
+# 5. Screens
+
+Tab moves between the parts of a screen. Escape goes back one step.
+
+# 6. In a world
+
+Escape opens the game menu.
