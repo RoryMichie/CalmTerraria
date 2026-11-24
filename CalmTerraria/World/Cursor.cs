@@ -112,6 +112,45 @@ internal sealed class Cursor
             WatchPlacing();
     }
 
+    private static readonly string[] LiquidWords = { "water", "lava", "honey", "shimmer" };
+
+    /// <summary>A bucket or a sponge used where the game will do
+    /// nothing with it, which the game does in silence: why not, or
+    /// null when it will work. The rules are the game's own.</summary>
+    private static string? BucketRefusal(Item item, int x, int y)
+    {
+        int pours = item.type switch
+        {
+            Terraria.ID.ItemID.WaterBucket or Terraria.ID.ItemID.BottomlessBucket => 0,
+            Terraria.ID.ItemID.LavaBucket or Terraria.ID.ItemID.BottomlessLavaBucket => 1,
+            Terraria.ID.ItemID.HoneyBucket or Terraria.ID.ItemID.BottomlessHoneyBucket => 2,
+            _ => -1,
+        };
+        var scoops = item.type is Terraria.ID.ItemID.EmptyBucket or Terraria.ID.ItemID.SuperAbsorbantSponge
+            or Terraria.ID.ItemID.LavaAbsorbantSponge;
+        if (pours < 0 && !scoops)
+            return null;
+        var tile = Main.tile[x, y];
+        var there = LiquidWords[Math.Clamp(tile.LiquidType, 0, LiquidWords.Length - 1)];
+        if (scoops)
+        {
+            if (tile.LiquidAmount == 0)
+                return "Nothing to take up here.";
+            if (item.type == Terraria.ID.ItemID.SuperAbsorbantSponge && tile.LiquidType != Terraria.ID.LiquidID.Water)
+                return $"This sponge takes water; that is {there}.";
+            if (item.type == Terraria.ID.ItemID.LavaAbsorbantSponge && tile.LiquidType != Terraria.ID.LiquidID.Lava)
+                return $"This sponge takes lava; that is {there}.";
+            return null;
+        }
+        if (tile.HasTile && !tile.IsActuated && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType])
+            return "Solid here: it pours into an open tile.";
+        if (tile.LiquidAmount > 0 && tile.LiquidType != pours)
+            return $"There is {there} in this tile: it pours into an empty one beside it.";
+        if (tile.LiquidAmount >= 200)
+            return "Already full.";
+        return null;
+    }
+
     /// <summary>A tile something is being placed on, as it was, and
     /// how many frames it has to change before the failure is said.</summary>
     private (int X, int Y, bool HadTile, ushort Wall, int Item, int Frames)? _placeWatch;
@@ -334,7 +373,11 @@ internal sealed class Cursor
         }
         button = true;
         if (System.Runtime.CompilerServices.Unsafe.AreSame(ref button, ref _left))
+        {
             WatchPlacing();
+            if (InReach(x, y) && BucketRefusal(Main.LocalPlayer.HeldItem, x, y) is { } why)
+                Say(why);
+        }
     }
 
     /// <summary>Whether using the item acts on the tile under the

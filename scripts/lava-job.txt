@@ -1,0 +1,73 @@
+# The pour job against lava poured for the purpose.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+hold A 2500
+wait 500
+do clearing
+wait 2500
+do hold LavaBucket 6
+key ctrl+k
+key l
+key l
+key l
+key m
+down [
+wait 500
+key l
+wait 500
+key l
+wait 500
+up [
+wait 1500
+do lava
+do hold BottomlessBucket
+key ctrl+k
+key j
+key j
+key j
+key j
+key j
+key j
+key j
+key j
+key j
+key j
+key m
+key m
+key m
+key x
+key ctrl+k
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key i
+key i
+key x
+key tab
+heard Build
+key end
+wait 300
+key enter
+wait 500
+key tab
+heard Start
+key enter
+heard Done
+wait 1000
+do lava
+key x
+quit

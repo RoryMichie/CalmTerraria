@@ -106,6 +106,35 @@ internal static class DebugCommands
                 for (var y = py - 8; y <= py + 1; y++)
                     WorldGen.KillTile(x, y, noItem: true);
         });
+        // hold LavaBucket 5 - that many of an item, by internal name, in the hand.
+        autopilot.Register("hold", args =>
+        {
+            RequireTestWorld();
+            var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var player = Main.LocalPlayer;
+            if (player.selectedItem >= 10)
+                player.selectedItem = 0;
+            var item = new Item();
+            item.SetDefaults(ItemID.Search.GetId(parts[0]));
+            item.stack = parts.Length > 1 ? int.Parse(parts[1]) : 1;
+            player.inventory[player.selectedItem] = item;
+            log.Info($"Debug: holding {item.Name}, {item.stack}.");
+        });
+        // lava - how much lava is near the player.
+        autopilot.Register("lava", _ =>
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            int lava = 0, water = 0, obsidian = 0;
+            for (var x = px - 20; x <= px + 20; x++)
+                for (var y = py - 12; y <= py + 12; y++)
+                {
+                    var tile = Main.tile[x, y];
+                    if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Lava) lava++;
+                    if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Water) water++;
+                    if (tile.HasTile && tile.TileType == TileID.Obsidian) obsidian++;
+                }
+            log.Info($"Lava: {lava} lava, {water} water, {obsidian} obsidian near the player.");
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {
