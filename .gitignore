@@ -5,3 +5,4 @@ obj/
 # Staged by the build from the srui clone; see CalmTerraria.csproj.
 CalmTerraria/lib/
 CalmTerraria/native/
+dist/

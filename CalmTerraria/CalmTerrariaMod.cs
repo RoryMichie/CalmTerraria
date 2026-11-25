@@ -45,6 +45,27 @@ public sealed class CalmTerrariaMod : Mod
         };
     }
 
+    /// <summary>The game's bindings that fight the mod are put right
+    /// here, once, and saved, so that nobody installing the mod has a
+    /// settings file to edit.</summary>
+    private void FixGameBindings()
+    {
+        try
+        {
+            var bindings = Terraria.GameInput.PlayerInput.CurrentProfile
+                .InputModes[Terraria.GameInput.InputMode.Keyboard].KeyStatus;
+            var changes = CalmTerraria.Keys.GameBindings.Fix(bindings);
+            if (changes.Count == 0)
+                return;
+            Terraria.GameInput.PlayerInput.Save();
+            Logger.Info("Game key bindings changed to suit the mod: " + string.Join("; ", changes) + ".");
+        }
+        catch (Exception e)
+        {
+            Logger.Warn("The game's key bindings could not be checked.", e);
+        }
+    }
+
     public override void Unload()
     {
         On_Main.DoUpdate_HandleInput -= AfterGameReadsInput;
@@ -107,6 +128,7 @@ public sealed class CalmTerrariaMod : Mod
                 _autopilot?.Register("flight", _ => Logger.Info($"Flight: {FlightSounds.Report}"));
                 _shell.WorldFrame += ItemUse.Update;
                 TerrariaPack.Say = text => _host.App.Announce(text);
+                FixGameBindings();
                 _ = new Spy(_host, _shell);
                 _ = new HazardWatch(_host, _shell);
                 _ = new Feedback(_host, _shell);
