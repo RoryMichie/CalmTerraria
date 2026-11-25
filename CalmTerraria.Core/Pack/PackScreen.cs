@@ -230,18 +230,25 @@ public sealed class PackList : ListBox<PackLine>
     private readonly IPack _pack;
     private readonly IChest? _chest;
     private readonly IShop? _shop;
+    private readonly IChest? _storage;
 
-    public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null, IShop? shop = null)
+    private static readonly KeyCombo Store = KeyCombo.WithShift(Key.Enter);
+
+    /// <param name="storage">The chests near the character as one
+    /// store: Shift+Enter puts the item away in it.</param>
+    public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null, IShop? shop = null, IChest? storage = null)
         : base(parent, pack.FreeSlots == 0 ? "Carried, full" : "Carried", Array.Empty<PackLine>())
     {
         _pack = pack;
         _chest = chest;
         _shop = shop;
+        _storage = storage;
         BindItems(new StackLines(pack.Stacks, pack.Describe).Lines);
     }
 
     public override bool ReservesKey(KeyCombo combo) =>
         (!combo.HasModifier && (combo.Key == Key.Delete || combo.Key == Key.Space || combo.Key == Key.Enter))
+        || (_storage != null && combo == Store)
         || ItemKeys.Reserves(combo) || base.ReservesKey(combo);
 
     protected override bool OnInput(in InputEvent input)
@@ -249,6 +256,18 @@ public sealed class PackList : ListBox<PackLine>
         if (Items.Count == 0)
             return base.OnInput(input);
         var line = Items[SelectedIndex];
+        if (_storage != null && input.Is(Store))
+        {
+            var storage = _storage;
+            Quantity.Ask(App, line.Count, line.Count, count =>
+            {
+                var stored = Quantity.Over(line.Stacks, count, storage.Deposit);
+                Announce(stored == count ? "Stored."
+                    : stored > 0 ? $"Stored {stored}. No room in storage."
+                    : "No room in storage.");
+            });
+            return true;
+        }
         if (input.Kind == InputKind.Activate)
         {
             if (_shop != null)
@@ -879,6 +898,7 @@ public sealed class PackScreen
     public bool IsOpen => _dialog != null;
 
     private static readonly string[] ChestActions = { "Loot all", "Deposit all", "Quick stack", "Restock", "Rename" };
+    private static readonly string[] StorageActions = { "Quick stack", "Deposit all", "Restock" };
 
     /// <param name="notice">Why something the player reached for
     /// did not open - a chest someone else has open. It stands first,
@@ -886,8 +906,11 @@ public sealed class PackScreen
     /// <param name="talk">Someone speaking: their words stand first,
     /// as a stop that does nothing, then what can be said back.</param>
     /// <param name="choose">Called with the index of the reply chosen.</param>
+    /// <param name="storage">The chests near the character, as one
+    /// container: a list after the inventory of everything in them,
+    /// and what can be done with the lot.</param>
     public void Open(IChest? chest = null, string? notice = null, PackFocus focus = PackFocus.First,
-        Talk? talk = null, Action<int>? choose = null, IShop? shop = null, IBuild? build = null)
+        Talk? talk = null, Action<int>? choose = null, IShop? shop = null, IBuild? build = null, IChest? storage = null)
     {
         if (_dialog != null)
             return;
@@ -950,8 +973,25 @@ public sealed class PackScreen
             };
             first ??= jobs;
         }
-        var pack = new PackList(dialog, _pack, chest, shop);
+        // Storage is for when nothing else is in front of the player.
+        if (chest != null || shop != null || talk != null)
+            storage = null;
+        var pack = new PackList(dialog, _pack, chest, shop, storage);
         first ??= pack;
+        if (storage != null)
+        {
+            _ = new ChestList(dialog, storage, _pack);
+            var actions = new ListBox(dialog, "Storage actions", StorageActions, activateItems: true);
+            actions.Activated += () =>
+            {
+                switch (actions.SelectedIndex)
+                {
+                    case 0: storage.QuickStack(); _app.Announce("Stacked."); break;
+                    case 1: storage.DepositAll(); _app.Announce("Deposited."); break;
+                    case 2: storage.Restock(); _app.Announce("Restocked."); break;
+                }
+            };
+        }
         _ = new EquipList(dialog, _pack);
         if (_crafting != null)
             _ = new CraftList(dialog, _crafting);

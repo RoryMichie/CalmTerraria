@@ -215,6 +215,7 @@ internal sealed class TerrariaCrafting : ICrafting
             ChestUI.GetContainerUsageInfo(out _, out var chest);
             hand = hand.Concat(chest);
         }
+        hand = hand.Concat(TerrariaStorage.Materials());
         var items = hand.Where(item => !item.IsAir).ToList();
         var most = 9999;
         foreach (var needed in recipe.requiredItem)

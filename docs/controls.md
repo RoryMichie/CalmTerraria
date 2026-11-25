@@ -251,6 +251,28 @@ safe, brings the same screen with two tab stops in front:
 - Chest actions: Loot all, Deposit all, Quick stack, Restock, and
   Rename for chests in the world.
 
+Storage: with chests near the character - within 50 tiles to either
+side and 30 above or below, about what is on screen - and nothing
+else open, the screen has two more stops after Carried, and every one
+of those chests is treated as a single container. Single player only;
+locked chests are left out.
+
+- Storage, named with how many chests it is: everything in all of
+  them as one alphabetical list, the same item in several chests as
+  one line with its total. The keys are a chest's: Enter takes the
+  item, asking how many; a digit takes it to that hotbar slot; F1
+  describes; the brackets take one out to use or open. Typing letters
+  jumps to an item by name.
+- Storage actions: Quick stack (puts away only what storage already
+  has some of), Deposit all, and Restock. Deposit all and Quick stack
+  leave the hotbar and favourites alone.
+- In Carried, Shift+Enter puts the item away, asking how many. It
+  goes onto a stack of the same thing where there is one, then into
+  a chest that already holds that thing, then into the nearest chest
+  with room.
+- Crafting counts what is in storage as it counts what is carried,
+  and takes what it uses from the chests.
+
 A flying piggy bank or a void lens, once summoned, is a container that
 hangs in the air: the scanner lists it under Containers, the cursor
 reads it, and right bracket within a couple of tiles of it opens it.

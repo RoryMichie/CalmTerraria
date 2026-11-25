@@ -137,7 +137,8 @@ internal sealed class Shell
             _host.App.Announce("Paused.");
         }
         Recipe.FindRecipes();
-        _pack.Open(null, notice, focus, build: Build);
+        _pack.Open(null, notice, focus, build: Build,
+            storage: World.TerrariaStorage.Available ? new World.TerrariaStorage() : null);
     }
 
     /// <summary>The pack screen, opened on the reason a chest did not
