@@ -75,6 +75,15 @@ public static class Tones
     /// so it is never taken for the yoyo.</summary>
     public static float[] Incoming() => Wobble(frequency: 760f, wavers: 14f, depth: 1.4f, seconds: 0.5f, level: Level * 0.7f);
 
+    /// <summary>Falling: a steady whistle with a slow sway, played
+    /// round and round and bent downwards by how far the fall has
+    /// gone, the way a dropped thing whistles in a cartoon.</summary>
+    public static float[] Falling() => Wobble(frequency: 620f, wavers: 4f, depth: 0.8f, seconds: 0.5f, level: Level * 0.6f);
+
+    /// <summary>Falling far enough to be hurt on landing: the same
+    /// whistle with a fast, wide flutter in it.</summary>
+    public static float[] FallingFar() => Wobble(frequency: 620f, wavers: 16f, depth: 2.6f, seconds: 0.5f, level: Level * 0.7f);
+
     private static float[] Blip(float frequency, float fall, float seconds, float decay, float harmonics)
     {
         var samples = new float[(int)(SampleRate * seconds)];

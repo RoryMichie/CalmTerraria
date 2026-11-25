@@ -1,0 +1,17 @@
+# The falling whistle: off the edge of the test platform, a long way down.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do moves
+hold D 3500
+wait 1200
+do moves
+wait 4000
+do moves
+quit

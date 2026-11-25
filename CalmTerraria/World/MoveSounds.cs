@@ -47,13 +47,17 @@ internal sealed class MoveSounds
             _airborne = 0;
         };
         shell.WorldFrame += Update;
+        shell.LeftWorld += Quiet;
     }
 
     private void Update()
     {
         var player = Main.LocalPlayer;
         if (_broken || player.dead || Main.gamePaused)
+        {
+            Quiet();
             return;
+        }
         // The heart: quicker the less health is left.
         var health = player.statLifeMax2 > 0 ? player.statLife / (float)player.statLifeMax2 : 1f;
         if (health < LowHealth && _host.Now >= _nextBeat)
@@ -63,6 +67,7 @@ internal sealed class MoveSounds
             _nextBeat = _host.Now + (ulong)(FastBeatMs + (SlowBeatMs - FastBeatMs) * (health / LowHealth));
         }
         Bump(player);
+        Fall(player);
         // A fish on the player's own line: the float is being pulled.
         var biting = false;
         foreach (var projectile in Main.ActiveProjectiles)
@@ -100,6 +105,89 @@ internal sealed class MoveSounds
             _airborne = 0;
         }
         _grounded = grounded;
+    }
+
+    private Sound? _falling, _fallingFar;
+    private int _fallFrames;
+
+    public static int Falls { get; private set; }
+    public static int HardFalls { get; private set; }
+
+    /// <summary>The game's own measure: a fall of more than this many
+    /// tiles hurts, unless something worn prevents it.</summary>
+    private const int SafeFall = 25;
+
+    /// <summary>Falling: a whistle for as long as it lasts, sinking in
+    /// pitch as the fall goes on, and fluttering once the fall is
+    /// long enough to hurt at the bottom. It starts a third of a
+    /// second in, so a hop or a step down is not a fall.</summary>
+    private void Fall(Player player)
+    {
+        var falling = player.velocity.Y > 4f && !player.mount.Active && player.grappling[0] < 0 && !player.pulley;
+        _fallFrames = falling ? _fallFrames + 1 : 0;
+        var sounding = _fallFrames >= 20 && Main.soundVolume > 0f;
+        var fallen = Math.Max(0f, player.position.Y / 16f - player.fallStart);
+        var hurts = sounding && !player.noFallDmg && fallen > SafeFall + player.extraFall;
+        try
+        {
+            if (sounding && _falling == null)
+            {
+                var folder = Path.Combine(Main.SavePath, "CalmTerraria", "sounds");
+                var audio = _host.App.Audio;
+                Sound Loop(string name, float[] samples)
+                {
+                    var path = Path.Combine(folder, name + ".wav");
+                    Tones.WriteWav(path, samples);
+                    var sound = audio.CreateSound();
+                    sound.Load(path);
+                    sound.Looping = true;
+                    return sound;
+                }
+                _falling = Loop("falling", Tones.Falling());
+                _fallingFar = Loop("falling-far", Tones.FallingFar());
+            }
+            if (_falling == null || _fallingFar == null)
+                return;
+            Set(_falling, sounding && !hurts, fallen, ref _wasFalling, () => Falls++);
+            Set(_fallingFar, hurts, fallen, ref _wasFallingFar, () => HardFalls++);
+        }
+        catch (Exception e)
+        {
+            _broken = true;
+            _log.Error("The falling whistle failed; movement sounds are off for this session.", e);
+        }
+    }
+
+    private bool _wasFalling, _wasFallingFar;
+
+    /// <summary>A whistle must not outlast the fall: dead, paused or
+    /// out of the world, it stops.</summary>
+    private void Quiet()
+    {
+        if (_wasFalling)
+            _falling?.Stop();
+        if (_wasFallingFar)
+            _fallingFar?.Stop();
+        _wasFalling = _wasFallingFar = false;
+        _fallFrames = 0;
+    }
+
+    private static void Set(Sound sound, bool on, float fallen, ref bool was, Action started)
+    {
+        if (on)
+        {
+            // An octave down over sixty tiles of falling.
+            sound.Pitch = MathF.Pow(2f, -Math.Clamp(fallen / 60f, 0f, 1f));
+            sound.BaseVolume = Volume * Main.soundVolume;
+            if (!was)
+            {
+                sound.Play();
+                started();
+            }
+        }
+        else if (was)
+            sound.Stop();
+        was = on;
     }
 
     private string? _bumpWav;

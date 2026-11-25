@@ -114,6 +114,8 @@ public class TonesTests
     {
         { "yoyo", Tones.Yoyo() },
         { "incoming", Tones.Incoming() },
+        { "falling", Tones.Falling() },
+        { "falling far", Tones.FallingFar() },
     };
 
     /// <summary>A loop is quiet, and its end meets its start: the step

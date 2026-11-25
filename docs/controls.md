@@ -289,6 +289,9 @@ light". F1 reads the description again.
   once for each time it is walked into.
 - A fish on the line is two quick rising notes, on top of the game's
   own splash as the float dips. Left bracket then reels it in.
+- Falling is a whistle for as long as it lasts, sinking in pitch as
+  the fall goes on. Once the fall is long enough to hurt at the
+  bottom, the whistle flutters.
 - Jumping and landing each have a sound; the landing is louder the
   faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they
