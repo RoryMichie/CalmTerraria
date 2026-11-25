@@ -1,0 +1,52 @@
+# The cursor clings with smart cursor off, keeps its offset with it on; the hook goes to the cursor, or up.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold GrapplingHook
+hold D2 100
+wait 300
+key ctrl+k
+key l
+key l
+do state
+hold D 600
+wait 300
+do state
+log --- hook with the cursor on the character
+hold E 100
+wait 150
+do hooks
+wait 1500
+hold Space 100
+wait 500
+log --- hook with the cursor up and to the right
+key ctrl+k
+key o
+key o
+key o
+key o
+hold E 100
+wait 150
+do hooks
+wait 1000
+hold Space 100
+wait 300
+log --- smart cursor on
+hold V 100
+wait 300
+key ctrl+k
+key l
+key l
+do state
+hold D 600
+wait 300
+do state
+hold V 100
+wait 300
+quit

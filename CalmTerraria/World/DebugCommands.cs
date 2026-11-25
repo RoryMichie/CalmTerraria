@@ -234,6 +234,15 @@ internal static class DebugCommands
             var (px, py) = WorldScanner.PlayerTile();
             log.Info($"Items: player {px},{py} me {Main.myPlayer} selected {player.selectedItem} '{player.HeldItem.Name}' anim {player.itemAnimation}: " + string.Join("; ", lines));
         });
+        // hooks - the player's grappling hooks in flight, and which way they go.
+        autopilot.Register("hooks", _ =>
+        {
+            var lines = new List<string>();
+            foreach (var projectile in Main.ActiveProjectiles)
+                if (projectile.owner == Main.myPlayer && projectile.aiStyle == 7)
+                    lines.Add($"{projectile.Name} velocity {projectile.velocity.X:0.0},{projectile.velocity.Y:0.0}");
+            log.Info("Hooks: " + (lines.Count == 0 ? "none" : string.Join("; ", lines)));
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

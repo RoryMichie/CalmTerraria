@@ -30,9 +30,15 @@ is from the character: "Dirt, 3 right 1 down".
   live in, and reads its answer: what is missing, if anything.
 - Ctrl+K brings the cursor back to the player.
 
-While the cursor is within reach it travels with the player and keeps
-its place relative to them: put it one tile ahead and it stays one tile
-ahead. Beyond reach - after Home in the scanner, or after moving it
+While the cursor is within reach it goes with the player. With the
+smart cursor off it clings: a step brings it back onto the character.
+With the smart cursor on it keeps its place relative to them: put it
+one tile ahead and it stays one tile ahead. Holding a bracket keeps it
+where it is either way, so a run of blocks can be laid while walking.
+
+The grappling hook, on the game's own key (E), goes to the cursor: put
+the cursor where the hook should catch. With the cursor on the
+character it goes straight up. Jump lets go. Beyond reach - after Home in the scanner, or after moving it
 there - it stays on that spot in the world until it is moved back
 within reach or Ctrl+K brings it home.
 

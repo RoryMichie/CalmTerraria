@@ -299,8 +299,46 @@ internal sealed class Cursor
         if (!_placed || !_carried)
             return;
         var (px, py) = WorldScanner.PlayerTile();
+        // With the smart cursor off, a step brings the cursor back
+        // onto the character: it clings. With it on, the cursor keeps
+        // its place beside the character as they go - the tile ahead
+        // stays the tile ahead - which is what the smart cursor is
+        // for. Not while a button is held, or a job has the cursor.
+        if ((px, py) != _stoodAt && !Main.SmartCursorWanted && !BuildTool.Working && !_left && !_right)
+            _offsetX = _offsetY = 0;
+        _stoodAt = (px, py);
         _x = Math.Clamp(px + _offsetX, 0, Main.maxTilesX - 1);
         _y = Math.Clamp(py + _offsetY, 0, Main.maxTilesY - 1);
+    }
+
+    private (int X, int Y) _stoodAt;
+
+    /// <summary>Where the grappling hook goes. It is fired at the
+    /// mouse, so at the cursor: put the cursor where the hook should
+    /// catch. With the cursor on the character there is no direction
+    /// in that, and the hook goes straight up, which is what a hook
+    /// fired without aiming is mostly wanted for.</summary>
+    public void AimHook(Action fire)
+    {
+        var player = Main.LocalPlayer;
+        var (px, py) = WorldScanner.PlayerTile();
+        if (!_placed || (_x, _y) != (px, py))
+        {
+            fire();
+            return;
+        }
+        var (x, y) = (Main.mouseX, Main.mouseY);
+        var up = Vector2.Transform(player.Center - new Vector2(0f, 240f) - Main.screenPosition, Main.GameViewMatrix.ZoomMatrix);
+        Main.mouseX = (int)Math.Clamp(up.X, 0f, Main.screenWidth - 1f);
+        Main.mouseY = (int)Math.Clamp(up.Y, 0f, Main.screenHeight - 1f);
+        try
+        {
+            fire();
+        }
+        finally
+        {
+            (Main.mouseX, Main.mouseY) = (x, y);
+        }
     }
 
     private void Move(int dx, int dy)

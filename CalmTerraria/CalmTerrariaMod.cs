@@ -32,6 +32,14 @@ public sealed class CalmTerrariaMod : Mod
             if (!_failed)
                 _cursor?.InjectMouse();
         };
+        // The hook is fired at the mouse; the cursor says where that is.
+        On_Player.QuickGrapple += (orig, self) =>
+        {
+            if (_failed || _cursor == null || self.whoAmI != Main.myPlayer)
+                orig(self);
+            else
+                _cursor.AimHook(() => orig(self));
+        };
         Terraria.GameInput.On_PlayerInput.KeyboardInput += orig =>
         {
             var any = orig();
