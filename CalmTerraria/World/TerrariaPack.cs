@@ -39,7 +39,8 @@ internal sealed class TerrariaPack : IPack
         {
             var item = inventory[slot];
             if (!item.IsAir)
-                stacks.Add(new PackStack(slot, item.AffixName(), item.stack, Wearable(item)));
+                stacks.Add(new PackStack(slot, item.AffixName(), item.stack, Wearable(item),
+                    slot >= 54 ? "ammo slot" : slot >= 50 ? "coin slot" : null));
         }
         return stacks;
     }

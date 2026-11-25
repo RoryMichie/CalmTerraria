@@ -6,7 +6,10 @@ namespace CalmTerraria.Pack;
 /// <summary>One stack in the player's inventory, as the game holds it.</summary>
 /// <param name="Slot">The game's slot, for acting on the stack.</param>
 /// <param name="Equippable">Armour or an accessory: Enter wears it.</param>
-public sealed record PackStack(int Slot, string Name, int Count, bool Equippable);
+/// <param name="Where">For a stack in one of the game's special
+/// slots, which it is: "coin slot", "ammo slot". Null in the main
+/// inventory.</param>
+public sealed record PackStack(int Slot, string Name, int Count, bool Equippable, string? Where = null);
 
 public enum UseResult { Started, Paused, Busy, NotUsable }
 
@@ -64,12 +67,20 @@ public sealed partial class PackLine : Element
     /// <summary>The stacks behind the line, smallest first.</summary>
     internal List<PackStack> Stacks { get; set; } = new();
 
-    public PackLine(string name) => Name = name;
+    /// <summary>The special slots the line's stacks are in, or null.</summary>
+    public string? Where { get; }
+
+    public PackLine(string name, string? where = null)
+    {
+        Name = name;
+        Where = where;
+    }
 
     // A full stop before the description, where there is one, so the
     // two are heard as two.
     [Field]
-    public string Value => (Count > 1 ? $"{Name}, {Count}" : Name) + (About.Length > 0 ? "." : "");
+    public string Value => (Count > 1 ? $"{Name}, {Count}" : Name) + (Where == null ? "" : $", {Where}")
+        + (About.Length > 0 ? "." : "");
 
     /// <summary>What the game says about the item, read after it
     /// each time the line is landed on.</summary>
@@ -98,7 +109,7 @@ public sealed partial class EquipLine : Element
 internal sealed class StackLines
 {
     private readonly Func<IReadOnlyList<PackStack>> _stacks;
-    private readonly Dictionary<string, PackLine> _lines = new(StringComparer.Ordinal);
+    private readonly Dictionary<(string Name, string? Where), PackLine> _lines = new();
     private List<PackLine> _sorted = new();
 
     private readonly Func<int, string> _describe;
@@ -111,9 +122,15 @@ internal sealed class StackLines
 
     public IReadOnlyList<PackLine> Lines()
     {
+        // The main inventory by name. After it, what is in the game's
+        // coin and ammunition slots, in the game's own order: kept
+        // apart and at the end, since it is there to be spent and
+        // fired, not looked through.
         var groups = _stacks()
-            .GroupBy(stack => stack.Name, StringComparer.Ordinal)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(stack => (stack.Name, stack.Where))
+            .OrderBy(group => group.Key.Where == null ? 0 : 1)
+            .ThenBy(group => group.Key.Where == null ? 0 : group.Min(stack => stack.Slot))
+            .ThenBy(group => group.Key.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
         var changed = groups.Count != _sorted.Count;
         var sorted = new List<PackLine>(groups.Count);
@@ -122,7 +139,7 @@ internal sealed class StackLines
             var group = groups[i];
             if (!_lines.TryGetValue(group.Key, out var line))
             {
-                var made = line = new PackLine(group.Key);
+                var made = line = new PackLine(group.Key.Name, group.Key.Where);
                 made.Describe = () => made.Stacks.Count == 0 ? "" : _describe(made.Stacks[^1].Slot);
                 _lines[group.Key] = line;
             }
@@ -136,7 +153,7 @@ internal sealed class StackLines
         if (changed)
         {
             _sorted = sorted;
-            foreach (var gone in _lines.Keys.Where(name => !groups.Any(group => group.Key == name)).ToList())
+            foreach (var gone in _lines.Keys.Where(key => !groups.Any(group => group.Key == key)).ToList())
                 _lines.Remove(gone);
         }
         return _sorted;

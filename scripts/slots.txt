@@ -1,0 +1,19 @@
+# Coin and ammo slots at the end of the Carried list.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 2500
+key tab
+heard Carried
+key end
+wait 300
+key up
+wait 300
+key up
+wait 300
+key up
+wait 300
+key up
+wait 300
+key up
+quit

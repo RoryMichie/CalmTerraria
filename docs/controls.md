@@ -211,7 +211,11 @@ crafting, Powers, Save and exit, then the chat list and the message
 box - chat is last, so from the world it is Shift+Tab away and the
 things done with the hands are forwards.
 
-- Carried (the inventory): Enter wears what can be worn and holds anything else.
+- Carried (the inventory): alphabetical, with what is in the game's
+  coin and ammunition slots kept apart at the end and marked -
+  "Silver Coin, 40, coin slot", "Wooden Arrow, 99, ammo slot". Arrows
+  in the main inventory are their own line, in their place in the
+  alphabet. Enter wears what can be worn and holds anything else.
   Space always holds. Delete trashes one stack. Typing letters jumps
   to an item by name. A digit, 1 to 0, puts the item in that hotbar
   slot and what was there takes its place. F1 reads the item's

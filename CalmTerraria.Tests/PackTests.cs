@@ -15,9 +15,9 @@ internal sealed class FakePack : IPack
     public bool Full { get; set; }
     private int _nextSlot = 100;
 
-    public FakePack Add(string name, int count = 1, bool equippable = false)
+    public FakePack Add(string name, int count = 1, bool equippable = false, string? where = null)
     {
-        Inventory.Add(new PackStack(_nextSlot++, name, count, equippable));
+        Inventory.Add(new PackStack(_nextSlot++, name, count, equippable, where));
         return this;
     }
 
@@ -237,6 +237,26 @@ public class PackScreenTests
         ui.Type(']');
         ui.Expect("Nothing to open.");
         Assert.Single(pack.Opened);
+    }
+
+    [Fact]
+    public void CoinAndAmmoSlotsComeLastAndSayWhatTheyAre()
+    {
+        var (ui, _, _) = Open(p => p
+            .Add("Silver Coin", 40, where: "coin slot")
+            .Add("Wooden Arrow", 99, where: "ammo slot")
+            .Add("Wooden Arrow", 12)
+            .Add("Zebra Statue")
+            .Add("Acorn", 5));
+        ui.Expect("Carried list Acorn, 5");
+        ui.Press("down");
+        ui.Expect("Wooden Arrow, 12. 7 melee damage. Material");
+        ui.Press("down");
+        ui.Expect("Zebra Statue. 7 melee damage. Material");
+        ui.Press("down");
+        ui.Expect("Silver Coin, 40, coin slot. 7 melee damage. Material");
+        ui.Press("down");
+        ui.Expect("Wooden Arrow, 99, ammo slot. 7 melee damage. Material");
     }
 
     [Fact]
