@@ -192,6 +192,8 @@ named, kept per world.
 # 5. Screens
 
 Tab moves between the parts of a screen. Escape goes back one step.
+Moving to another item in a list, or to another part of a screen,
+makes the game's own menu tick.
 
 In a world, the world is one stop in a ring with the rest: Tab from
 the world goes to the inventory and on round, Shift+Tab goes round the

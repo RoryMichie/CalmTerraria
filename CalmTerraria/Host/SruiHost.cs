@@ -59,6 +59,7 @@ internal sealed class SruiHost : IDisposable
         _log = log;
         _keyboard = new SdlKeyboard();
         App.AddReader(new LogReader(log, text => Spoke?.Invoke(text)));
+        App.AddReader(new ClickReader());
         try
         {
             // Prism wants to be created on the thread that speaks.
