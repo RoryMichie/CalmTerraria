@@ -19,7 +19,10 @@ namespace CalmTerraria.World;
 /// what they hit.</summary>
 internal sealed class FlightSounds
 {
-    private const int YoyoAi = 99;
+    /// <summary>The game's kinds of weapon that stay out on a string
+    /// or a chain and are steered: yoyos, flails, and the chained
+    /// blades and harpoons that are thrown out and come back.</summary>
+    private static readonly HashSet<int> Tethered = new() { 99, 15, 13 };
     /// <summary>How many things flying at the player are voiced.</summary>
     private const int MaxIncoming = 4;
     /// <summary>Beyond this many tiles, silent.</summary>
@@ -77,7 +80,7 @@ internal sealed class FlightSounds
             var incoming = new List<Projectile>();
             foreach (var projectile in Main.ActiveProjectiles)
             {
-                if (projectile.owner == Main.myPlayer && projectile.aiStyle == YoyoAi)
+                if (projectile.owner == Main.myPlayer && Tethered.Contains(projectile.aiStyle))
                     Voiced(projectile, yoyo: true, player);
                 else if (projectile.hostile && projectile.damage > 0
                     && Vector2.Distance(projectile.Center, player.Center) <= Range * 16f)

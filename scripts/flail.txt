@@ -1,0 +1,24 @@
+# The waver follows a flail.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1000
+do hold Mace
+wait 300
+do spawn Zombie 8 0
+wait 1000
+do flight
+down [
+wait 1200
+do flight
+wait 1200
+do flight
+up [
+wait 2000
+do flight
+quit

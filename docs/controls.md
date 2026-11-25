@@ -291,7 +291,8 @@ light". F1 reads the description again.
 - Low health is a heartbeat: under three tenths of full health, two
   soft thumps, quicker the less is left.
 - The character's own yoyo wavers softly from where it is, for as
-  long as it is out. Things flying at the character - arrows,
+  long as it is out; so does a flail on its chain, and a chained
+  blade or harpoon, so the arc of the swing is heard. Things flying at the character - arrows,
   fireballs - make a higher, quicker waver from where they are, the
   nearest four of them. Both are to the side they are on, higher in
   pitch above the character and lower below, louder the nearer.
