@@ -365,6 +365,15 @@ light". F1 reads the description again.
 - Backspace: health, mana, defense, and each effect on the character
   with the time it has left. With three or fewer inventory slots
   free it says how many, or that the inventory is full.
+- Shift+Backspace: the fight. Each boss about, with its health as a
+  number and in hundredths - a boss in several parts is all its parts
+  together - and the event under way: an invasion with how far
+  through it is, a moon or the Old One's Army with its wave, a slime
+  rain with how many are killed, a blood moon or an eclipse by name.
+  "No boss, no event." otherwise.
+- Unasked, a boss's health is said as it falls past three quarters,
+  a half, a quarter and a tenth - "Eye of Cthulhu, 50 percent." -
+  and an invasion's progress at each quarter.
 - A full inventory: the Carried list is named "Carried, full";
   walking over something there is no room for says "No room for"
   it, once; and nothing is crafted that would have nowhere to go.

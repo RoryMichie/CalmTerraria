@@ -150,6 +150,7 @@ public sealed class CalmTerrariaMod : Mod
                 _ = new Spy(_host, _shell);
                 _ = new HazardWatch(_host, _shell);
                 _ = new Feedback(_host, _shell);
+                _ = new Fights(_host, _shell);
                 _autopilot?.Register("footsteps", _ => Logger.Info($"Footsteps: {Feedback.FootstepsRaised} raised, last {Feedback.LastFootstep}"));
                 var sonar = new EnemySonar(_host, _shell, Logger);
                 _autopilot?.Register("sonar-log", _ => sonar.LogPulses = !sonar.LogPulses);
