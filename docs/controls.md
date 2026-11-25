@@ -26,6 +26,9 @@ is from the character: "Dirt, 3 right 1 down".
 - Shift with a direction skims: the cursor runs that way to the first
   tile that reads differently.
 - K says what is under the cursor and where that is from the player.
+  On the character it says so - "Your head", "Your body", "Your
+  legs" - and then what they are standing in, if it is not air.
+  Another player reads by name.
 - Shift+K asks the game whether the room at the cursor is fit to
   live in, and reads its answer: what is missing, if anything.
 - Ctrl+K brings the cursor back to the player.

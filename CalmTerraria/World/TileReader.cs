@@ -33,6 +33,13 @@ internal static class TileReader
         if (!TerrariaPowers.Knows(x, y))
             return "Unknown";
         var area = new Rectangle(x * 16, y * 16, 16, 16);
+        // The character is in the world too, three tiles of them: a
+        // cursor on them reads them, and then what they stand in.
+        if (Body(area) is { } body)
+        {
+            var behind = Ground(x, y);
+            return behind == "Air" ? body : $"{body}, {behind}";
+        }
         foreach (var npc in Main.ActiveNPCs)
         {
             if (npc.Hitbox.Intersects(area))
@@ -45,11 +52,43 @@ internal static class TileReader
             if (item.Hitbox.Intersects(area))
                 return item.stack > 1 ? $"{item.Name}, {item.stack}" : item.Name;
         }
+        return Ground(x, y);
+    }
+
+    /// <summary>What the world itself has at a tile: the block, the
+    /// liquid, the wall behind, or air.</summary>
+    private static string Ground(int x, int y)
+    {
         var tile = Main.tile[x, y];
         if (tile.HasTile)
             return TileNames.At(x, y, tile);
         if (tile.LiquidAmount > 0)
             return tile.LiquidType switch { 1 => "Lava", 2 => "Honey", 3 => "Shimmer", _ => "Water" };
         return tile.WallType > 0 ? TileNames.OfWall(tile.WallType) : "Air";
+    }
+
+    /// <summary>Whose body is on a tile, and which part of it: the
+    /// player's own head, body or legs, or another player by name. A
+    /// body that only brushes the tile's edge does not count.</summary>
+    private static string? Body(Rectangle area)
+    {
+        for (var i = 0; i < Main.maxPlayers; i++)
+        {
+            var player = Main.player[i];
+            if (player is not { active: true } || player.dead)
+                continue;
+            var overlap = Rectangle.Intersect(player.Hitbox, area);
+            if (overlap.Width < 6 || overlap.Height < 4)
+                continue;
+            var third = (overlap.Center.Y - player.Hitbox.Top) * 3 / Math.Max(1, player.Hitbox.Height);
+            var part = third switch
+            {
+                <= 0 => "head",
+                1 => "body",
+                _ => "legs",
+            };
+            return i == Main.myPlayer ? $"Your {part}" : $"{player.name}'s {part}";
+        }
+        return null;
     }
 }

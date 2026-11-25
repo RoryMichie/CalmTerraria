@@ -1,0 +1,19 @@
+# The cursor on the character reads the character.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do godmode
+do arena
+wait 1500
+key ctrl+k
+key i
+key i
+key m
+key m
+key m
+key m
+key ctrl+k
+key l
+key j
+quit
