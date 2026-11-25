@@ -10,7 +10,7 @@ namespace CalmTerraria.World;
 /// at a glance from the backdrop and the screen round them, in a few
 /// words: the biome, the layer of the world and how far the biome runs, whether they are in a
 /// room or under something, and what the ground does to the left and
-/// to the right. Shift+Z is the character's coordinates.</summary>
+/// to the right. C is the character's coordinates.</summary>
 internal sealed class Surroundings
 {
     /// <summary>How far to each side the lie of the ground is taken.</summary>
@@ -24,7 +24,7 @@ internal sealed class Surroundings
         _host = host;
         _scanner = scanner;
         shell.WorldCommands[KeyCombo.Plain(Key.Char('z'))] = () => _host.App.Announce(Describe());
-        shell.WorldCommands[KeyCombo.WithShift(Key.Char('z'))] = () => _host.App.Announce(Whereabouts());
+        shell.WorldCommands[KeyCombo.Plain(Key.Char('c'))] = () => _host.App.Announce(Whereabouts());
     }
 
     /// <summary>The character's tile, as the game numbers the world:

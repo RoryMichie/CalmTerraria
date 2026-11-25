@@ -376,7 +376,7 @@ light". F1 reads the description again.
   then up 2. Right: flat 12, then a drop." A side that is level for
   thirty tiles is "flat". A room says how many of its tiles have no
   back wall only when some have none.
-- Shift+Z: the character's coordinates, in tiles - "2140, 312." The
+- C: the character's coordinates, in tiles - "2140, 312." The
   first counts from the world's left edge and the second from its
   top, so the second grows going down.- Apostrophe: what the character's informational accessories show -
   the time, the depth, the position and so on - in the game's own
