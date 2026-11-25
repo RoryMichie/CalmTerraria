@@ -30,7 +30,7 @@ internal sealed class TitleScreen
         if (_menu == null)
         {
             _menu = new ListBox(_app, "Terraria",
-                new[] { "Single player", "Join by address", "New character", "New world", "Exit" }, activateItems: true);
+                new[] { "Single player", "Join by address", "New character", "New world", "Settings", "Exit" }, activateItems: true);
             _menu.Activated += () =>
             {
                 switch (_menu.SelectedIndex)
@@ -39,6 +39,7 @@ internal sealed class TitleScreen
                     case 1: ChooseCharacter(AskAddress); break;
                     case 2: NewCharacter(); break;
                     case 3: NewWorld(); break;
+                    case 4: _shell.SettingsScreen.Open(); break;
                     default: QuitGame(Main.instance); break;
                 }
             };

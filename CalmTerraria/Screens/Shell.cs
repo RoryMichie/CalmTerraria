@@ -45,7 +45,8 @@ internal sealed class Shell
         {
             BeginBusy("Saving.");
             WorldGen.SaveAndQuit();
-        }, new World.TerrariaPowers(), new World.TerrariaCrafting(), ChatLog, new World.TerrariaChat());
+        }, new World.TerrariaPowers(), new World.TerrariaCrafting(), ChatLog, new World.TerrariaChat(),
+            SettingsScreen = new CalmTerraria.Settings.SettingsScreen(host.App, Settings));
         // The world's screens are stops beside the world: Tab goes
         // round to them and the game runs on. Enter is the message box.
         WorldCommands[KeyCombo.Plain(Key.Tab)] = () => OpenPack(focus: PackFocus.First);
@@ -91,11 +92,28 @@ internal sealed class Shell
             }
             return true;
         };
-        host.KeyReleasedWhileGameOwns = key => WorldKeyReleased?.Invoke(key);
+        // The classic layout is a translation in front of the mod's
+        // own: a key it leaves to the game is not the mod's at all.
+        host.KeyReleasedWhileGameOwns = key =>
+        {
+            if (ModSettings.Classic)
+            {
+                if (CalmTerraria.Keys.Keymap.FromClassic(key) is not { } own)
+                    return;
+                key = own;
+            }
+            WorldKeyReleased?.Invoke(key);
+        };
         host.KeyWhileGameOwns = combo =>
         {
             if (_place != Place.World)
                 return false;
+            if (ModSettings.Classic)
+            {
+                if (CalmTerraria.Keys.Keymap.FromClassic(combo) is not { } own)
+                    return false;
+                combo = own;
+            }
             if (combo == KeyCombo.Plain(Key.Escape))
             {
                 OpenPack(paused: true);
@@ -107,6 +125,13 @@ internal sealed class Shell
             return true;
         };
     }
+
+    /// <summary>The mod's settings and the game's.</summary>
+    public ModSettings Settings { get; } = new();
+
+    /// <summary>The settings screen: on the title menu and on the
+    /// pack screen.</summary>
+    public CalmTerraria.Settings.SettingsScreen SettingsScreen { get; }
 
     /// <summary>The area the player has marked, if anything offers one.</summary>
     public IBuild? Build { get; set; }

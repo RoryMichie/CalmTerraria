@@ -28,11 +28,15 @@ public static class GameBindings
 
     /// <summary>Put the bindings right, in place. What was changed,
     /// in words, for the log; empty when nothing needed changing.</summary>
-    public static List<string> Fix(IDictionary<string, List<string>> bindings)
+    /// <param name="classic">The classic key layout is in use: J is
+    /// not the cursor's, so quick mana stays on it.</param>
+    public static List<string> Fix(IDictionary<string, List<string>> bindings, bool classic = false)
     {
         var changes = new List<string>();
         foreach (var (binding, off, to) in Moves)
         {
+            if (classic && binding == "QuickMana")
+                continue;
             if (!bindings.TryGetValue(binding, out var keys) || !keys.Contains(off))
                 continue;
             keys.RemoveAll(key => key == off);
@@ -53,6 +57,22 @@ public static class GameBindings
             if (!keys.Contains(button))
                 keys.Add(button);
             changes.Add($"{binding} put back on {button}" + (letters.Count > 0 ? $", off {string.Join(" and ", letters)}" : ""));
+        }
+        return changes;
+    }
+
+    /// <summary>On changing to the classic layout: quick mana, if this
+    /// mod's move put it on G, goes back to J, where nothing else has
+    /// J. Changing back is <see cref="Fix"/>.</summary>
+    public static List<string> ToClassic(IDictionary<string, List<string>> bindings)
+    {
+        var changes = new List<string>();
+        if (bindings.TryGetValue("QuickMana", out var keys) && keys.Contains("G") && !keys.Contains("J")
+            && !bindings.Any(pair => pair.Value.Contains("J")))
+        {
+            keys.RemoveAll(key => key == "G");
+            keys.Add("J");
+            changes.Add("QuickMana moved from G to J");
         }
         return changes;
     }

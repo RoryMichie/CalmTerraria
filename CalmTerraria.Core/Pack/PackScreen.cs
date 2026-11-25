@@ -875,6 +875,7 @@ public sealed class PackScreen
     private readonly IPack _pack;
     private readonly Action _saveAndExit;
     private readonly PowersScreen? _powers;
+    private readonly CalmTerraria.Settings.SettingsScreen? _settings;
     private readonly ICrafting? _crafting;
     private readonly ChatLog? _chatLog;
     private readonly IChat? _chat;
@@ -884,8 +885,9 @@ public sealed class PackScreen
     public event Action? Closed;
 
     public PackScreen(SruiApp app, IPack pack, Action saveAndExit, IPowers? powers = null, ICrafting? crafting = null,
-        ChatLog? chatLog = null, IChat? chat = null)
+        ChatLog? chatLog = null, IChat? chat = null, CalmTerraria.Settings.SettingsScreen? settings = null)
     {
+        _settings = settings;
         _chatLog = chatLog;
         _chat = chat;
         _crafting = crafting;
@@ -997,6 +999,8 @@ public sealed class PackScreen
             _ = new CraftList(dialog, _crafting);
         if (_powers is { } powers)
             new Button(dialog, "Powers").Activated += powers.Open;
+        if (_settings is { } settings)
+            new Button(dialog, "Settings").Activated += settings.Open;
         var exit = new Button(dialog, "Save and exit");
         exit.Activated += () =>
         {

@@ -56,13 +56,17 @@ public sealed class CalmTerrariaMod : Mod
     /// <summary>The game's bindings that fight the mod are put right
     /// here, once, and saved, so that nobody installing the mod has a
     /// settings file to edit.</summary>
-    private void FixGameBindings()
+    /// <param name="toClassic">The player has just chosen the classic
+    /// key layout: quick mana goes back to J.</param>
+    private void FixGameBindings(bool toClassic = false)
     {
         try
         {
             var bindings = Terraria.GameInput.PlayerInput.CurrentProfile
                 .InputModes[Terraria.GameInput.InputMode.Keyboard].KeyStatus;
-            var changes = CalmTerraria.Keys.GameBindings.Fix(bindings);
+            var changes = CalmTerraria.Keys.GameBindings.Fix(bindings, ModSettings.Classic);
+            if (toClassic)
+                changes.AddRange(CalmTerraria.Keys.GameBindings.ToClassic(bindings));
             if (changes.Count == 0)
                 return;
             Terraria.GameInput.PlayerInput.Save();
@@ -139,6 +143,7 @@ public sealed class CalmTerrariaMod : Mod
                 _shell.WorldFrame += Travel.Update;
                 TerrariaPack.Say = text => _host.App.Announce(text);
                 FixGameBindings();
+                _shell.Settings.KeysChanged = FixGameBindings;
                 _ = new Surroundings(_host, _shell, scanner);
                 _ = new Spy(_host, _shell);
                 _ = new HazardWatch(_host, _shell);

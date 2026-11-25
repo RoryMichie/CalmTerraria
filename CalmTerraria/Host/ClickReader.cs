@@ -11,6 +11,8 @@ internal sealed class ClickReader : IReader
 {
     public void OnTick(IReadOnlyList<AccessibilityEvent> events)
     {
+        if (!ModSettings.Ticks)
+            return;
         foreach (var e in events)
         {
             if (e is AccessibilityEvent.ItemArrived

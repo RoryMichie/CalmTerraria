@@ -30,6 +30,7 @@ key shift+tab
 key shift+tab
 key shift+tab
 key shift+tab
+key shift+tab
 heard Powers
 key enter
 heard Omniscience

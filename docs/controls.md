@@ -203,7 +203,7 @@ Escape opens the same ring with the game paused for as long as it is
 up, in single player; a server cannot be paused.
 
 The title menu has Single player, Join by address, New character, New
-world, and Exit. A new character takes a name and a difficulty; its
+world, Settings, and Exit. A new character takes a name and a difficulty; its
 looks are rolled at random. A new world takes a name (one is
 suggested), a size, a difficulty, which evil, and a seed if wanted;
 making it says every tenth of the way and then that it is done. Join by
@@ -216,7 +216,7 @@ refusal is read out before the title menu returns.
 # 6. The pack screen
 
 Tab or Escape, in a world. The stops: the inventory, the equipment,
-crafting, Powers, Save and exit, then the chat list and the message
+crafting, Powers, Settings, Save and exit, then the chat list and the message
 box - chat is last, so from the world it is Shift+Tab away and the
 things done with the hands are forwards.
 
@@ -386,7 +386,46 @@ has and more, for any character.
 - Teleport to waypoint: the same for the world's waypoints.
 - Make it day, Make it night. Single player only.
 
-# 9. Keys taken from the game
+# 9. Settings
+
+The Settings button on the pack screen, after Powers, and Settings on
+the title menu. Two tabs; left and right arrow change tab, Tab goes
+into it. Everything takes effect as it is changed, and is kept.
+
+Mod:
+
+- Classic keys: the key layout of the earlier accessibility mod, for
+  hands that know it. See section 10.
+- Menu tick: the game's tick on moving through a list. On unless
+  switched off.
+
+Game:
+
+- Sound volume, Music volume, Ambient volume: arrows move by 5, Page
+  Up and Page Down by 20, Home and End go to the ends.
+- Autosave.
+
+# 10. Classic keys
+
+With Classic keys on, in a world:
+
+- O, K, L and semicolon move the cursor up, left, down and right.
+  There are no diagonals. Shift with one of them skims.
+- Comma says what is under the cursor; Shift+comma asks about housing;
+  Ctrl+comma brings the cursor back to the player.
+- I uses the held item at the cursor and P interacts. The brackets
+  still do the same.
+- J is the game's quick mana again, and H its quick heal as always.
+  Switching the layout moves the game's quick mana binding between G
+  and J by itself, where the player has not put it somewhere else.
+- U, N and M are the game's: M is its full-screen map.
+
+Everything else is as in the rest of this document: the scanner, X,
+Backspace, Z, apostrophe, backslash, Tab. Inside the mod's screens
+nothing changes, since letters there find things by name: using an
+item from a list is still the brackets.
+
+# 11. Keys taken from the game
 
 A key the mod uses in a world is hidden from the game, so J (quick
 mana) and M (the full-screen map) no longer reach it. Shift and Control
