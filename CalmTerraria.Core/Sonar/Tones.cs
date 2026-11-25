@@ -28,6 +28,16 @@ public static class Tones
     /// <summary>Walking into something solid: a short dull knock.</summary>
     public static float[] Bump() => Blip(frequency: 170f, fall: 0.6f, seconds: 0.07f, decay: 60f, harmonics: 0.9f);
 
+    /// <summary>A fish on the line: two quick high notes, the second
+    /// higher. The game's own cue is the splash of the float dipping,
+    /// which is easy to lose under everything else.</summary>
+    public static float[] Bite()
+    {
+        var first = Blip(frequency: 880f, fall: 1f, seconds: 0.05f, decay: 40f, harmonics: 0.2f);
+        var second = Blip(frequency: 1180f, fall: 1f, seconds: 0.06f, decay: 35f, harmonics: 0.2f);
+        return first.Concat(new float[(int)(SampleRate * 0.03f)]).Concat(second).ToArray();
+    }
+
     /// <summary>Low health: a heartbeat, two soft thumps, the second a
     /// little lower. Pitched where small speakers and headphones still
     /// carry it, not down where a real one sits.</summary>

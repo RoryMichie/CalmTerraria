@@ -184,6 +184,31 @@ internal static class DebugCommands
             player.fallStart = floor;
             log.Info($"Debug: arena floor at {floor}, centre {cx}.");
         });
+        // pool - on the arena, a stone basin of water to the right of
+        // the character, big enough to fish in.
+        autopilot.Register("pool", _ =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            var floor = py + 2;
+            for (var x = px + 3; x <= px + 26; x++)
+            {
+                for (var y = floor; y <= floor + 8; y++)
+                {
+                    var tile = Main.tile[x, y];
+                    tile.ClearEverything();
+                    var wall = x == px + 3 || x == px + 26 || y == floor + 8;
+                    if (wall)
+                        WorldGen.PlaceTile(x, y, TileID.Stone, mute: true, forced: true);
+                    else
+                    {
+                        tile.LiquidAmount = 255;
+                        tile.LiquidType = LiquidID.Water;
+                    }
+                }
+            }
+            log.Info($"Debug: pool from {px + 4} to {px + 25}, surface at {floor}.");
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

@@ -1,0 +1,39 @@
+# A bite on the line.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1000
+do pool
+wait 500
+hold D2 100
+wait 200
+do hold ApprenticeBait 20
+hold D1 100
+wait 200
+do hold GoldenFishingRod
+wait 300
+key ctrl+k
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key m
+key m
+key k
+down [
+wait 300
+up [
+wait 20000
+do moves
+wait 20000
+do moves
+quit

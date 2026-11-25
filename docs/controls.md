@@ -264,6 +264,8 @@ light". F1 reads the description again.
   pitch above the character and lower below, louder the nearer.
 - Walking into a wall is a short knock from the side the wall is on,
   once for each time it is walked into.
+- A fish on the line is two quick rising notes, on top of the game's
+  own splash as the float dips. Left bracket then reels it in.
 - Jumping and landing each have a sound; the landing is louder the
   faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they

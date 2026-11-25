@@ -63,6 +63,19 @@ internal sealed class MoveSounds
             _nextBeat = _host.Now + (ulong)(FastBeatMs + (SlowBeatMs - FastBeatMs) * (health / LowHealth));
         }
         Bump(player);
+        // A fish on the player's own line: the float is being pulled.
+        var biting = false;
+        foreach (var projectile in Main.ActiveProjectiles)
+        {
+            if (projectile.owner == Main.myPlayer && projectile.bobber && projectile.ai[1] < 0f)
+                biting = true;
+        }
+        if (biting && !_wasBiting)
+        {
+            Bites++;
+            Play(ref _biteWav, "bite", Tones.Bite, Volume);
+        }
+        _wasBiting = biting;
         var grounded = player.velocity.Y == 0f;
         if (!grounded)
         {
@@ -95,6 +108,9 @@ internal sealed class MoveSounds
     private bool _bumped;
 
     public static int Bumps { get; private set; }
+    public static int Bites { get; private set; }
+    private string? _biteWav;
+    private bool _wasBiting;
 
     /// <summary>Walking into a wall: a knock, from the side the wall
     /// is on, once for each time it is walked into. Pressing on
