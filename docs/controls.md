@@ -43,8 +43,10 @@ smart cursor off it clings: a step brings it back onto the character.
 Holding a bracket keeps it where it is, so a run of blocks can be laid
 while walking.
 
-Digging in a direction: with the smart cursor on (V), a direction key
-points and does not step. The cursor goes two tiles from the character
+Digging in a direction: with the smart cursor on (V), the keys the
+character is moved with point the cursor as well: S is down, A and S
+together down and left, and so on, with nothing said. A direction key
+of the cursor's points too, and does not step. The cursor goes two tiles from the character
 that way, whatever it was on before, and stays that way from them as
 they move; the direction is said, with the tile the game has picked to
 work on - "Left: Dirt, 1 left". Holding the left bracket with a

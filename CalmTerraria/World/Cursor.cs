@@ -308,6 +308,7 @@ internal sealed class Cursor
         }
         if (!_placed || !_carried)
             return;
+        AimWithMovement();
         var (px, py) = WorldScanner.PlayerTile();
         // With the smart cursor off, a step brings the cursor back
         // onto the character: it clings. With it on, the cursor keeps
@@ -373,6 +374,30 @@ internal sealed class Cursor
 
     /// <summary>How far from the character a pointed cursor sits.</summary>
     private const int AimDistance = 2;
+
+    /// <summary>How far from the character the game is told the mouse
+    /// is while the cursor is pointed, in pixels: ten tiles.</summary>
+    private const float AimReach = 160f;
+
+    /// <summary>With the smart cursor on, the keys the character is
+    /// moved with point it too, as a gamepad's stick does: down digs
+    /// down, down and left digs a stair. Nothing is said - the player
+    /// pressed the key. The last direction given stays, whichever
+    /// keys gave it.</summary>
+    private void AimWithMovement()
+    {
+        if (!Main.SmartCursorWanted || !_placed || !_carried || _host.OwnsKeyboard || BuildTool.Working)
+            return;
+        var player = Main.LocalPlayer;
+        var dx = (player.controlRight ? 1 : 0) - (player.controlLeft ? 1 : 0);
+        var dy = (player.controlDown ? 1 : 0) - (player.controlUp ? 1 : 0);
+        if (dx == 0 && dy == 0)
+            return;
+        if ((_offsetX, _offsetY) == (dx * AimDistance, dy * AimDistance))
+            return;
+        var (px, py) = WorldScanner.PlayerTile();
+        Place(px + dx * AimDistance, py + dy * AimDistance);
+    }
 
     /// <summary>A direction just pointed in, and how many frames until
     /// it is said: the game takes a frame to choose its tile.</summary>
@@ -596,8 +621,11 @@ internal sealed class Cursor
         // centre is seldom dead level with that, and "left" would come
         // out as left and a little down. So a cursor that goes with
         // the character is put exactly that way from their middle.
+        // And well clear of them: the game looks for something to dig
+        // between the character and the mouse, so a mouse two tiles
+        // off finds nothing that is three tiles off.
         if (Main.SmartCursorWanted && _carried && (_offsetX != 0 || _offsetY != 0))
-            world = Main.LocalPlayer.Center + new Vector2(_offsetX * 16f, _offsetY * 16f);
+            world = Main.LocalPlayer.Center + Vector2.Normalize(new Vector2(_offsetX, _offsetY)) * AimReach;
         if (_right && _riding is { active: true } riding)
             world = riding.Center;
         else if (_left && _aim is { active: true } enemy)
