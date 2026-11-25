@@ -1,3 +1,4 @@
+using CalmTerraria.Scan;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -6,42 +7,106 @@ namespace CalmTerraria.World;
 
 /// <summary>Putting the character somewhere at once: a power, used by
 /// the waypoints and the scanner. The game's own teleport, so a server
-/// is told the way a Rod of Discord tells it.</summary>
+/// is told the way a Rod of Discord tells it.
+///
+/// The character is never put inside the ground or left in mid-air.
+/// It is stood on the thing, if there is room to stand on it - so
+/// that an item on the ground is picked up - and otherwise on the
+/// nearest footing, however far that is, with how far the thing then
+/// is said. On a server, a place this computer has not been sent yet
+/// is empty until it arrives: the character is held still there, and
+/// stood properly once it has.</summary>
 internal static class Travel
 {
     /// <summary>How far round the tile a place to stand is looked for.</summary>
-    private const int Search = 8;
+    private const int Search = 40;
 
-    /// <summary>Stand the local player at, or as near as there is
-    /// footing to, a tile: a chest is in the ground's way and a vein
-    /// of ore is inside the rock.</summary>
-    public static void To(int x, int y)
+    private static (int X, int Y)? _arriving;
+    private static int _arrivingFrames;
+    private static Vector2 _held;
+    private static Action<string>? _say;
+
+    /// <summary>Go to a tile. What to say about where that left the
+    /// character relative to it, or null when they are on it.</summary>
+    public static string? To(int x, int y, Action<string> say)
+    {
+        _say = say;
+        if (Main.netMode == NetmodeID.MultiplayerClient && !Loaded(x, y))
+        {
+            // Not sent yet: go, hold still, and stand properly when
+            // the ground has arrived.
+            Move(new Vector2(x * 16f, y * 16f - 32f));
+            _arriving = (x, y);
+            _arrivingFrames = 0;
+            _held = Main.LocalPlayer.position;
+            return null;
+        }
+        return Stand(x, y);
+    }
+
+    private static string? Stand(int x, int y)
     {
         var player = Main.LocalPlayer;
-        var (sx, sy) = Footing(x, y) ?? (x, y);
+        if (Footing(x, y) is not { } spot)
+            return "No footing anywhere near it. Not moved.";
         // Feet on the bottom of that tile, body across it and the next.
-        var to = new Vector2(sx * 16f + 16f - player.width / 2f, (sy + 1) * 16f - player.height);
+        Move(new Vector2(spot.X * 16f + 16f - player.width / 2f, (spot.Y + 1) * 16f - player.height));
+        return Touches(spot, x, y) ? null : Directions.Offset(x - spot.X, y - (spot.Y - 1));
+    }
+
+    private static void Move(Vector2 to)
+    {
+        var player = Main.LocalPlayer;
         player.Teleport(to, 1);
         player.velocity = Vector2.Zero;
+        player.fallStart = (int)(to.Y / 16f);
         if (Main.netMode == NetmodeID.MultiplayerClient)
             NetMessage.SendData(MessageID.TeleportEntity, -1, -1, null, 0, player.whoAmI, to.X, to.Y, 1);
     }
 
-    /// <summary>The nearest tile with room for a body above it and
-    /// something to stand on below.</summary>
+    /// <summary>Once a frame in a world: waiting for the ground.</summary>
+    public static void Update()
+    {
+        if (_arriving is not { } goal)
+            return;
+        var player = Main.LocalPlayer;
+        if (Loaded(goal.X, goal.Y) || ++_arrivingFrames > 600)
+        {
+            _arriving = null;
+            if (Stand(goal.X, goal.Y) is { } said)
+                _say?.Invoke(said);
+            return;
+        }
+        player.position = _held;
+        player.velocity = Vector2.Zero;
+        player.fallStart = (int)(_held.Y / 16f);
+    }
+
+    private static bool Loaded(int x, int y) =>
+        Main.sectionManager == null || Main.sectionManager.TilesLoaded(x - 2, y - 4, x + 2, y + 4);
+
+    /// <summary>Standing there, the body is over the tile: an item on
+    /// it is in reach of the hands.</summary>
+    private static bool Touches((int X, int Y) feet, int x, int y) =>
+        x >= feet.X - 1 && x <= feet.X + 2 && y >= feet.Y - 3 && y <= feet.Y + 1;
+
+    /// <summary>A tile with room for a body above it and something to
+    /// stand on below: one where the body is over the target, if
+    /// there is one, and otherwise the nearest.</summary>
     private static (int X, int Y)? Footing(int x, int y)
     {
         (int X, int Y)? best = null;
-        var bestDistance = int.MaxValue;
+        var bestScore = long.MaxValue;
         for (var dy = -Search; dy <= Search; dy++)
         {
             for (var dx = -Search; dx <= Search; dx++)
             {
-                var distance = dx * dx + dy * dy;
-                if (distance >= bestDistance || !Stands(x + dx, y + dy))
+                var spot = (X: x + dx, Y: y + dy);
+                long score = dx * dx + dy * dy + (Touches(spot, x, y) ? 0 : 1_000_000);
+                if (score >= bestScore || !Stands(spot.X, spot.Y))
                     continue;
-                best = (x + dx, y + dy);
-                bestDistance = distance;
+                best = spot;
+                bestScore = score;
             }
         }
         return best;
@@ -53,7 +118,7 @@ internal static class Travel
             return false;
         for (var column = x; column <= x + 1; column++)
             for (var row = y - 2; row <= y; row++)
-                if (WorldGen.SolidTile(column, row))
+                if (WorldGen.SolidTile(column, row) || Main.tile[column, row] is { LiquidAmount: > 0, LiquidType: LiquidID.Lava })
                     return false;
         return Floor(x, y + 1) || Floor(x + 1, y + 1);
     }

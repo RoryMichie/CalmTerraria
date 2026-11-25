@@ -126,8 +126,12 @@ Factorio Access's keys.
   never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance. The character
   stays where it is.
-- Ctrl+Home: move the character there - a teleport, to the nearest
-  footing beside the thing - and the cursor onto it.
+- Ctrl+Home: move the character there - a teleport - and the cursor
+  onto it. The character is stood on the thing where there is room,
+  so an item on the ground is picked up; where there is not - ore
+  inside rock - on the nearest footing, with how far the thing is
+  from there said. Never inside the ground. Something that has gone
+  since the scan is said to be gone.
 
 A chest that has been given a name is listed under Containers by that
 name, as its own entry: "Ores, Chest".

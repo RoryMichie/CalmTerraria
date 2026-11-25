@@ -73,6 +73,10 @@ internal sealed class TerrariaScanSource : IScanSource
         Mark(Treasure, TileID.Heart, TileID.ManaCrystal, TileID.LifeFruit, TileID.ShadowOrbs,
             TileID.PlanteraBulb, TileID.Larva);
         Mark(Plants, TileID.MatureHerbs, TileID.BloomingHerbs, TileID.DyePlants);
+        // Trees, each its own entry with its height in tiles.
+        for (var type = 0; type < types; type++)
+            if (TileID.Sets.IsATreeTrunk[type] || type == TileID.PalmTree)
+                _categoryOfType[type] = Plants;
         Mark(Hazards, TileID.Spikes, TileID.WoodenSpikes, TileID.Traps, TileID.Boulder, TileID.Explosives,
             TileID.PressurePlates, TileID.GeyserTrap, TileID.LandMine);
 
@@ -157,7 +161,7 @@ internal sealed class TerrariaScanSource : IScanSource
         // Ores and gems are veins, and spikes and traps come in runs;
         // everything else here is an object,
         // reported at its top-left tile only.
-        var gathers = category is Ores or Gems or Hazards;
+        var gathers = category is Ores or Gems or Hazards || TileID.Sets.IsATreeTrunk[type] || type == TileID.PalmTree;
         var data = gathers ? null : TileObjectData.GetTileData(tile);
         if (data != null
             && (tile.TileFrameX % data.CoordinateFullWidth != 0 || tile.TileFrameY % data.CoordinateFullHeight != 0))

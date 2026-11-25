@@ -124,7 +124,8 @@ internal sealed class Waypoints
         var index = _points.FindIndex(point => point.Name == name);
         if (index < 0)
             return false;
-        Travel.To(_points[index].X, _points[index].Y);
+        if (Travel.To(_points[index].X, _points[index].Y, text => _host.App.Announce(text)) is { } where)
+            _host.App.Announce(where);
         return true;
     }
 }

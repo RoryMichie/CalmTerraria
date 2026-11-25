@@ -127,6 +127,7 @@ public sealed class CalmTerrariaMod : Mod
                 _ = new FlightSounds(_host, _shell, Logger);
                 _autopilot?.Register("flight", _ => Logger.Info($"Flight: {FlightSounds.Report}"));
                 _shell.WorldFrame += ItemUse.Update;
+                _shell.WorldFrame += Travel.Update;
                 TerrariaPack.Say = text => _host.App.Announce(text);
                 FixGameBindings();
                 _ = new Spy(_host, _shell);

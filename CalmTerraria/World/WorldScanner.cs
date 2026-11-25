@@ -91,14 +91,26 @@ internal sealed class WorldScanner
                 _host.App.Announce("Nothing selected.");
                 return;
             }
-            Travel.To(target.X, target.Y);
+            // Something that moved on - an item picked up, a creature
+            // gone - is not a place to go any more.
+            if (_list.Current is { Gone: true } gone)
+            {
+                _host.App.Announce($"{gone.DisplayName} is gone.");
+                return;
+            }
+            var where = Travel.To(target.X, target.Y, text => _host.App.Announce(text));
             // The cursor comes too, onto the thing itself.
             JumpRequested?.Invoke(target);
+            // Where it could only be stood near: how far off it is.
+            if (where != null)
+                _host.App.Announce(where);
         };
         commands[KeyCombo.Plain(Key.Home)] = () =>
         {
             // Never refreshed here: it goes to what was last read.
-            if (Ready() && _list.Target is { } target)
+            if (Ready() && _list.Current is { Gone: true } gone)
+                _host.App.Announce($"{gone.DisplayName} is gone.");
+            else if (Ready() && _list.Target is { } target)
                 JumpRequested?.Invoke(target);
             _usedAt = _host.Now;
         };

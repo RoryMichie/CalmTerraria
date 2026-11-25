@@ -1,0 +1,29 @@
+# Ctrl+Home to ore inside rock: stood on footing, offset said. Trees in the scanner.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do godmode
+do recall
+wait 1500
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+wait 300
+key shift+pagedown
+key shift+pagedown
+wait 300
+key ctrl+home
+wait 800
+do state
+key k
+key shift+w
+key shift+s
+log --- plants
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+wait 300
+key pagedown
+key pagedown
+quit
