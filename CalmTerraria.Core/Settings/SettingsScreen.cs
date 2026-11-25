@@ -17,6 +17,10 @@ public interface ISettings
     /// <summary>A stop that has a shortcut key says it when it is read.</summary>
     bool SayShortcuts { get; set; }
 
+    /// <summary>What kind of thing a stop is - "list", "button",
+    /// "check box" - is said when it is read.</summary>
+    bool SayRoles { get; set; }
+
     int SoundVolume { get; set; }
     int MusicVolume { get; set; }
     int AmbientVolume { get; set; }
@@ -64,6 +68,8 @@ public sealed class SettingsScreen
         tick.Toggled += on => _settings.MenuTick = on;
         var shortcuts = new CheckBox(mod, "Say shortcut keys", _settings.SayShortcuts);
         shortcuts.Toggled += on => _settings.SayShortcuts = on;
+        var roles = new CheckBox(mod, "Say roles", _settings.SayRoles);
+        roles.Toggled += on => _settings.SayRoles = on;
 
         var game = tabs.AddTab("Game").Panel!;
         Volume(game, "Sound volume", _settings.SoundVolume, value => _settings.SoundVolume = value);

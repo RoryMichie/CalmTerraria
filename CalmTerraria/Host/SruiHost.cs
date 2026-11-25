@@ -78,11 +78,14 @@ internal sealed class SruiHost : IDisposable
     /// <summary>What the settings say of speech, put into effect.</summary>
     public void ApplySettings()
     {
-        var shortcuts = ModSettings.Shortcuts;
-        _logReader.Verbosity.Shortcuts = shortcuts;
-        App.SpeechVerbosity.Shortcuts = shortcuts;
+        var all = new List<SpeechVerbosity> { _logReader.Verbosity, App.SpeechVerbosity };
         if (_reader != null)
-            _reader.Verbosity.Shortcuts = shortcuts;
+            all.Add(_reader.Verbosity);
+        foreach (var verbosity in all)
+        {
+            verbosity.Shortcuts = ModSettings.Shortcuts;
+            verbosity.Roles = ModSettings.Roles;
+        }
     }
 
     public void TakeKeyboard() => OwnsKeyboard = true;

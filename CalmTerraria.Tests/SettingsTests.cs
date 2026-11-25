@@ -10,6 +10,7 @@ internal sealed class FakeSettings : ISettings
     public bool ClassicKeys { get; set; }
     public bool MenuTick { get; set; } = true;
     public bool SayShortcuts { get; set; } = true;
+    public bool SayRoles { get; set; } = true;
     public int SoundVolume { get; set; } = 50;
     public int MusicVolume { get; set; } = 50;
     public int AmbientVolume { get; set; } = 50;

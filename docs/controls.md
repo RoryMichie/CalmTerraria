@@ -440,6 +440,8 @@ Mod:
   switched off.
 - Say shortcut keys: a stop with an Alt key says it after it is read.
   On unless switched off.
+- Say roles: what kind of thing a stop is - "list", "button", "check
+  box" - is said with it. On unless switched off.
 
 Game:
 

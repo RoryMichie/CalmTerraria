@@ -35,6 +35,22 @@ internal sealed class ModSettings : ISettings
     /// <summary>Shortcut keys are said with the stops that have them.</summary>
     public static bool Shortcuts => !(_shortcuts ??= System.IO.File.Exists(File("no-shortcut-keys.txt")));
 
+    private static bool? _noRoles;
+
+    /// <summary>What kind of thing a stop is, is said.</summary>
+    public static bool Roles => !(_noRoles ??= System.IO.File.Exists(File("no-roles.txt")));
+
+    public bool SayRoles
+    {
+        get => Roles;
+        set
+        {
+            _noRoles = !value;
+            Mark("no-roles.txt", !value, "Roles are not said.");
+            SpeechChanged?.Invoke();
+        }
+    }
+
     /// <summary>Called when what is spoken has changed.</summary>
     public Action? SpeechChanged { get; set; }
 
