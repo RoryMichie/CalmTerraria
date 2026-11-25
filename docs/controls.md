@@ -40,9 +40,20 @@ is from the character: "Dirt, 3 right 1 down".
 
 While the cursor is within reach it goes with the player. With the
 smart cursor off it clings: a step brings it back onto the character.
-With the smart cursor on it keeps its place relative to them: put it
-one tile ahead and it stays one tile ahead. Holding a bracket keeps it
-where it is either way, so a run of blocks can be laid while walking.
+Holding a bracket keeps it where it is, so a run of blocks can be laid
+while walking.
+
+Digging in a direction: with the smart cursor on (V), a direction key
+points and does not step. The cursor goes two tiles from the character
+that way, whatever it was on before, and stays that way from them as
+they move; the direction is said, with the tile the game has picked to
+work on - "Left: Dirt, 1 left". Holding the left bracket with a
+pickaxe then digs that way, and the game chooses the tiles: level, a
+tunnel the character can walk through as they go; up or down, a
+shaft; the diagonals, a stair. An axe, a hammer and blocks to place
+are pointed the same way. K still reads the cursor's own tile and
+Ctrl+K brings it back onto the character. A cursor sent out of reach,
+by the scanner or by skimming, steps tile by tile as ever.
 
 The grappling hook, on the game's own key (E), goes to the cursor: put
 the cursor where the hook should catch. With the cursor on the
@@ -326,7 +337,9 @@ is read. Escape ends the conversation. A sign reads the same way.
 A shop puts its list in front: each item with its price, Enter buys
 one and says what money is left, F1 describes. While a shop is open,
 Enter in the inventory sells all of the item; the shop keeps it, to
-be bought back.
+be bought back. Each line of the inventory then says what the shop
+gives for it, before its description - "Wood, 300. Sells for 1
+copper each. Material" - or "Worth nothing."
 
 Holding swaps the item into the hand; the number keys still switch
 between the last ten things held.

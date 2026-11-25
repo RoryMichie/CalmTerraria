@@ -291,6 +291,7 @@ internal sealed class Cursor
     {
         Aim();
         CheckPlacing();
+        SayAim();
         if (_lockWatch is { } watch)
         {
             // A key in the pack opens it on the click; without one
@@ -353,7 +354,55 @@ internal sealed class Cursor
     private void Move(int dx, int dy)
     {
         var (x, y) = Tile;
+        // With the smart cursor on, a direction is a direction: the
+        // game digs, chops and builds that way from the character,
+        // choosing the tiles itself, so the cursor is pointed and not
+        // stepped. One that has been sent off to look around is still
+        // stepped, from where it is.
+        if (Main.SmartCursorWanted && _carried)
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            Place(px + dx * AimDistance, py + dy * AimDistance);
+            _aimed = (AimName(dx, dy), 2);
+            if (_left)
+                WatchPlacing();
+            return;
+        }
         MoveTo(x + dx, y + dy, where: true);
+    }
+
+    /// <summary>How far from the character a pointed cursor sits.</summary>
+    private const int AimDistance = 2;
+
+    /// <summary>A direction just pointed in, and how many frames until
+    /// it is said: the game takes a frame to choose its tile.</summary>
+    private (string Direction, int Frames)? _aimed;
+
+    private static string AimName(int dx, int dy) =>
+        ((dy < 0 ? "Up" : dy > 0 ? "Down" : "") + (dx < 0 ? " left" : dx > 0 ? " right" : "")).Trim() is { Length: > 0 } name
+            ? char.ToUpperInvariant(name[0]) + name[1..]
+            : "Here";
+
+    /// <summary>The direction pointed in, and the tile the game's
+    /// smart cursor has chosen that way for what is held, if any.</summary>
+    private void SayAim()
+    {
+        if (_aimed is not { } aimed)
+            return;
+        if (aimed.Frames > 0)
+        {
+            _aimed = (aimed.Direction, aimed.Frames - 1);
+            return;
+        }
+        _aimed = null;
+        if (Main.SmartCursorShowing)
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            int tx = Main.SmartCursorX, ty = Main.SmartCursorY;
+            Say($"{aimed.Direction}: {TileReader.Describe(tx, ty)}, {Directions.Offset(tx - px, ty - py)}");
+        }
+        else
+            Say($"{aimed.Direction}.");
     }
 
     /// <summary>Run in a direction to the first tile that reads
@@ -542,6 +591,13 @@ internal sealed class Cursor
         if (!_placed)
             return;
         var world = new Vector2(_x * 16f + 8f, _y * 16f + 8f);
+        // The smart cursor goes by the direction of the mouse from the
+        // middle of the character, and is strict about it: a tile's
+        // centre is seldom dead level with that, and "left" would come
+        // out as left and a little down. So a cursor that goes with
+        // the character is put exactly that way from their middle.
+        if (Main.SmartCursorWanted && _carried && (_offsetX != 0 || _offsetY != 0))
+            world = Main.LocalPlayer.Center + new Vector2(_offsetX * 16f, _offsetY * 16f);
         if (_right && _riding is { active: true } riding)
             world = riding.Center;
         else if (_left && _aim is { active: true } enemy)

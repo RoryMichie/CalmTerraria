@@ -65,7 +65,27 @@ internal sealed class TerrariaPack : IPack
         SoundEngine.PlaySound(SoundID.Grab);
     }
 
-    public string Describe(int slot) => ItemText.Describe(Player.inventory[slot]);
+    public string Describe(int slot)
+    {
+        var item = Player.inventory[slot];
+        var about = ItemText.Describe(item);
+        // With a shop open, what it would fetch comes first.
+        if (!TerrariaShop.IsOpen || item.IsAir)
+            return about;
+        return about.Length > 0 ? $"{Worth(item)} {about}" : Worth(item);
+    }
+
+    /// <summary>What a shop gives for one of the item, by the game's
+    /// own sum: a fifth of its value, or what was paid for it if it
+    /// was bought here just now.</summary>
+    private static string Worth(Item item)
+    {
+        Player.GetItemExpectedPrice(item, out var selling, out var buying);
+        if (selling <= 0)
+            return "Worth nothing.";
+        var each = Main.shopSellbackHelper.GetAmount(item) > 0 ? buying : Math.Max(1, selling / 5);
+        return item.stack > 1 ? $"Sells for {TerrariaShop.Coins(each)} each." : $"Sells for {TerrariaShop.Coins(each)}.";
+    }
 
     public void ToHotbar(int slot, int hotbar)
     {
