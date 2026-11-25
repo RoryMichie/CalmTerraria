@@ -150,8 +150,10 @@ internal sealed class Feedback
         {
             _dead = player.dead;
             // The death message itself is one of the game's messages.
-            Say(_dead ? $"Respawning in {(player.respawnTimer + 59) / 60} seconds." : "Respawned.");
+            Say(_dead ? $"{Dropped(player)}Respawning in {(player.respawnTimer + 59) / 60} seconds." : "Respawned.");
+            _breathSaid = 100;
         }
+        Breath(player);
 
         // Walking over something the inventory has no room for: the
         // game does nothing and shows nothing. Said once for each.
@@ -196,10 +198,57 @@ internal sealed class Feedback
 
     /// <summary>Health, mana, and each thing affecting the character
     /// with the time it has left.</summary>
+    /// <summary>What dying cost, and where it lies, for going back
+    /// for it: the coins a softcore character drops, or everything a
+    /// mediumcore one carried. Nothing is said when nothing fell.</summary>
+    private static string Dropped(Player player)
+    {
+        var what = player.difficulty == Terraria.ID.PlayerDifficultyID.MediumCore ? "everything carried"
+            : player.lostCoins > 0 ? TerrariaShop.Coins(player.lostCoins)
+            : null;
+        if (what == null)
+            return "";
+        var at = player.lastDeathPostion;
+        return $"Dropped {what}, at {(int)(at.X / 16f)}, {(int)(at.Y / 16f)}. ";
+    }
+
+    /// <summary>The lowest mark of breath said since it was last full.</summary>
+    private int _breathSaid = 100;
+
+    /// <summary>Breath, which the game shows as bubbles over the
+    /// character only while it is short: said as it runs down, when
+    /// it is gone, and when it is back.</summary>
+    private void Breath(Player player)
+    {
+        if (player.dead || player.breathMax <= 0)
+            return;
+        var percent = 100 * Math.Max(0, player.breath) / player.breathMax;
+        if (percent >= 100)
+        {
+            if (_breathSaid < 100)
+                Say("Breath restored.");
+            _breathSaid = 100;
+            return;
+        }
+        var mark = percent <= 0 ? 0 : percent <= 25 ? 25 : percent <= 50 ? 50 : percent <= 75 ? 75 : 100;
+        if (mark >= _breathSaid)
+            return;
+        _breathSaid = mark;
+        Say(mark switch
+        {
+            0 => "Drowning.",
+            25 => "Breath low, a quarter left.",
+            50 => "Breath half gone.",
+            _ => "Holding breath.",
+        });
+    }
+
     private static string Status()
     {
         var player = Main.LocalPlayer;
         var parts = new List<string> { $"Health {player.statLife} of {player.statLifeMax2}" };
+        if (player.breath < player.breathMax && player.breathMax > 0)
+            parts.Add($"breath {100 * Math.Max(0, player.breath) / player.breathMax} percent");
         if (player.statManaMax2 > 0)
             parts.Add($"mana {player.statMana} of {player.statManaMax2}");
         if (player.statDefense > 0)

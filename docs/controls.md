@@ -426,6 +426,14 @@ light". F1 reads the description again.
   tiles - "Lava, 3 right 1 down." - and again only after being clear
   of them. The scanner has a Hazards category: lava in any amount,
   spikes, traps, boulders, explosives, pressure plates.
+- Breath: "Holding breath." once a quarter of it is gone, "Breath
+  half gone.", "Breath low, a quarter left.", "Drowning." when there
+  is none and it hurts, and "Breath restored." when it is full again.
+  Backspace says how much is left while it is short.
+- Dying says what was dropped and where, before how long until the
+  respawn: the coins - "Dropped 2 gold 30 silver, at 4121, 521." -
+  or, for a mediumcore character, everything carried. C reads the
+  character's own coordinates for walking back to it.
 - Low health is a heartbeat: under three tenths of full health, two
   soft thumps, quicker the less is left.
 - The character's own yoyo wavers softly from where it is, for as
