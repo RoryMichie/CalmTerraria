@@ -256,8 +256,8 @@ safe, brings the same screen with two tab stops in front:
 Storage: with chests near the character - within 50 tiles to either
 side and 30 above or below, about what is on screen - and nothing
 else open, the screen has two more stops after Carried, and every one
-of those chests is treated as a single container. Single player only;
-locked chests are left out.
+of those chests is treated as a single container. Locked chests are
+left out.
 
 - Storage, named with how many chests it is: everything in all of
   them as one alphabetical list, the same item in several chests as
@@ -274,6 +274,21 @@ locked chests are left out.
   with room.
 - Crafting counts what is in storage as it counts what is carried,
   and takes what it uses from the chests.
+
+On a server, storage works the same, with these differences:
+
+- A server says what is in a chest only when it is opened, so as the
+  screen comes up each chest in reach is opened and shut again at
+  once, from where the character stands. The list fills as the
+  answers arrive, which is a moment. Nothing of that is heard here;
+  other players see the lids move.
+- A chest another player has open is left out until they shut it.
+- Chests rigged to a trap are left out: asking about one would set
+  the trap off.
+- Crafting counts storage only while this screen is up without a
+  chest, a shop or a conversation in front.
+- Two players with this mod can both use the same chests: each is
+  told when the other changes one, and looks again.
 
 A flying piggy bank or a void lens, once summoned, is a container that
 hangs in the air: the scanner lists it under Containers, the cursor
@@ -379,7 +394,8 @@ has and more, for any character.
 - Omnipresent storage: storage is every unlocked chest in the world,
   wherever the character is, not only the chests near them. Taking,
   putting away and crafting all reach it. Remembered between
-  sessions. Single player only, as storage is.
+  sessions. On a server it is every chest in the parts of the world
+  this computer has been sent, which is where the character has been.
 - Give item: a list of every item; type the start of a name, Enter
   gives a full stack. The list stays open for more.
 - Spawn creature: the same for creatures; one appears twelve tiles

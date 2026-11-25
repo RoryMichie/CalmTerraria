@@ -54,6 +54,7 @@ internal sealed class Shell
         WorldCommands[KeyCombo.Plain(Key.Enter)] = () => OpenPack(focus: PackFocus.Chat);
         _pack.Closed += () =>
         {
+            World.TerrariaStorage.End();
             if (_paused)
             {
                 _paused = false;
@@ -161,6 +162,7 @@ internal sealed class Shell
             Main.playerInventory = true;
             _host.App.Announce("Paused.");
         }
+        World.TerrariaStorage.Begin();
         Recipe.FindRecipes();
         _pack.Open(null, notice, focus, build: Build,
             storage: World.TerrariaStorage.Available ? new World.TerrariaStorage() : null);
