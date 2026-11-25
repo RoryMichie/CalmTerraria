@@ -250,6 +250,7 @@ internal sealed class BuildTool : IBuild
             Build(Kind.Fill, all, "Filling", "filled", "Fill", "tiles to fill");
             if (rim.Count < all.Count)
                 Build(Kind.Outline, rim, "Outlining", "placed", "Outline", "tiles round the edge");
+            OfferLevel(left, top, right, bottom, item, name, Offer);
         }
 
         if (!held.IsAir && held.createWall > 0)
@@ -388,6 +389,58 @@ internal sealed class BuildTool : IBuild
             steps.Add((x, y));
         }
         return steps;
+    }
+
+    /// <summary>How far under the line holes are filled.</summary>
+    private const int LevelDepth = 8;
+
+    /// <summary>Flat ground: everything in the marked area is cleared
+    /// away, and every hole under it is filled with the held block,
+    /// so that the bottom edge of the area is one level floor to walk
+    /// and build on. For ground that has been dug to pieces.</summary>
+    private void OfferLevel(int left, int top, int right, int bottom, int item, string name, Action<Job, string, string> offer)
+    {
+        var player = Main.LocalPlayer;
+        var above = new List<(int X, int Y)>();
+        int kept = 0;
+        for (var y = top; y <= bottom; y++)
+        {
+            for (var x = left; x <= right; x++)
+            {
+                var tile = Main.tile[x, y];
+                if (!tile.HasTile)
+                    continue;
+                var type = tile.TileType;
+                var cut = Main.tileAxe[type] ? Best(i => i.axe) >= 0 : Best(i => i.pick) >= 0 && player.HasEnoughPickPowerToHurtTile(x, y);
+                if (TileID.Sets.BasicChest[type] || TileID.Sets.BasicDresser[type] || Main.tileHammer[type] || !cut)
+                    kept++;
+                else
+                    above.Add((x, y));
+            }
+        }
+        List<(int X, int Y)> Holes()
+        {
+            var holes = new List<(int X, int Y)>();
+            // From the bottom of each column up, so each block has one under it.
+            for (var y = Math.Min(bottom + LevelDepth, Main.maxTilesY - 3); y > bottom; y--)
+                for (var x = left; x <= right; x++)
+                    if (Open(x, y))
+                        holes.Add((x, y));
+            return holes;
+        }
+        var under = Holes();
+        if (above.Count == 0 && under.Count == 0)
+            return;
+        var ordered = above.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
+            .Concat(above.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList();
+        Job Filling() => new Job(Kind.Fill, item, "Filling the ground,", "filled", Holes());
+        var job = ordered.Count == 0 ? Filling() : new Job(Kind.Clear, 0, "Levelling: clearing", "cleared", ordered, Then: Filling);
+        var have = Carried(item);
+        offer(job, $"Level with {name}, {right - left + 1} wide",
+            $"Flat ground {right - left + 1} tiles wide, along the bottom of the marked area. "
+            + $"{above.Count} tiles cleared from inside it, {under.Count} holes filled under it, down to {LevelDepth} deep. "
+            + (have >= under.Count ? $"You have {have} {name}." : $"You have {have} {name}, {under.Count - have} short.")
+            + (kept > 0 ? $" {kept} tiles are left: chests, or too hard for your tools." : ""));
     }
 
     /// <summary>The vein miner: for something marked from the scanner
@@ -603,12 +656,21 @@ internal sealed class BuildTool : IBuild
         // Smart cursor chooses its own tile; this work chooses each one.
         Main.SmartCursorWanted_Mouse = false;
         Working = true;
+        _dug = null;
         Begin(job);
     }
 
     private void Begin(Job job)
     {
         _job = job;
+        if (job.Kind == Kind.Clear && job.Targets.Count > 0)
+        {
+            var (l, t, r, b) = (job.Targets.Min(p => p.X) - 10, job.Targets.Min(p => p.Y) - 10,
+                job.Targets.Max(p => p.X) + 10, job.Targets.Max(p => p.Y) + 12);
+            _dug = _dug is { } had
+                ? (Math.Min(had.Left, l), Math.Min(had.Top, t), Math.Max(had.Right, r), Math.Max(had.Bottom, b))
+                : (l, t, r, b);
+        }
         _queue = new Queue<(int X, int Y)>(job.Targets);
         _failed = new List<(int X, int Y)>();
         _far = new List<(int X, int Y)>();
@@ -885,15 +947,11 @@ internal sealed class BuildTool : IBuild
         Shout();
         // What was dug or cut down lies where it fell, which with a
         // long reach is not where the character is: go and get it.
-        if (_job.Kind is Kind.Clear && _job.Targets.Count > 0)
+        if (_dug is { } dug)
         {
             _fetching = true;
             _fetchFrames = 0;
-            _fetchSkipped.Clear();
-            _fetchLeft = _job.Targets.Min(t => t.X) - 10;
-            _fetchRight = _job.Targets.Max(t => t.X) + 10;
-            _fetchTop = _job.Targets.Min(t => t.Y) - 10;
-            _fetchBottom = _job.Targets.Max(t => t.Y) + 12;
+            (_fetchLeft, _fetchTop, _fetchRight, _fetchBottom) = dug;
             return;
         }
         Finish();
@@ -912,6 +970,8 @@ internal sealed class BuildTool : IBuild
     public static string Report { get; private set; } = "";
 
     private bool _fetching;
+    /// <summary>Where this run of jobs has dug, for its drops.</summary>
+    private (int Left, int Top, int Right, int Bottom)? _dug;
     private int _fetchFrames, _fetchLeft, _fetchRight, _fetchTop, _fetchBottom, _fetchType;
     private Item? _fetchItem;
     private readonly HashSet<Item> _fetchSkipped = new();
@@ -926,57 +986,40 @@ internal sealed class BuildTool : IBuild
     {
         var x = (int)(item.Center.X / 16f);
         var y = (int)(item.Center.Y / 16f);
-        return x >= _fetchLeft && x <= _fetchRight && y >= _fetchTop && y <= _fetchBottom;
+        // Where the work was, or already brought to the character.
+        return (x >= _fetchLeft && x <= _fetchRight && y >= _fetchTop && y <= _fetchBottom)
+            || Microsoft.Xna.Framework.Vector2.Distance(item.Center, Main.LocalPlayer.Center) < 48f;
     }
 
-    /// <summary>After clearing: walk to each thing lying where the
-    /// work was, nearest first, as far as walking gets. What cannot
-    /// be walked to is said, with where it is, and left.</summary>
+    /// <summary>After clearing: what was dug or cut down is brought
+    /// to the character, from wherever the work was. With a long
+    /// reach that can be forty tiles off, down a hole or up a tree,
+    /// and the pockmarked ground it has to be fetched over is the
+    /// reason for clearing in the first place. A power, like the long
+    /// reach itself. What the pack has no room for stays, and is
+    /// counted.</summary>
     private void Fetch()
     {
         var player = Main.LocalPlayer;
-        if (_walk == Walk.Fetch)
-            return;
-        if (_gaveUpWalking && _fetchItem != null)
-        {
-            _fetchSkipped.Add(_fetchItem);
-            _gaveUpWalking = false;
-        }
-        Item? next = null;
-        var nearest = float.MaxValue;
         var lying = 0;
-        Item? nearestLying = null;
-        var nearestLyingDistance = float.MaxValue;
         foreach (var item in Main.ActiveItems)
         {
             if (!Dropped(item))
                 continue;
             lying++;
-            var distance = Microsoft.Xna.Framework.Vector2.Distance(item.Center, player.Center);
-            if (distance < nearestLyingDistance)
-                (nearestLying, nearestLyingDistance) = (item, distance);
-            if (_fetchSkipped.Contains(item))
+            if (!player.ItemSpace(item).CanTakeItem)
                 continue;
-            if (distance < nearest)
-                (next, nearest) = (item, distance);
+            item.Center = player.Center;
+            item.velocity = Microsoft.Xna.Framework.Vector2.Zero;
+            item.noGrabDelay = 0;
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                NetMessage.SendData(MessageID.SyncItem, -1, -1, null, item.whoAmI);
         }
-        if (next == null || ++_fetchFrames > 3600)
-        {
-            _fetching = false;
-            string? also = null;
-            if (nearestLying is { } left)
-            {
-                var (px, py) = WorldScanner.PlayerTile();
-                also = $"{lying} drops could not be walked to, nearest {Directions.Offset((int)(left.Center.X / 16f) - px, (int)(left.Center.Y / 16f) - py)}.";
-            }
-            Finish(also);
+        // A moment for the last of them to be taken up.
+        if (lying > 0 && ++_fetchFrames < 45)
             return;
-        }
-        _fetchItem = next;
-        _fetchType = next.type;
-        var (fx, fy) = WorldScanner.PlayerTile();
-        Report += $" | to {next.Name} x{next.stack} at {(int)(next.Center.X / 16f)},{(int)(next.Center.Y / 16f)} from {fx},{fy}, {lying} lying, bounds {_fetchLeft}..{_fetchRight} {_fetchTop}..{_fetchBottom}";
-        StartWalking(Walk.Fetch, ((int)(next.Center.X / 16f), (int)(next.Center.Y / 16f)));
+        _fetching = false;
+        Finish(lying > 0 ? $"{lying} drops left where they are: no room for them." : null);
     }
 
     private const string Tree = "tree";
@@ -993,7 +1036,8 @@ internal sealed class BuildTool : IBuild
         {
             Kind.Clear => Main.tileAxe[tile.TileType] ? Tree : TileNames.At(at.X, at.Y, tile),
             Kind.Unwall => "walls",
-            Kind.Wall or Kind.Fill or Kind.Outline => Main.LocalPlayer.HeldItem.Name,
+            // What the job places, whatever is in the hand this instant.
+            Kind.Wall or Kind.Fill or Kind.Outline => Lang.GetItemNameValue(_job.Item),
             Kind.Soak => $"tiles of {LiquidNames[Math.Clamp(tile.LiquidType, 0, LiquidNames.Length - 1)]}",
             Kind.Pour => "buckets of water",
             _ => "tiles",
@@ -1121,7 +1165,6 @@ internal sealed class BuildTool : IBuild
         {
             Walk.Aside => !_aside.Concat(_queue).Any(InTheWay) && !(_current is { } now && InTheWay(now)) && ++_walkFrames > 12,
             // Until it is in the pack, or gone some other way.
-            Walk.Fetch => !StillLying(),
             _ => Reachable(_walkGoal),
         };
         if (arrived)

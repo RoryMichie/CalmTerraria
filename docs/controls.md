@@ -81,6 +81,9 @@ Work on an area:
 - With an area marked, the Tab ring leads with a Build list of what
   can be done to it with what is held:
   - a block: Fill, and Outline (the edge only: the shell of a room);
+  - a block: also Level - flat ground along the bottom of the area.
+    Everything inside it is cleared and every hole under it, down to
+    eight tiles, is filled, for ground that has been dug to pieces;
   - a wall: Wall;
   - always: Clear, using the best pickaxe and axe carried, trees
     first and from the foot; and, with a hammer carried, Remove walls;
@@ -107,10 +110,9 @@ Work on an area:
   loose things where the blocks are to go are cut down or dug out,
   then the blocks go in. Solid ground already there is left, being as
   good as a wall, and chests are never touched.
-- After clearing or mining, the job walks the character to what was
-  dropped, nearest first, as far as walking gets - with a long reach
-  the drops are where the work was, not where the character is. What
-  cannot be walked to is counted and placed at the end.
+- After clearing or mining, what was dug or cut down is brought to
+  the character from wherever the work was, and picked up. What the
+  inventory has no room for is counted and left.
 - X stops a job. The area stays marked for the next one.
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with

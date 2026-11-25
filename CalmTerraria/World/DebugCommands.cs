@@ -243,6 +243,40 @@ internal static class DebugCommands
                     lines.Add($"{projectile.Name} velocity {projectile.velocity.X:0.0},{projectile.velocity.Y:0.0}");
             log.Info("Hooks: " + (lines.Count == 0 ? "none" : string.Join("; ", lines)));
         });
+        // pockmark - the arena's floor to the right of the character, dug
+        // into holes with lumps left standing on it.
+        autopilot.Register("pockmark", _ =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            var floor = py + 2;
+            for (var x = px + 3; x <= px + 18; x++)
+            {
+                if (x % 3 == 0)
+                    for (var y = floor; y <= floor + 1; y++)
+                        Main.tile[x, y].ClearEverything();
+                if (x % 4 == 0)
+                    for (var y = floor - 2; y < floor; y++)
+                        WorldGen.PlaceTile(x, y, TileID.Dirt, mute: true, forced: true);
+            }
+            log.Info($"Debug: pockmarked {px + 3}..{px + 18}, floor at {floor}.");
+        });
+        // ground - how flat that stretch is now: open tiles in the floor, solid ones above it.
+        autopilot.Register("ground", _ =>
+        {
+            var cx = Main.spawnTileX;
+            var floor = Math.Max(60, Main.spawnTileY - 120);
+            int holes = 0, lumps = 0;
+            for (var x = cx + 3; x <= cx + 18; x++)
+            {
+                if (!Main.tile[x, floor].HasTile)
+                    holes++;
+                for (var y = floor - 4; y < floor; y++)
+                    if (Main.tile[x, y].HasTile)
+                        lumps++;
+            }
+            log.Info($"Ground: {holes} holes in the floor, {lumps} tiles standing on it.");
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {
