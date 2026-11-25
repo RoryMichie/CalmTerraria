@@ -121,10 +121,24 @@ public sealed class Surveyor
     private readonly List<int> _tiles = new();
     private readonly List<(int Kind, int X, int Y)> _first = new();
     private int _column;
+    private readonly int _top, _right, _bottom;
 
-    public Surveyor(IScanSource source) => _source = source;
+    public Surveyor(IScanSource source) : this(source, 0, 0, source.Width - 1, source.Height - 1)
+    {
+    }
 
-    public bool Done => _column >= _source.Width;
+    /// <summary>A survey of part of the world only: quick enough to
+    /// take whole, on the spot, for what is round the player now.</summary>
+    public Surveyor(IScanSource source, int left, int top, int right, int bottom)
+    {
+        _source = source;
+        _column = Math.Max(0, left);
+        _top = Math.Max(0, top);
+        _right = Math.Min(source.Width - 1, right);
+        _bottom = Math.Min(source.Height - 1, bottom);
+    }
+
+    public bool Done => _column > _right;
 
     /// <summary>How far through the world the pass is, 0 to 1.</summary>
     public double Progress => _source.Width == 0 ? 1.0 : Math.Min(1.0, (double)_column / _source.Width);
@@ -132,11 +146,11 @@ public sealed class Surveyor
     /// <summary>Survey the next columns. False once the pass is done.</summary>
     public bool Step(int columns)
     {
-        var end = Math.Min(_source.Width, _column + columns);
+        var end = Math.Min(_right + 1, _column + columns);
         var kinds = _source.Kinds;
         for (; _column < end; _column++)
         {
-            for (var y = 0; y < _source.Height; y++)
+            for (var y = _top; y <= _bottom; y++)
             {
                 var kind = _source.KindAt(_column, y);
                 if (kind < 0)

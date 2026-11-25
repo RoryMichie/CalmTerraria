@@ -125,6 +125,11 @@ Factorio Access's keys.
 - Shift+Page Up and Shift+Page Down: instance of that kind, nearest
   first.
 - End: refresh the scan. Shift+End: refresh, facing direction only.
+- Whenever the scan is taken, by End or by itself, the world for
+  160 tiles to either side and 100 above and below is looked at
+  afresh on the spot: what has just been dug, poured on or built is
+  already in it. Further off, it is as the background survey last
+  found it, which can be a few seconds old.
 - The scan also refreshes by itself: whenever the category is
   changed, and at the first scanner key after five seconds without
   one. It never changes in the middle of a run of key presses. Home

@@ -173,12 +173,40 @@ internal sealed class WorldScanner
     /// scanner key: what it says should be about now.</summary>
     private const ulong StaleMs = 5000;
 
+    /// <summary>How far round the player is surveyed afresh, on the
+    /// spot, each time the list is taken.</summary>
+    private const int NearAcross = 160, NearDown = 100;
+
+    /// <summary>The background survey takes seconds to go round the
+    /// whole world, so what it last saw near the player may be what
+    /// the player has since dug out, poured on or built. So the part
+    /// of the world round the player is surveyed again here, whole,
+    /// and takes the place of what the background survey has for it.
+    /// A thing that reaches past the edge of that part - a lake, a
+    /// biome - keeps the background survey's account of it.</summary>
+    private IEnumerable<Feature> Fresh()
+    {
+        if (_source == null)
+            return _latest!;
+        var (px, py) = PlayerTile();
+        int left = px - NearAcross, top = py - NearDown, right = px + NearAcross, bottom = py + NearDown;
+        var survey = new Surveyor(_source, left, top, right, bottom);
+        while (survey.Step(64))
+        {
+        }
+        bool Inside(Feature feature) =>
+            feature.Bounds.Left > left + 2 && feature.Bounds.Right < right - 2
+            && feature.Bounds.Top > top + 2 && feature.Bounds.Bottom < bottom - 2;
+        var near = Refine(survey.Finish()).Where(Inside);
+        return _latest!.Where(feature => !Inside(feature)).Concat(near);
+    }
+
     private void Take(bool facingOnly)
     {
         _taken = true;
         _facingOnly = facingOnly;
         _usedAt = _host.Now;
-        IEnumerable<Feature> features = _latest!.Concat(Creatures());
+        IEnumerable<Feature> features = Fresh().Concat(Creatures());
         if (Extra != null)
             features = features.Concat(Extra());
         if (facingOnly)

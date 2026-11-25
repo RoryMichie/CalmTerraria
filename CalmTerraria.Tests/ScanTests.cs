@@ -262,3 +262,30 @@ public class ScanListTests
         Assert.Equal("Pot, 4 right", list.Read());
     }
 }
+
+public class RegionSurveyTests
+{
+    private sealed class Grid : IScanSource
+    {
+        public HashSet<(int, int)> Ore { get; } = new();
+        public int Width => 200;
+        public int Height => 100;
+        public IReadOnlyList<ScanKind> Kinds { get; } = new[] { new ScanKind("Ore", "Ores", CellSize: 2) };
+        public int KindAt(int x, int y) => Ore.Contains((x, y)) ? 0 : -1;
+    }
+
+    [Fact]
+    public void ASurveyOfPartOfTheWorldSeesOnlyThatPart()
+    {
+        var grid = new Grid();
+        grid.Ore.Add((10, 10));
+        grid.Ore.Add((150, 50));
+        var survey = new Surveyor(grid, 100, 20, 180, 80);
+        while (survey.Step(16))
+        {
+        }
+        var found = survey.Finish();
+        Assert.Single(found);
+        Assert.Equal(150, found[0].Bounds.Left);
+    }
+}
