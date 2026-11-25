@@ -79,6 +79,10 @@ near open space the character has come close to, and not through a
 thickness of rock. Anything else unlit reads "Unknown". The
 Omniscience power does away with all of it.
 
+The potions that show things through the dark do so here: with a
+Spelunker potion, ore, gems and chests anywhere on screen are known,
+and with a Dangersense potion, traps and the like are.
+
 # 3. Clicking
 
 Left bracket and right bracket are the two mouse buttons, as in

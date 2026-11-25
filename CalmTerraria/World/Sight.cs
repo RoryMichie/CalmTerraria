@@ -45,6 +45,7 @@ internal static class Sight
             return;
         _at = at;
         _when = Main.GameUpdateCount;
+        Potions();
         if (!WorldGen.InWorld(at.X, at.Y, Reach + 2))
             return;
 
@@ -81,6 +82,33 @@ internal static class Sight
                     Cost[nx, ny] = cost + step;
                     Queue.Enqueue((nx, ny));
                 }
+            }
+        }
+    }
+
+    /// <summary>The potions that show things through the dark: with
+    /// Spelunker, ore, gems and chests anywhere on screen stand out,
+    /// lit or not; with Dangersense, traps and the like do. What they
+    /// show a sighted player goes on the map here.</summary>
+    private static void Potions()
+    {
+        var player = Main.LocalPlayer;
+        if (!player.findTreasure && !player.dangerSense)
+            return;
+        // The screen, in tiles, as the view is zoomed.
+        var zoom = Main.GameViewMatrix.Zoom;
+        var middle = Main.screenPosition + new Microsoft.Xna.Framework.Vector2(Main.screenWidth, Main.screenHeight) / 2f;
+        int across = (int)(Main.screenWidth / zoom.X / 32f) + 1, down = (int)(Main.screenHeight / zoom.Y / 32f) + 1;
+        int cx = (int)(middle.X / 16f), cy = (int)(middle.Y / 16f);
+        for (var x = Math.Max(10, cx - across); x <= Math.Min(Main.maxTilesX - 10, cx + across); x++)
+        {
+            for (var y = Math.Max(10, cy - down); y <= Math.Min(Main.maxTilesY - 10, cy + down); y++)
+            {
+                if (!Main.tile[x, y].HasTile)
+                    continue;
+                if ((player.findTreasure && Main.IsTileSpelunkable(x, y))
+                    || (player.dangerSense && Terraria.GameContent.Drawing.TileDrawing.IsTileDangerous(x, y, player)))
+                    Show(x, y);
             }
         }
     }
