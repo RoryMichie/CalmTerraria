@@ -8,7 +8,7 @@ namespace CalmTerraria.World;
 
 /// <summary>Z: where the character is. What a sighted player takes in
 /// at a glance from the backdrop and the screen round them, in a few
-/// words: the biome and the layer of the world, whether they are in a
+/// words: the biome, the layer of the world and how far the biome runs, whether they are in a
 /// room or under something, and what the ground does to the left and
 /// to the right. Shift+Z is the character's coordinates.</summary>
 internal sealed class Surroundings
@@ -32,13 +32,19 @@ internal sealed class Surroundings
     private static string Whereabouts()
     {
         var (px, py) = WorldScanner.PlayerTile();
-        return $"X {px}, Y {py}.";
+        return $"{px}, {py}.";
     }
     private string Describe()
     {
         var player = Main.LocalPlayer;
         var (px, py) = WorldScanner.PlayerTile();
         var parts = new List<string> { $"{Biome(player)}, {Layer(player)}." };
+        // How far the biome runs, where the scanner has it as a place.
+        if (_scanner.PlaceAt(px, py) is { } place)
+        {
+            var (left, _, right, _) = place.Bounds;
+            parts.Add($"{place.DisplayName} runs {Math.Max(0, px - left)} left, {Math.Max(0, right - px)} right.");
+        }
         var (shelter, enclosed) = Shelter(px, py, player.ZoneOverworldHeight || player.ZoneSkyHeight);
         parts.Add(shelter);
         // Indoors the walls are not the lie of the land.

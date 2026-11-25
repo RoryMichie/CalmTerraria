@@ -341,15 +341,16 @@ light". F1 reads the description again.
   Under the cursor, something lying loose reads with "dropped"
   after it, so it is not taken for the thing standing there.
 - Z: where the character is, in a few words. The biome and the layer
-  of the world; then a room with its size and what it is built of, or
+  of the world; how far the biome runs to either side, where the
+  scanner has it as a place; then a room with its size and what it is built of, or
   what is overhead, or "Open sky."; then, outside a room, what the
   ground does to each side as it would be walked - "Left: flat 4,
   then up 2. Right: flat 12, then a drop." A side that is level for
   thirty tiles is "flat". A room says how many of its tiles have no
   back wall only when some have none.
-- Shift+Z: the character's coordinates, in tiles - "X 2140, Y 312."
-  X counts from the world's left edge and Y from its top, so Y grows
-  going down.- Apostrophe: what the character's informational accessories show -
+- Shift+Z: the character's coordinates, in tiles - "2140, 312." The
+  first counts from the world's left edge and the second from its
+  top, so the second grows going down.- Apostrophe: what the character's informational accessories show -
   the time, the depth, the position and so on - in the game's own
   words, for those the character has.
 - The hotbar: the item is said when the selected slot changes.
