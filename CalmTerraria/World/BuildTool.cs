@@ -107,6 +107,12 @@ internal sealed class BuildTool : IBuild
         {
             var left = _queue.Count + _failed.Count + _far.Count + _aside.Count + (_current == null ? 0 : 1);
             Shout();
+            if (_fetching)
+            {
+                End();
+                Say("Stopped fetching.");
+                return;
+            }
             End();
             Say($"Stopped, {left} left.");
             return;
@@ -626,6 +632,7 @@ internal sealed class BuildTool : IBuild
         _job = null;
         _current = null;
         _walk = Walk.No;
+        _fetching = false;
         WalkDirection = 0;
         WalkJump = false;
         Working = false;
@@ -728,6 +735,11 @@ internal sealed class BuildTool : IBuild
         if (_tally > 0 && ++_tallyAge >= 240)
             Shout();
         KeepWalking();
+        if (_fetching)
+        {
+            Fetch();
+            return;
+        }
         if (_current is { } now)
         {
             if (Done(now))
@@ -870,11 +882,101 @@ internal sealed class BuildTool : IBuild
                 return;
             }
         }
-        var failed = _failed.Count;
-        var done = _job.Failed;
         Shout();
+        // What was dug or cut down lies where it fell, which with a
+        // long reach is not where the character is: go and get it.
+        if (_job.Kind is Kind.Clear && _job.Targets.Count > 0)
+        {
+            _fetching = true;
+            _fetchFrames = 0;
+            _fetchSkipped.Clear();
+            _fetchLeft = _job.Targets.Min(t => t.X) - 10;
+            _fetchRight = _job.Targets.Max(t => t.X) + 10;
+            _fetchTop = _job.Targets.Min(t => t.Y) - 10;
+            _fetchBottom = _job.Targets.Max(t => t.Y) + 12;
+            return;
+        }
+        Finish();
+    }
+
+    private void Finish(string? also = null)
+    {
+        var failed = _failed.Count;
+        var done = _job!.Failed;
         End();
-        Say(failed == 0 ? "Done." : $"Done. {failed} could not be {done}.");
+        Say((failed == 0 ? "Done." : $"Done. {failed} could not be {done}.") + (also == null ? "" : " " + also));
+    }
+
+    // ── Fetching ──
+    /// <summary>For autopilot scripts: what the fetching went after.</summary>
+    public static string Report { get; private set; } = "";
+
+    private bool _fetching;
+    private int _fetchFrames, _fetchLeft, _fetchRight, _fetchTop, _fetchBottom, _fetchType;
+    private Item? _fetchItem;
+    private readonly HashSet<Item> _fetchSkipped = new();
+
+    /// <summary>Whether what is being fetched is still on the ground.
+    /// A picked-up item is replaced in the game's list by a new,
+    /// empty one; the old one goes on looking as it did.</summary>
+    private bool StillLying() =>
+        _fetchItem is { } item && ReferenceEquals(Main.item[item.whoAmI], item) && item.active && item.stack > 0;
+
+    private bool Dropped(Item item)
+    {
+        var x = (int)(item.Center.X / 16f);
+        var y = (int)(item.Center.Y / 16f);
+        return x >= _fetchLeft && x <= _fetchRight && y >= _fetchTop && y <= _fetchBottom;
+    }
+
+    /// <summary>After clearing: walk to each thing lying where the
+    /// work was, nearest first, as far as walking gets. What cannot
+    /// be walked to is said, with where it is, and left.</summary>
+    private void Fetch()
+    {
+        var player = Main.LocalPlayer;
+        if (_walk == Walk.Fetch)
+            return;
+        if (_gaveUpWalking && _fetchItem != null)
+        {
+            _fetchSkipped.Add(_fetchItem);
+            _gaveUpWalking = false;
+        }
+        Item? next = null;
+        var nearest = float.MaxValue;
+        var lying = 0;
+        Item? nearestLying = null;
+        var nearestLyingDistance = float.MaxValue;
+        foreach (var item in Main.ActiveItems)
+        {
+            if (!Dropped(item))
+                continue;
+            lying++;
+            var distance = Microsoft.Xna.Framework.Vector2.Distance(item.Center, player.Center);
+            if (distance < nearestLyingDistance)
+                (nearestLying, nearestLyingDistance) = (item, distance);
+            if (_fetchSkipped.Contains(item))
+                continue;
+            if (distance < nearest)
+                (next, nearest) = (item, distance);
+        }
+        if (next == null || ++_fetchFrames > 3600)
+        {
+            _fetching = false;
+            string? also = null;
+            if (nearestLying is { } left)
+            {
+                var (px, py) = WorldScanner.PlayerTile();
+                also = $"{lying} drops could not be walked to, nearest {Directions.Offset((int)(left.Center.X / 16f) - px, (int)(left.Center.Y / 16f) - py)}.";
+            }
+            Finish(also);
+            return;
+        }
+        _fetchItem = next;
+        _fetchType = next.type;
+        var (fx, fy) = WorldScanner.PlayerTile();
+        Report += $" | to {next.Name} x{next.stack} at {(int)(next.Center.X / 16f)},{(int)(next.Center.Y / 16f)} from {fx},{fy}, {lying} lying, bounds {_fetchLeft}..{_fetchRight} {_fetchTop}..{_fetchBottom}";
+        StartWalking(Walk.Fetch, ((int)(next.Center.X / 16f), (int)(next.Center.Y / 16f)));
     }
 
     private const string Tree = "tree";
@@ -941,7 +1043,7 @@ internal sealed class BuildTool : IBuild
     // cannot get where it wants, it says what it wanted and leaves
     // the walking to the player.
 
-    private enum Walk { No, Aside, Closer }
+    private enum Walk { No, Aside, Closer, Fetch }
 
     private Walk _walk;
     private (int X, int Y) _walkGoal;
@@ -1015,9 +1117,13 @@ internal sealed class BuildTool : IBuild
         }
         var player = Main.LocalPlayer;
         var (px, py) = WorldScanner.PlayerTile();
-        var arrived = _walk == Walk.Aside
-            ? !_aside.Concat(_queue).Any(InTheWay) && !(_current is { } now && InTheWay(now)) && ++_walkFrames > 12
-            : Reachable(_walkGoal);
+        var arrived = _walk switch
+        {
+            Walk.Aside => !_aside.Concat(_queue).Any(InTheWay) && !(_current is { } now && InTheWay(now)) && ++_walkFrames > 12,
+            // Until it is in the pack, or gone some other way.
+            Walk.Fetch => !StillLying(),
+            _ => Reachable(_walkGoal),
+        };
         if (arrived)
         {
             _walk = Walk.No;

@@ -237,7 +237,9 @@ internal sealed class WorldScanner
             return;
         // The list never changes under a run of key presses, only
         // before the first of one. The selection stays on its kind.
-        if (fresh || _host.Now - _usedAt >= StaleMs)
+        // And never with something in it that has since been picked up
+        // or killed: a list of what is gone is a list of ghosts.
+        if (fresh || _host.Now - _usedAt >= StaleMs || _list.AnyGone)
             Take(_facingOnly);
         _usedAt = _host.Now;
         _host.App.Announce(move(_list));
@@ -349,10 +351,15 @@ internal sealed class WorldScanner
         {
             if (!OnScreen(item.Center, out var x, out var y))
                 continue;
-            var (tracked, type) = (item, item.type);
+            // The game puts a new, empty item in the slot when one is
+            // picked up, and leaves the old one looking as it did: it
+            // is there only while the slot still holds that very item.
+            var (tracked, slot) = (item, item.whoAmI);
             found.Add(new Feature(Kind(item.Name, TerrariaScanSource.Items), x, y)
             {
-                Live = () => tracked.active && tracked.type == type ? TileOf(tracked.Center) : null,
+                Live = () => ReferenceEquals(Main.item[slot], tracked) && tracked.active && tracked.stack > 0
+                    ? TileOf(tracked.Center)
+                    : null,
             });
         }
         return found;

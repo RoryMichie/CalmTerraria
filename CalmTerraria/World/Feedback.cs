@@ -61,8 +61,11 @@ internal sealed class Feedback
         };
         On_PopupText.NewText_PopupTextContext_Item_int_bool_bool += (orig, context, item, stack, noStack, longText) =>
         {
+            // Not "is it air": what goes onto a stack already carried
+            // arrives here with nothing left in it, having all gone
+            // into the stack, and is a pickup all the same.
             if (context is PopupTextContext.RegularItemPickup or PopupTextContext.ItemPickupToVoidContainer
-                && item != null && !item.IsAir && stack > 0)
+                && item != null && item.type > 0 && stack > 0)
             {
                 lock (_picked)
                 {

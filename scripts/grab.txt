@@ -1,0 +1,17 @@
+# Does walking over a dropped item pick it up?
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do drop Wood 5 8
+wait 2500
+do items
+hold D 1500
+wait 500
+do items
+quit

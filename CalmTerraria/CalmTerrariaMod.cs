@@ -122,6 +122,7 @@ public sealed class CalmTerrariaMod : Mod
                 });
                 _ = new Waypoints(_host, _shell, scanner, cursor);
                 _ = new BuildTool(_host, _shell, cursor, scanner);
+                _autopilot?.Register("fetched", _ => Logger.Info($"Fetch:{BuildTool.Report}"));
                 _ = new MoveSounds(_host, _shell, Logger);
                 _autopilot?.Register("moves", _ => Logger.Info($"Moves: {MoveSounds.Jumps} jumps, {MoveSounds.Landings} landings, {MoveSounds.Beats} heartbeats, {MoveSounds.Bumps} bumps, {MoveSounds.Bites} bites"));
                 _ = new FlightSounds(_host, _shell, Logger);

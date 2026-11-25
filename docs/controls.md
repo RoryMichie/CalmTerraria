@@ -101,6 +101,10 @@ Work on an area:
   loose things where the blocks are to go are cut down or dug out,
   then the blocks go in. Solid ground already there is left, being as
   good as a wall, and chests are never touched.
+- After clearing or mining, the job walks the character to what was
+  dropped, nearest first, as far as walking gets - with a long reach
+  the drops are where the work was, not where the character is. What
+  cannot be walked to is counted and placed at the end.
 - X stops a job. The area stays marked for the next one.
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with
@@ -132,7 +136,9 @@ Factorio Access's keys.
   found it, which can be a few seconds old.
 - The scan also refreshes by itself: whenever the category is
   changed, and at the first scanner key after five seconds without
-  one. It never changes in the middle of a run of key presses. Home
+  one, or when something in it has gone - an item picked up, an enemy
+  killed. It never otherwise changes in the middle of a run of key
+  presses. Home
   never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance. The character
   stays where it is.

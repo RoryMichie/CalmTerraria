@@ -31,6 +31,10 @@ public sealed class ScanList
 
     public bool IsEmpty => _categories.Count == 0;
 
+    /// <summary>Whether anything in the list has gone since it was
+    /// taken: an item picked up, a creature killed.</summary>
+    public bool AnyGone => _categories.Any(category => category.Kinds.Any(kind => kind.Instances.Any(feature => feature.Gone)));
+
     /// <summary>The selected instance, if there is one.</summary>
     public Feature? Current => IsEmpty ? null : _categories[_category].Kinds[_kind].Instances[_instance];
 

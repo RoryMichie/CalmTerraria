@@ -209,6 +209,31 @@ internal static class DebugCommands
             }
             log.Info($"Debug: pool from {px + 4} to {px + 25}, surface at {floor}.");
         });
+        // drop Wood 5 8 - that many of an item lying that many tiles to the right.
+        autopilot.Register("drop", args =>
+        {
+            RequireTestWorld();
+            var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var player = Main.LocalPlayer;
+            Item.NewItem(new EntitySource_DebugCommand("CalmTerraria autopilot"),
+                (int)player.Center.X + int.Parse(parts[2]) * 16, (int)player.Center.Y, 16, 16,
+                ItemID.Search.GetId(parts[0]), int.Parse(parts[1]));
+        });
+        // items - everything lying about near the player, and whether it could be picked up.
+        autopilot.Register("items", _ =>
+        {
+            var player = Main.LocalPlayer;
+            var lines = new List<string>();
+            foreach (var item in Main.ActiveItems)
+            {
+                if (Microsoft.Xna.Framework.Vector2.Distance(item.Center, player.Center) > 60 * 16)
+                    continue;
+                lines.Add($"{item.Name} x{item.stack} at {(int)(item.Center.X / 16f)},{(int)(item.Center.Y / 16f)} delay {item.noGrabDelay} "
+                    + $"for {item.playerIndexTheItemIsReservedFor} space {player.ItemSpace(item).CanTakeItem} touch {player.Hitbox.Intersects(item.Hitbox)} can {Terraria.ModLoader.ItemLoader.CanPickup(item, player)} accept {player.CanAcceptItemIntoInventory(item)} shimmer {item.shimmerTime}/{item.shimmered} grabbed {item.beingGrabbed} vel {item.velocity.X:0.0},{item.velocity.Y:0.0} box {item.Hitbox}");
+            }
+            var (px, py) = WorldScanner.PlayerTile();
+            log.Info($"Items: player {px},{py} me {Main.myPlayer} selected {player.selectedItem} '{player.HeldItem.Name}' anim {player.itemAnimation}: " + string.Join("; ", lines));
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

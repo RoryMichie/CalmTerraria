@@ -1,0 +1,81 @@
+# Clearing far off, then walking to the drops; and no ghosts in the scanner.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold Wood 60
+key ctrl+k
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key l
+key m
+key x
+key l
+key l
+key l
+key i
+key i
+key x
+heard Second corner
+key tab
+heard Build
+key enter
+wait 500
+key tab
+heard Start
+key enter
+heard Done
+wait 500
+log --- now clear it from where the character stands
+key tab
+heard Build
+key end
+wait 300
+key enter
+wait 500
+key tab
+heard Start
+key enter
+wait 6300
+do items
+wait 100
+do items
+wait 100
+do items
+wait 100
+do items
+wait 100
+do items
+wait 100
+do items
+wait 100
+do items
+wait 100
+do items
+heard Done
+wait 500
+do state
+do fetched
+key end
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pageup
+key ctrl+pageup
+quit
