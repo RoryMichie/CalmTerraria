@@ -39,6 +39,7 @@ public sealed class CalmTerrariaMod : Mod
             {
                 _cursor?.InjectButtons();
                 BuildTool.InjectMovement();
+                ItemUse.Inject();
             }
             return any;
         };
@@ -104,6 +105,8 @@ public sealed class CalmTerrariaMod : Mod
                 _autopilot?.Register("moves", _ => Logger.Info($"Moves: {MoveSounds.Jumps} jumps, {MoveSounds.Landings} landings, {MoveSounds.Beats} heartbeats, {MoveSounds.Bumps} bumps"));
                 _ = new FlightSounds(_host, _shell, Logger);
                 _autopilot?.Register("flight", _ => Logger.Info($"Flight: {FlightSounds.Report}"));
+                _shell.WorldFrame += ItemUse.Update;
+                TerrariaPack.Say = text => _host.App.Announce(text);
                 _ = new Spy(_host, _shell);
                 _ = new HazardWatch(_host, _shell);
                 _ = new Feedback(_host, _shell);

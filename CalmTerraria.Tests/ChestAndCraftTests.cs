@@ -58,6 +58,14 @@ internal sealed class FakeChest : IChest
     public void Restock() => Did.Add("restock");
     public void Rename(string name) => Name = name;
     public string Describe(int slot) => "Material";
+
+    public int TakeOne(int slot)
+    {
+        if (Take(slot, 1) == 0)
+            return -1;
+        return _pack.Inventory[^1].Slot;
+    }
+
     public List<(int Slot, int Hotbar)> Hotbarred { get; } = new();
 
     public bool ToHotbar(int slot, int hotbar)
@@ -228,6 +236,19 @@ public class ChestTests
         ui.Press("enter");
         Assert.Contains("Taken.", ui.Spoken());
         Assert.Contains(pack.Inventory, s => s.Name == "Spear");
+    }
+
+    [Fact]
+    public void LeftBracketInAChestTakesOneOutAndUsesIt()
+    {
+        var (ui, pack, chest) = Open();
+        ui.Drain();
+        ui.Type('[');
+        Assert.Single(pack.Used);
+        Assert.Equal(14, chest.Contents.Where(s => s.Name == "Gold Bar").Sum(s => s.Count));
+        chest.PackFull = true;
+        ui.Type('[');
+        ui.Expect("No room in the inventory.");
     }
 
     [Fact]

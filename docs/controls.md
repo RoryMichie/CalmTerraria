@@ -176,7 +176,11 @@ things done with the hands are forwards.
   Space always holds. Delete trashes one stack. Typing letters jumps
   to an item by name. A digit, 1 to 0, puts the item in that hotbar
   slot and what was there takes its place. F1 reads the item's
-  description.
+  description. Left bracket uses one - drinks it, eats it, throws it
+  - without its being held: it is in the hand only for as long as
+  the use takes. Right bracket opens what opens: a bag, a crate.
+  Using needs the game to be running, so it works from Tab and not
+  from the paused screen behind Escape.
 - Equipment: Enter takes the piece off.
 - Chat: the game's messages and what players have said, newest last.
 - Message: type and press Enter to send; the box empties and stays.
@@ -191,7 +195,9 @@ safe, brings the same screen with two tab stops in front:
 - The chest's contents, as a list named for the chest. Enter takes
   all of the item. A digit takes it straight to that hotbar slot,
   and what was there goes to the inventory; with no room for it,
-  nothing moves and that is said. F1 reads the description.
+  nothing moves and that is said. F1 reads the description. The
+  brackets work here too: one of the item comes out to be used or
+  opened.
 - Chest actions: Loot all, Deposit all, Quick stack, Restock, and
   Rename for chests in the world.
 

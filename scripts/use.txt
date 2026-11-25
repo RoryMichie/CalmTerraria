@@ -1,0 +1,48 @@
+# Using and opening from the list, without holding.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do arena
+wait 1000
+do hold LesserHealingPotion 5
+hold D3 100
+wait 300
+do hold HerbBag 2
+hold D2 100
+wait 500
+do health 30
+do state
+key backspace
+wait 300
+key tab
+heard Carried
+type lesser
+wait 600
+type [
+wait 2500
+key escape
+wait 300
+key backspace
+do state
+log --- opening a bag
+key tab
+heard Carried
+type herb
+wait 600
+type ]
+wait 1500
+type herb
+wait 600
+key escape
+log --- from the paused screen
+key escape
+heard Carried
+type lesser
+wait 600
+type [
+wait 500
+key escape
+quit

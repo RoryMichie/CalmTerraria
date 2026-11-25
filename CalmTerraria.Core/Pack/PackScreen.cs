@@ -8,6 +8,8 @@ namespace CalmTerraria.Pack;
 /// <param name="Equippable">Armour or an accessory: Enter wears it.</param>
 public sealed record PackStack(int Slot, string Name, int Count, bool Equippable);
 
+public enum UseResult { Started, Paused, Busy, NotUsable }
+
 /// <summary>The player's belongings, as the pack screen needs them.</summary>
 public interface IPack
 {
@@ -33,6 +35,15 @@ public interface IPack
     /// <summary>Put the stack in a hotbar slot, 0 to 9; what was
     /// there takes the stack's place.</summary>
     void ToHotbar(int slot, int hotbar);
+
+    /// <summary>Use one of the stack as if it were held and the mouse
+    /// clicked, without changing what is held: drink it, eat it,
+    /// throw it. The game says how it went when it has gone.</summary>
+    UseResult Use(int slot);
+
+    /// <summary>Open it, as a right-click in the game's inventory
+    /// does: a bag, a crate. False when it is not a thing that opens.</summary>
+    bool Open(int slot);
 
     /// <summary>Take off what is worn in an equipment slot. False
     /// when there is no room for it.</summary>
@@ -116,7 +127,36 @@ internal static class ItemKeys
     public static readonly Key Describe = Key.F(1);
 
     public static bool Reserves(KeyCombo combo) =>
-        !combo.HasModifier && (combo.Key == Describe || Hotbar(combo.Key) >= 0);
+        !combo.HasModifier && (combo.Key == Describe || Hotbar(combo.Key) >= 0
+            || combo.Key == Key.Char('[') || combo.Key == Key.Char(']'));
+
+    /// <summary>The brackets on an item are the mouse buttons on it,
+    /// as they are in the world: left uses it, without its being
+    /// held first; right opens it, if it is a thing that opens.</summary>
+    public static string? Brackets(in InputEvent input, IPack pack, Func<int> slot)
+    {
+        if (input.IsChar('['))
+        {
+            var at = slot();
+            if (at < 0)
+                return "No room in the inventory.";
+            return pack.Use(at) switch
+            {
+                UseResult.Started => "",
+                UseResult.Paused => "Not while paused: come in with Tab, not Escape.",
+                UseResult.Busy => "Still using the last thing.",
+                _ => "Can't be used.",
+            };
+        }
+        if (input.IsChar(']'))
+        {
+            var at = slot();
+            if (at < 0)
+                return "No room in the inventory.";
+            return pack.Open(at) ? "Opened." : "Nothing to open.";
+        }
+        return null;
+    }
 
     private static int Hotbar(Key key)
     {
@@ -206,6 +246,12 @@ public sealed class PackList : ListBox<PackLine>
         }
         if (input.IsChar(' '))
             return Hold(line);
+        if (ItemKeys.Brackets(input, _pack, () => line.Stacks[0].Slot) is { } said)
+        {
+            if (said.Length > 0)
+                Announce(said);
+            return true;
+        }
         if (input.Is(ItemKeys.Describe))
         {
             Announce(ItemKeys.Said(_pack.Describe(line.Stacks[^1].Slot)));
@@ -294,6 +340,10 @@ public interface IChest
     /// went.</summary>
     int Deposit(int packSlot, int count);
 
+    /// <summary>Move one of a stack to the inventory, to be used
+    /// there. The inventory slot it went to, or -1 with no room.</summary>
+    int TakeOne(int slot);
+
     string Describe(int slot);
 
     /// <summary>Put the stack in a hotbar slot, 0 to 9; what was
@@ -317,10 +367,13 @@ public sealed class ChestList : ListBox<PackLine>
 {
     private readonly IChest _chest;
 
-    public ChestList(IWidgetContainer parent, IChest chest)
+    private readonly IPack? _pack;
+
+    public ChestList(IWidgetContainer parent, IChest chest, IPack? pack = null)
         : base(parent, chest.Name, Array.Empty<PackLine>())
     {
         _chest = chest;
+        _pack = pack;
         BindItems(new StackLines(chest.Stacks).Lines);
     }
 
@@ -331,6 +384,14 @@ public sealed class ChestList : ListBox<PackLine>
     {
         if (Items.Count == 0)
             return base.OnInput(input);
+        // From a chest, one of it comes out first: only what is
+        // carried can be used.
+        if (_pack != null && ItemKeys.Brackets(input, _pack, () => _chest.TakeOne(Items[SelectedIndex].Stacks[0].Slot)) is { } said)
+        {
+            if (said.Length > 0)
+                Announce(said);
+            return true;
+        }
         if (input.Is(ItemKeys.Describe))
         {
             Announce(ItemKeys.Said(_chest.Describe(Items[SelectedIndex].Stacks[^1].Slot)));
@@ -743,9 +804,9 @@ public sealed class PackScreen
             first ??= new ShopList(dialog, shop);
         if (chest != null)
         {
-            first ??= new ChestList(dialog, chest);
+            first ??= new ChestList(dialog, chest, _pack);
             if (first is not ChestList)
-                _ = new ChestList(dialog, chest);
+                _ = new ChestList(dialog, chest, _pack);
             var actions = new ListBox(dialog, "Chest actions",
                 chest.CanRename ? ChestActions : ChestActions[..^1], activateItems: true);
             actions.Activated += () =>

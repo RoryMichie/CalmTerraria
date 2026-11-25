@@ -485,7 +485,9 @@ internal sealed class Cursor
     /// where the cursor is.</summary>
     public void InjectMouse()
     {
-        if (!_shell.InWorld || _host.OwnsKeyboard)
+        // A thing being used from a list is aimed where the cursor is
+        // too, though a screen has the keys.
+        if (!_shell.InWorld || (_host.OwnsKeyboard && !ItemUse.Active))
         {
             _left = _right = false;
             return;

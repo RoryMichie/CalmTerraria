@@ -40,6 +40,24 @@ internal sealed class FakePack : IPack
     public string Describe(int slot) => Inventory.Single(s => s.Slot == slot).Name == "Acorn" ? "" : "7 melee damage. Material";
     public List<(int Slot, int Hotbar)> Hotbarred { get; } = new();
     public void ToHotbar(int slot, int hotbar) => Hotbarred.Add((slot, hotbar));
+    public List<int> Used { get; } = new();
+    public List<int> Opened { get; } = new();
+    public UseResult UseGives { get; set; } = UseResult.Started;
+
+    public UseResult Use(int slot)
+    {
+        if (UseGives == UseResult.Started)
+            Used.Add(slot);
+        return UseGives;
+    }
+
+    public bool Open(int slot)
+    {
+        var bag = Inventory.Single(s => s.Slot == slot).Name.Contains("Bag");
+        if (bag)
+            Opened.Add(slot);
+        return bag;
+    }
 
     public bool Unequip(int index)
     {
@@ -187,6 +205,37 @@ public class PackScreenTests
         ui.Drain();
         ui.Press("f1");
         ui.Expect("7 melee damage. Material");
+    }
+
+    [Fact]
+    public void LeftBracketUsesWithoutHoldingAndSaysNothingWhenItStarts()
+    {
+        var (ui, pack, _) = Open();
+        ui.Drain();
+        ui.Type('[');
+        ui.ExpectNoSpeech();
+        Assert.Single(pack.Used);
+        Assert.Null(pack.Held);
+        pack.UseGives = UseResult.Paused;
+        ui.Type('[');
+        ui.Expect("Not while paused: come in with Tab, not Escape.");
+        pack.UseGives = UseResult.NotUsable;
+        ui.Type('[');
+        ui.Expect("Can't be used.");
+    }
+
+    [Fact]
+    public void RightBracketOpensWhatOpensAndSaysSoOtherwise()
+    {
+        var (ui, pack, _) = Open(p => p.Add("Herb Bag", 2).Add("Wood", 5));
+        ui.Drain();
+        ui.Type(']');
+        ui.Expect("Opened.");
+        ui.Press("down");
+        ui.Drain();
+        ui.Type(']');
+        ui.Expect("Nothing to open.");
+        Assert.Single(pack.Opened);
     }
 
     [Fact]

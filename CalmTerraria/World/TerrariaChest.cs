@@ -85,6 +85,23 @@ internal sealed class TerrariaChest : IChest
         return moved;
     }
 
+    public int TakeOne(int slot)
+    {
+        if (!IsOpen)
+            return -1;
+        var type = Contents(out _)[slot].type;
+        if (Take(slot, 1) == 0)
+            return -1;
+        // Where it went: the smallest stack of it, so a lone one that
+        // found an empty slot is the one used.
+        var inventory = Player.inventory;
+        var at = -1;
+        for (var i = 0; i < 50; i++)
+            if (inventory[i].type == type && (at < 0 || inventory[i].stack < inventory[at].stack))
+                at = i;
+        return at;
+    }
+
     public int Deposit(int packSlot, int count)
     {
         if (!IsOpen)

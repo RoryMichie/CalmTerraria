@@ -62,6 +62,46 @@ internal sealed class TerrariaPack : IPack
         SoundEngine.PlaySound(SoundID.Grab);
     }
 
+    /// <summary>Set by whoever owns the speech, for what is only
+    /// known after the screen has moved on.</summary>
+    public static Action<string>? Say { get; set; }
+
+    public UseResult Use(int slot)
+    {
+        var item = Player.inventory[slot];
+        if (item.IsAir || item.useStyle <= 0)
+            return UseResult.NotUsable;
+        // Nothing is used while the game stands still.
+        if (Main.gamePaused)
+            return UseResult.Paused;
+        if (Player.itemAnimation > 0 || ItemUse.Active)
+            return UseResult.Busy;
+        return ItemUse.Begin(slot, text => Say?.Invoke(text)) ? UseResult.Started : UseResult.Busy;
+    }
+
+    public bool Open(int slot)
+    {
+        var inventory = Player.inventory;
+        var item = inventory[slot];
+        // Only what the game opens on a right-click. On anything else
+        // the same click would pick one up onto the mouse.
+        if (item.IsAir || !Terraria.ModLoader.ItemLoader.CanRightClick(item) || !Main.mouseItem.IsAir || Player.itemAnimation > 0)
+            return false;
+        var (right, release) = (Main.mouseRight, Main.mouseRightRelease);
+        Main.mouseRight = true;
+        Main.mouseRightRelease = true;
+        try
+        {
+            ItemSlot.RightClick(inventory, ItemSlot.Context.InventoryItem, slot);
+        }
+        finally
+        {
+            (Main.mouseRight, Main.mouseRightRelease) = (right, release);
+        }
+        Recipe.FindRecipes();
+        return true;
+    }
+
     public bool Equip(int slot)
     {
         var inventory = Player.inventory;
