@@ -51,7 +51,11 @@ internal static class Travel
             return "No footing anywhere near it. Not moved.";
         // Feet on the bottom of that tile, body across it and the next.
         Move(new Vector2(spot.X * 16f + 16f - player.width / 2f, (spot.Y + 1) * 16f - player.height));
-        return Touches(spot, x, y) ? null : Directions.Offset(x - spot.X, y - (spot.Y - 1));
+        if (Touches(spot, x, y))
+            return null;
+        // From where the character now is, as K would give it.
+        var (px, py) = WorldScanner.PlayerTile();
+        return Directions.Offset(x - px, y - py);
     }
 
     private static void Move(Vector2 to)
