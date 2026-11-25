@@ -102,9 +102,10 @@ Work on an area:
   then the blocks go in. Solid ground already there is left, being as
   good as a wall, and chests are never touched.
 - X stops a job. The area stays marked for the next one.
-- With the scanner on something, the Build list also has Clear path
-  to it, area or no area: a stair cut through the ground from the
-  character to the thing, one tile along for each tile up or down so
+- With anything marked - one tile after a first X, an area after a
+  second, or something from the scanner after Shift+X - the Build
+  list also has Clear path to it: a stair cut through the ground from
+  the character to the mark, one tile along for each tile up or down so
   it can be walked without jumping, doubling back where the thing is
   straight above or below. Its plan says how long it is, what would
   come out, and what is in the way; it is cut in the order it is
@@ -250,6 +251,8 @@ moved without asking.
   fireballs - make a higher, quicker waver from where they are, the
   nearest four of them. Both are to the side they are on, higher in
   pitch above the character and lower below, louder the nearer.
+- Walking into a wall is a short knock from the side the wall is on,
+  once for each time it is walked into.
 - Jumping and landing each have a sound; the landing is louder the
   faster the fall.
 - The game's own messages - deaths, events, chat - are spoken as they

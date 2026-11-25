@@ -95,6 +95,7 @@ public class TonesTests
         { "jump", Tones.Jump() },
         { "land", Tones.Land() },
         { "heartbeat", Tones.Heartbeat() },
+        { "bump", Tones.Bump() },
     };
 
     /// <summary>Nothing the sonar plays may be loud: about a third of

@@ -1,0 +1,59 @@
+# Walking into a wall knocks once; a path is offered to what is marked, not to the scanner's selection.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold Wood 300
+key ctrl+k
+key l
+key l
+key l
+key l
+key m
+down [
+wait 400
+key i
+wait 400
+key i
+wait 400
+up [
+do moves
+hold D 1500
+wait 300
+do moves
+hold A 400
+wait 200
+hold D 1200
+wait 300
+do moves
+log --- the path: nothing marked, then one tile marked
+key end
+key tab
+heard Carried
+key escape
+key ctrl+k
+key j
+key j
+key j
+key j
+key j
+key j
+key j
+key j
+key m
+key m
+key m
+key m
+key x
+heard First corner
+key tab
+heard Build
+key escape
+key x
+key x
+quit

@@ -62,6 +62,7 @@ internal sealed class MoveSounds
             Play(ref _heartWav, "heartbeat", Tones.Heartbeat, Volume);
             _nextBeat = _host.Now + (ulong)(FastBeatMs + (SlowBeatMs - FastBeatMs) * (health / LowHealth));
         }
+        Bump(player);
         var grounded = player.velocity.Y == 0f;
         if (!grounded)
         {
@@ -86,6 +87,73 @@ internal sealed class MoveSounds
             _airborne = 0;
         }
         _grounded = grounded;
+    }
+
+    private string? _bumpWav;
+    private SoundEntity? _leftSide, _rightSide;
+    private int _pressing, _against;
+    private bool _bumped;
+
+    public static int Bumps { get; private set; }
+
+    /// <summary>Walking into a wall: a knock, from the side the wall
+    /// is on, once for each time it is walked into. Pressing on
+    /// against it says nothing more; stepping away and back does.</summary>
+    private void Bump(Player player)
+    {
+        var direction = player.controlLeft == player.controlRight ? 0 : player.controlLeft ? -1 : 1;
+        if (direction == 0)
+        {
+            _pressing = 0;
+            _bumped = false;
+            return;
+        }
+        // A new push the other way is a new chance to knock.
+        if (direction != _against)
+        {
+            _against = direction;
+            _pressing = 0;
+            _bumped = false;
+        }
+        var stopped = Math.Abs(player.velocity.X) < 0.01f && Math.Abs(player.position.X - player.oldPosition.X) < 0.01f;
+        if (!stopped)
+        {
+            _pressing = 0;
+            _bumped = false;
+            return;
+        }
+        // Stopped with the key down is not yet a wall: a frozen or
+        // webbed character stops too. Something solid has to be there.
+        if (_bumped || ++_pressing < 3
+            || !Collision.SolidCollision(player.position + new Microsoft.Xna.Framework.Vector2(direction * 6f, 0f), player.width, player.height - 18))
+            return;
+        _bumped = true;
+        Bumps++;
+        if (Main.soundVolume <= 0f)
+            return;
+        try
+        {
+            var audio = _host.App.Audio;
+            if (_bumpWav == null)
+            {
+                Tones.WriteWav(_bumpWav = Path.Combine(Main.SavePath, "CalmTerraria", "sounds", "bump.wav"), Tones.Bump());
+                _leftSide = audio.CreateEntity();
+                _rightSide = audio.CreateEntity();
+                _leftSide.Hrtf = _rightSide.Hrtf = audio.IsHrtfAvailable;
+                // The listener faces into the screen; a wall is to one side.
+                _leftSide.SetPosition(-1.6f, 1.2f, 0f);
+                _rightSide.SetPosition(1.6f, 1.2f, 0f);
+            }
+            var sound = audio.CreateSound((direction < 0 ? _leftSide! : _rightSide!).Group, oneshot: true);
+            sound.Load(_bumpWav);
+            sound.BaseVolume = Volume * Main.soundVolume;
+            sound.Play();
+        }
+        catch (Exception e)
+        {
+            _broken = true;
+            _log.Error("The wall knock failed; movement sounds are off for this session.", e);
+        }
     }
 
     private void Play(ref string? wav, string name, Func<float[]> tone, float volume)

@@ -25,6 +25,9 @@ public static class Tones
     /// <summary>Coming back to it: a low thud that drops away.</summary>
     public static float[] Land() => Blip(frequency: 210f, fall: 0.5f, seconds: 0.14f, decay: 26f, harmonics: 0.6f);
 
+    /// <summary>Walking into something solid: a short dull knock.</summary>
+    public static float[] Bump() => Blip(frequency: 170f, fall: 0.6f, seconds: 0.07f, decay: 60f, harmonics: 0.9f);
+
     /// <summary>Low health: a heartbeat, two soft thumps, the second a
     /// little lower. Pitched where small speakers and headphones still
     /// carry it, not down where a real one sits.</summary>

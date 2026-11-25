@@ -46,6 +46,9 @@ internal sealed class BuildTool : IBuild
     private readonly Cursor _cursor;
     private readonly WorldScanner _scanner;
     private (int X, int Y)? _a, _b;
+    /// <summary>What the marked area is, when it was marked from the
+    /// scanner.</summary>
+    private string? _markedName;
     private readonly Dictionary<int, Job> _offered = new();
 
     private Job? _job;
@@ -78,6 +81,7 @@ internal sealed class BuildTool : IBuild
             var (left, top, right, bottom) = feature.Bounds;
             _a = (left, top);
             _b = (right, bottom);
+            _markedName = feature.DisplayName;
             Say($"Selected {feature.DisplayName}, {right - left + 1} by {bottom - top + 1}.");
         };
         shell.Build = this;
@@ -86,6 +90,7 @@ internal sealed class BuildTool : IBuild
         shell.EnteredWorld += () =>
         {
             _a = _b = null;
+            _markedName = null;
             End();
         };
         shell.LeftWorld += End;
@@ -103,6 +108,7 @@ internal sealed class BuildTool : IBuild
             Say($"Stopped, {left} left.");
             return;
         }
+        _markedName = null;
         if (_a == null)
         {
             _a = _cursor.Tile;
@@ -375,10 +381,19 @@ internal sealed class BuildTool : IBuild
 
     private void OfferPath(Action<Job, string, string> offer)
     {
-        if (_scanner.Selected is not { } feature)
+        // To what is marked: the one tile, after a first X, or the
+        // nearest tile of the area. Something from the scanner is
+        // marked with Shift+X, and is then named.
+        if (_a is not { } first)
             return;
         var (px, py) = WorldScanner.PlayerTile();
-        var target = feature.Nearest(px, py);
+        var target = first;
+        if (_b != null)
+        {
+            var (left, top, right, bottom) = Area();
+            target = (Math.Clamp(px, left, right), Math.Clamp(py + 1, top, bottom));
+        }
+        var what = _markedName ?? (_b == null ? "the marked tile" : "the marked area");
         // From the feet, to standing where the thing is.
         var from = (X: px, Y: py + 1);
         var distance = Math.Abs(target.X - from.X) + Math.Abs(target.Y - from.Y);
@@ -396,9 +411,9 @@ internal sealed class BuildTool : IBuild
         var open = steps.Count(step => WorldGen.InWorld(step.X, step.Y + 1, 2)
             && !WorldGen.SolidTile(step.X, step.Y + 1) && !seen.Contains((step.X, step.Y + 1)));
         var lava = tiles.Count(t => IsLava(t.X, t.Y));
-        var intro = $"A stair to {feature.DisplayName}, {Directions.Offset(target.X - px, target.Y - py)}, {steps.Count} steps. "
+        var intro = $"A stair to {what}, {Directions.Offset(target.X - px, target.Y - py)}, {steps.Count} steps. "
             + (open > 0 ? $"{open} steps of it have nothing underfoot: mind the drop. " : "");
-        OfferClear(tiles, lava, offer, $"Clear path to {feature.DisplayName}", intro, keepOrder: true, walls: false);
+        OfferClear(tiles, lava, offer, $"Clear path to {what}", intro, keepOrder: true, walls: false);
     }
 
     private void OfferClear(List<(int X, int Y)> all, int lava, Action<Job, string, string> offer,
