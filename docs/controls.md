@@ -276,6 +276,12 @@ light". F1 reads the description again.
 
 - Backspace: health, mana, defense, and each effect on the character
   with the time it has left.
+- Z: where the character is, in one line. The biome and the layer
+  of the world; how far the biome runs to either side, where the
+  scanner has it as a place; how far from the world's centre;
+  whether they are in a room, how big and of what, or what if
+  anything is overhead; how far the ground runs flat each way and
+  how much it rises, drops or gives out within thirty tiles.
 - Apostrophe: what the character's informational accessories show -
   the time, the depth, the position and so on - in the game's own
   words, for those the character has.

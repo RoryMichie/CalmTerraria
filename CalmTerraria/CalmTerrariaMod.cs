@@ -139,6 +139,7 @@ public sealed class CalmTerrariaMod : Mod
                 _shell.WorldFrame += Travel.Update;
                 TerrariaPack.Say = text => _host.App.Announce(text);
                 FixGameBindings();
+                _ = new Surroundings(_host, _shell, scanner);
                 _ = new Spy(_host, _shell);
                 _ = new HazardWatch(_host, _shell);
                 _ = new Feedback(_host, _shell);

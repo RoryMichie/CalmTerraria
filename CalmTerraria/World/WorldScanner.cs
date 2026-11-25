@@ -38,6 +38,27 @@ internal sealed class WorldScanner
     /// <summary>Features from outside the world itself: waypoints.</summary>
     public Func<IEnumerable<Feature>>? Extra { get; set; }
 
+    /// <summary>The place - biome, dungeon, building - that a tile is
+    /// in, as the background survey last had it: the smallest whose
+    /// bounds hold the tile. Buildings are left to the room check.</summary>
+    public Feature? PlaceAt(int x, int y)
+    {
+        Feature? best = null;
+        long bestArea = long.MaxValue;
+        foreach (var feature in _latest ?? new List<Feature>())
+        {
+            if (feature.Kind.Category != TerrariaScanSource.Places || feature.Kind.Name == "Building")
+                continue;
+            var (left, top, right, bottom) = feature.Bounds;
+            if (x < left || x > right || y < top - 20 || y > bottom + 20)
+                continue;
+            var area = (long)(right - left + 1) * (bottom - top + 1);
+            if (area < bestArea)
+                (best, bestArea) = (feature, area);
+        }
+        return best;
+    }
+
     /// <summary>What the scanner is on.</summary>
     public Feature? Selected => _taken ? _list.Current : null;
 
