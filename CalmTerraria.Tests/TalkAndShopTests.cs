@@ -100,9 +100,9 @@ public class ShopTests
     public void TheShopIsAlphabeticalWithPrices()
     {
         var (ui, _, _) = Open();
-        ui.Expect("Shop list Mining Helmet, 4 gold");
+        ui.Expect("Shop list Mining Helmet, 4 gold. Provides light");
         ui.Press("down");
-        ui.Expect("Torch, 50 copper");
+        ui.Expect("Torch, 50 copper. Provides light");
     }
 
     [Fact]

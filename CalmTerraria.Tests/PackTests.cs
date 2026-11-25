@@ -90,11 +90,11 @@ public class PackScreenTests
         var (ui, _, _) = Open();
         ui.Expect("Carried list Acorn, 5");
         ui.Press("down");
-        ui.Expect("Copper Helmet");
+        ui.Expect("Copper Helmet. 7 melee damage. Material");
         ui.Press("down");
-        ui.Expect("Copper Pickaxe");
+        ui.Expect("Copper Pickaxe. 7 melee damage. Material");
         ui.Press("down");
-        ui.Expect("Wood, 347");
+        ui.Expect("Wood, 347. 7 melee damage. Material");
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class PackScreenTests
         var (ui, pack, _) = Open();
         ui.Press("down");
         ui.Press("enter");
-        ui.Expect("Equipped.", "Copper Pickaxe");
+        ui.Expect("Equipped.", "Copper Pickaxe. 7 melee damage. Material");
         Assert.Equal("Copper Helmet", pack.Worn[0].Item);
     }
 
@@ -144,7 +144,7 @@ public class PackScreenTests
         var (ui, pack, _) = Open();
         ui.Press("end");
         ui.Press("delete");
-        ui.Expect("Trashed.", "Wood, 300");
+        ui.Expect("Trashed.", "Wood, 300.");
         Assert.Single(pack.Inventory, s => s.Name == "Wood");
     }
 

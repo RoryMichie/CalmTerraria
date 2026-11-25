@@ -231,6 +231,11 @@ for a purchase or a crafting, a full stack for a gift. Enter alone accepts that;
 typing a number replaces it; Escape moves nothing. One of something is
 moved without asking.
 
+Descriptions: in every list of items - carried, a chest, a shop,
+crafting - landing on an item reads it and then the game's own
+description of it: "Torch, 286. Can be placed. Material. Provides
+light". F1 reads the description again.
+
 # 7. Status and what the game shows
 
 - Backspace: health, mana, defense, and each effect on the character

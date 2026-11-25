@@ -63,8 +63,17 @@ public sealed partial class PackLine : Element
 
     public PackLine(string name) => Name = name;
 
+    // A full stop before the description, where there is one, so the
+    // two are heard as two.
     [Field]
-    public string Value => Count > 1 ? $"{Name}, {Count}" : Name;
+    public string Value => (Count > 1 ? $"{Name}, {Count}" : Name) + (About.Length > 0 ? "." : "");
+
+    /// <summary>What the game says about the item, read after it
+    /// each time the line is landed on.</summary>
+    internal Func<string>? Describe { get; set; }
+
+    [Field]
+    public string About => Describe?.Invoke() ?? "";
 }
 
 /// <summary>A line of the equipment list.</summary>
@@ -89,7 +98,13 @@ internal sealed class StackLines
     private readonly Dictionary<string, PackLine> _lines = new(StringComparer.Ordinal);
     private List<PackLine> _sorted = new();
 
-    public StackLines(Func<IReadOnlyList<PackStack>> stacks) => _stacks = stacks;
+    private readonly Func<int, string> _describe;
+
+    public StackLines(Func<IReadOnlyList<PackStack>> stacks, Func<int, string> describe)
+    {
+        _stacks = stacks;
+        _describe = describe;
+    }
 
     public IReadOnlyList<PackLine> Lines()
     {
@@ -103,7 +118,11 @@ internal sealed class StackLines
         {
             var group = groups[i];
             if (!_lines.TryGetValue(group.Key, out var line))
-                _lines[group.Key] = line = new PackLine(group.Key);
+            {
+                var made = line = new PackLine(group.Key);
+                made.Describe = () => made.Stacks.Count == 0 ? "" : _describe(made.Stacks[^1].Slot);
+                _lines[group.Key] = line;
+            }
             line.Count = group.Sum(stack => stack.Count);
             line.Equippable = group.Any(stack => stack.Equippable);
             line.Stacks = group.OrderBy(stack => stack.Count).ToList();
@@ -198,7 +217,7 @@ public sealed class PackList : ListBox<PackLine>
         _pack = pack;
         _chest = chest;
         _shop = shop;
-        BindItems(new StackLines(pack.Stacks).Lines);
+        BindItems(new StackLines(pack.Stacks, pack.Describe).Lines);
     }
 
     public override bool ReservesKey(KeyCombo combo) =>
@@ -374,7 +393,7 @@ public sealed class ChestList : ListBox<PackLine>
     {
         _chest = chest;
         _pack = pack;
-        BindItems(new StackLines(chest.Stacks).Lines);
+        BindItems(new StackLines(chest.Stacks, chest.Describe).Lines);
     }
 
     public override bool ReservesKey(KeyCombo combo) =>
@@ -446,7 +465,12 @@ public sealed partial class CraftLine : Element
     public CraftLine(Craftable recipe) => Recipe = recipe;
 
     [Field]
-    public string Value => Recipe.Count > 1 ? $"{Recipe.Name}, {Recipe.Count}" : Recipe.Name;
+    public string Value => (Recipe.Count > 1 ? $"{Recipe.Name}, {Recipe.Count}" : Recipe.Name) + (About.Length > 0 ? "." : "");
+
+    internal Func<int, string>? Describe { get; set; }
+
+    [Field]
+    public string About => Describe?.Invoke(Recipe.Id) ?? "";
 }
 
 /// <summary>What can be made now: one alphabetical list. Enter makes
@@ -475,7 +499,7 @@ public sealed class CraftList : ListBox<CraftLine>
         for (var i = 0; i < recipes.Count; i++)
         {
             if (!_lines.TryGetValue(recipes[i].Id, out var line))
-                _lines[recipes[i].Id] = line = new CraftLine(recipes[i]);
+                _lines[recipes[i].Id] = line = new CraftLine(recipes[i]) { Describe = _crafting.Describe };
             line.Recipe = recipes[i];
             sorted.Add(line);
             changed |= i >= _sorted.Count || !ReferenceEquals(_sorted[i], line);
@@ -637,7 +661,13 @@ public sealed partial class ShopLine : Element
     public ShopLine(ShopItem item) => Item = item;
 
     [Field]
-    public string Value => Item.Count > 1 ? $"{Item.Name}, {Item.Count}, {Item.Price}" : $"{Item.Name}, {Item.Price}";
+    public string Value => (Item.Count > 1 ? $"{Item.Name}, {Item.Count}, {Item.Price}" : $"{Item.Name}, {Item.Price}")
+        + (About.Length > 0 ? "." : "");
+
+    internal Func<int, string>? Describe { get; set; }
+
+    [Field]
+    public string About => Describe?.Invoke(Item.Slot) ?? "";
 }
 
 /// <summary>What the shop sells, alphabetical, each with its price.
@@ -666,7 +696,7 @@ public sealed class ShopList : ListBox<ShopLine>
         for (var i = 0; i < items.Count; i++)
         {
             if (!_lines.TryGetValue(items[i].Slot, out var line) || line.Item.Name != items[i].Name)
-                _lines[items[i].Slot] = line = new ShopLine(items[i]);
+                _lines[items[i].Slot] = line = new ShopLine(items[i]) { Describe = _shop.Describe };
             line.Item = items[i];
             sorted.Add(line);
             changed |= i >= _sorted.Count || !ReferenceEquals(_sorted[i], line);

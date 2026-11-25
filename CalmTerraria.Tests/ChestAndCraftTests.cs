@@ -115,7 +115,7 @@ public class ChestTests
     public void OpensOnTheChestWithStacksMerged()
     {
         var (ui, _, _) = Open();
-        ui.Expect("Chest list Gold Bar, 15");
+        ui.Expect("Chest list Gold Bar, 15. Material");
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class ChestTests
         ui.Press("enter");
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Taken.", "Chest list Spear");
+        ui.Expect("Taken.", "Chest list Spear. Material");
         Assert.Equal(15, pack.Inventory.Where(s => s.Name == "Gold Bar").Sum(s => s.Count));
         Assert.Single(chest.Contents);
     }
@@ -326,9 +326,9 @@ public class CraftTests
     public void TheListIsAlphabeticalAndSaysHowManyAreMade()
     {
         var (ui, _) = Open();
-        ui.Expect("Crafting list Torch, 3");
+        ui.Expect("Crafting list Torch, 3. Provides light");
         ui.Press("down");
-        ui.Expect("Work Bench");
+        ui.Expect("Work Bench. Provides light");
     }
 
     [Fact]
