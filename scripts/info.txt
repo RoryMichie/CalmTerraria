@@ -1,0 +1,12 @@
+# Apostrophe reads the informational accessories.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+key '
+wait 500
+do hold CellPhone
+wait 1500
+key '
+wait 500
+quit

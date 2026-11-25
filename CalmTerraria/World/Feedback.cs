@@ -109,6 +109,7 @@ internal sealed class Feedback
         };
         shell.WorldFrame += Update;
         shell.WorldCommands[KeyCombo.Plain(Key.Backspace)] = () => Say(Status());
+        shell.WorldCommands[KeyCombo.Plain(Key.Char('\''))] = () => Say(Instruments());
     }
 
     private void Say(string text) => _host.App.Announce(text);
@@ -159,6 +160,20 @@ internal sealed class Feedback
         _selected = selected;
     }
 
+    /// <summary>What the character's informational accessories show -
+    /// the watch's time, the depth meter's depth, the compass's
+    /// position and the rest - in the words the game has just drawn
+    /// for each. Those switched off in the game's own list are not
+    /// drawn, and so are not read.</summary>
+    private static string Instruments()
+    {
+        var readings = InfoCapture.Recent();
+        if (readings.Count == 0)
+            return "No informational accessories.";
+        // Each as its own sentence; some come with their own ending.
+        return string.Join(" ", readings.Select(text => text[^1] is '.' or '!' or '?' ? text : text + "."));
+    }
+
     /// <summary>Health, mana, and each thing affecting the character
     /// with the time it has left.</summary>
     private static string Status()
@@ -194,5 +209,35 @@ internal sealed class Feedback
         if (seconds >= 60)
             return "1 minute";
         return seconds == 1 ? "1 second" : $"{seconds} seconds";
+    }
+}
+
+/// <summary>The game works out what each informational accessory
+/// says as it draws it, and nowhere else. This is handed each one as
+/// that happens, and keeps the latest.</summary>
+internal sealed class InfoCapture : Terraria.ModLoader.GlobalInfoDisplay
+{
+    private static readonly SortedDictionary<int, (string Text, uint Frame)> Latest = new();
+
+    public override void ModifyDisplayParameters(Terraria.ModLoader.InfoDisplay currentDisplay, ref string displayValue,
+        ref string displayName, ref Color displayColor, ref Color displayShadowColor)
+    {
+        lock (Latest)
+            Latest[currentDisplay.Type] = (displayValue ?? "", Main.GameUpdateCount);
+    }
+
+    /// <summary>What was drawn within the last half second, in the
+    /// game's own order.</summary>
+    public static List<string> Recent()
+    {
+        lock (Latest)
+        {
+            return Latest.Values
+                .Where(entry => Main.GameUpdateCount - entry.Frame <= 30)
+                .Select(entry => ItemText.Clean(entry.Text))
+                // A meter with nothing to measure says so with these.
+                .Where(text => text.Length > 0 && text != "N/A")
+                .ToList();
+        }
     }
 }

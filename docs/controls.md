@@ -240,6 +240,9 @@ light". F1 reads the description again.
 
 - Backspace: health, mana, defense, and each effect on the character
   with the time it has left.
+- Apostrophe: what the character's informational accessories show -
+  the time, the depth, the position and so on - in the game's own
+  words, for those the character has.
 - The hotbar: the item is said when the selected slot changes.
 - Smart cursor: said when it goes on or off.
 - Picking things up: said once the pickups stop for a moment, with
