@@ -15,6 +15,9 @@ public interface IPack
 {
     IReadOnlyList<PackStack> Stacks();
 
+    /// <summary>How many empty slots the inventory has left.</summary>
+    int FreeSlots { get; }
+
     /// <summary>What is worn, in a fixed order: the slot's name and
     /// the item in it, or null for an empty slot.</summary>
     IReadOnlyList<(string Slot, string? Item)> Equipment();
@@ -212,7 +215,7 @@ public sealed class PackList : ListBox<PackLine>
     private readonly IShop? _shop;
 
     public PackList(IWidgetContainer parent, IPack pack, IChest? chest = null, IShop? shop = null)
-        : base(parent, "Carried", Array.Empty<PackLine>())
+        : base(parent, pack.FreeSlots == 0 ? "Carried, full" : "Carried", Array.Empty<PackLine>())
     {
         _pack = pack;
         _chest = chest;
@@ -454,6 +457,10 @@ public interface ICrafting
     /// <summary>Make it once. False when the game would not.</summary>
     bool Craft(int id);
 
+    /// <summary>Why it cannot be made just now though the makings
+    /// are there - no room for it - or null.</summary>
+    string? Blocked(int id);
+
     /// <summary>What the game's tooltip says about what is made.</summary>
     string Describe(int id);
 }
@@ -524,6 +531,12 @@ public sealed class CraftList : ListBox<CraftLine>
         var recipe = Items[SelectedIndex].Recipe;
         if (input.Kind == InputKind.Activate)
         {
+            // Asked first: a thing with nowhere to go is not made.
+            if (_crafting.Blocked(recipe.Id) is { } blocked)
+            {
+                Announce(blocked);
+                return true;
+            }
             Quantity.Ask(App, 1, recipe.Most, count =>
             {
                 var made = 0;

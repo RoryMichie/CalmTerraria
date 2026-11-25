@@ -234,6 +234,9 @@ internal sealed class TerrariaCrafting : ICrafting
 
     public string Describe(int id) => ItemText.Describe(Main.recipe[id].createItem);
 
+    public string? Blocked(int id) =>
+        Main.LocalPlayer.ItemSpace(Main.recipe[id].createItem).CanTakeItem ? null : "No room in the inventory.";
+
     public bool Craft(int id)
     {
         var available = false;

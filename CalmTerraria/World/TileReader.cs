@@ -50,7 +50,9 @@ internal static class TileReader
         foreach (var item in Main.ActiveItems)
         {
             if (item.Hitbox.Intersects(area))
-                return item.stack > 1 ? $"{item.Name}, {item.stack}" : item.Name;
+                // Lying loose, not placed: a work bench on the ground is
+                // not a work bench standing there.
+                return (item.stack > 1 ? $"{item.Name}, {item.stack}" : item.Name) + ", dropped";
         }
         return Ground(x, y);
     }

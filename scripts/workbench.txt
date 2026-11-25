@@ -1,0 +1,30 @@
+# Craft a work bench from the Tab screen: where does it go?
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold Wood 50
+hold D2 100
+wait 300
+do inv
+key tab
+heard Carried
+key tab
+key tab
+heard Crafting
+type work
+wait 600
+key enter
+heard How many
+key enter
+heard Crafted
+do inv
+key escape
+wait 1500
+do inv
+quit

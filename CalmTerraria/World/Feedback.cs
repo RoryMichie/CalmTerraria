@@ -39,6 +39,8 @@ internal sealed class Feedback
     public static int FootstepsRaised { get; private set; }
     public static string LastFootstep { get; private set; } = "";
 
+    private readonly HashSet<Item> _noRoomFor = new();
+
     private int _selected = -1;
     private bool? _smartCursor;
     private bool _dead;
@@ -151,6 +153,21 @@ internal sealed class Feedback
             Say(_dead ? $"Respawning in {(player.respawnTimer + 59) / 60} seconds." : "Respawned.");
         }
 
+        // Walking over something the inventory has no room for: the
+        // game does nothing and shows nothing. Said once for each.
+        if (Main.GameUpdateCount % 4 == 0 && !player.dead)
+        {
+            foreach (var item in Main.ActiveItems)
+            {
+                if (item.noGrabDelay != 0 || !player.Hitbox.Intersects(item.Hitbox) || player.ItemSpace(item).CanTakeItem)
+                    continue;
+                if (_noRoomFor.Add(item))
+                    Say($"No room for {item.Name}.");
+            }
+            if (_noRoomFor.Count > 200)
+                _noRoomFor.Clear();
+        }
+
         var smart = Main.SmartCursorWanted;
         if (_smartCursor is { } was && was != smart)
             Say(smart ? "Smart cursor on." : "Smart cursor off.");
@@ -187,6 +204,14 @@ internal sealed class Feedback
             parts.Add($"mana {player.statMana} of {player.statManaMax2}");
         if (player.statDefense > 0)
             parts.Add($"defense {(int)player.statDefense}");
+        var free = 0;
+        for (var slot = 0; slot < 50; slot++)
+            if (player.inventory[slot].IsAir)
+                free++;
+        if (free == 0)
+            parts.Add("inventory full");
+        else if (free <= 3)
+            parts.Add($"{free} inventory slots free");
         for (var i = 0; i < player.buffType.Length; i++)
         {
             var type = player.buffType[i];

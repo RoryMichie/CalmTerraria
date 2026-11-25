@@ -277,6 +277,37 @@ internal static class DebugCommands
             }
             log.Info($"Ground: {holes} holes in the floor, {lumps} tiles standing on it.");
         });
+        // inv - where things are: the hand, the mouse, and the first slots.
+        autopilot.Register("inv", _ =>
+        {
+            var player = Main.LocalPlayer;
+            var slots = new List<string>();
+            for (var i = 0; i < 58; i++)
+                if (!player.inventory[i].IsAir)
+                    slots.Add($"{i}:{player.inventory[i].Name}x{player.inventory[i].stack}");
+            var (px, py) = WorldScanner.PlayerTile();
+            var near = new List<string>();
+            for (var x = px - 4; x <= px + 4; x++)
+                for (var y = py - 3; y <= py + 2; y++)
+                    if (Main.tile[x, y].HasTile && Main.tileFrameImportant[Main.tile[x, y].TileType])
+                        near.Add($"{TileNames.At(x, y, Main.tile[x, y])}@{x - px},{y - py}");
+            log.Info($"Inv: selected {player.selectedItem}, mouse '{Main.mouseItem.Name}'x{Main.mouseItem.stack}, objects near [{string.Join(" ", near.Distinct())}], slots {string.Join(" ", slots)}");
+        });
+        // fill - every empty inventory slot of the test character filled
+        // with one of something different, so there is no room for more.
+        autopilot.Register("fill", _ =>
+        {
+            RequireTestWorld();
+            var inventory = Main.LocalPlayer.inventory;
+            var type = ItemID.IronPickaxe;
+            for (var slot = 0; slot < 50; slot++)
+            {
+                if (!inventory[slot].IsAir)
+                    continue;
+                inventory[slot] = new Item();
+                inventory[slot].SetDefaults(type++);
+            }
+        });
         // die - the test character is killed.
         autopilot.Register("die", _ =>
         {

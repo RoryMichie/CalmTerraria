@@ -278,7 +278,13 @@ light". F1 reads the description again.
 # 7. Status and what the game shows
 
 - Backspace: health, mana, defense, and each effect on the character
-  with the time it has left.
+  with the time it has left. With three or fewer inventory slots
+  free it says how many, or that the inventory is full.
+- A full inventory: the Carried list is named "Carried, full";
+  walking over something there is no room for says "No room for"
+  it, once; and nothing is crafted that would have nowhere to go.
+  Under the cursor, something lying loose reads with "dropped"
+  after it, so it is not taken for the thing standing there.
 - Z: where the character is, in one line. The biome and the layer
   of the world; how far the biome runs to either side, where the
   scanner has it as a place; how far from the world's centre;

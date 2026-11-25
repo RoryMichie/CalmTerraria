@@ -1,0 +1,39 @@
+# A full inventory: said, and nothing crafted into nowhere.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold Wood 50
+do fill
+wait 300
+key backspace
+wait 300
+key tab
+heard Carried
+key tab
+key tab
+heard Crafting
+type work
+wait 600
+key enter
+wait 600
+key escape
+wait 500
+do drop LeadBar 3 6
+wait 2500
+key ctrl+k
+key l
+key l
+key l
+key l
+key l
+key l
+key m
+hold D 1200
+wait 800
+quit

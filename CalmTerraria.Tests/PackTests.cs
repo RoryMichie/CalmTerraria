@@ -22,6 +22,7 @@ internal sealed class FakePack : IPack
     }
 
     public IReadOnlyList<PackStack> Stacks() => Inventory;
+    public int FreeSlots { get; set; } = 10;
     public IReadOnlyList<(string Slot, string? Item)> Equipment() => Worn;
     public void Hold(int slot) => Held = slot;
 
@@ -236,6 +237,15 @@ public class PackScreenTests
         ui.Type(']');
         ui.Expect("Nothing to open.");
         Assert.Single(pack.Opened);
+    }
+
+    [Fact]
+    public void AFullInventorySaysSoInItsName()
+    {
+        var ui = new TestApp();
+        var pack = new FakePack { FreeSlots = 0 }.Add("Acorn", 5);
+        new PackScreen(ui.App, pack, () => { }).Open();
+        ui.Expect("Carried, full list Acorn, 5");
     }
 
     [Fact]

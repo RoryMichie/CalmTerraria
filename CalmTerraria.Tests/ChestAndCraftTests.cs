@@ -90,6 +90,8 @@ internal sealed class FakeCrafting : ICrafting
     public IReadOnlyList<Craftable> Recipes() => Available;
 
     public string Describe(int id) => "Provides light";
+    public string? NoRoom { get; set; }
+    public string? Blocked(int id) => NoRoom;
 
     public bool Craft(int id)
     {
@@ -364,6 +366,17 @@ public class CraftTests
         ui.Press("enter");
         Assert.Contains("Crafted.", ui.Spoken());
         Assert.Equal(new[] { 3, 3, 3 }, crafting.Made);
+    }
+
+    [Fact]
+    public void WithNoRoomNothingIsMadeAndThatIsSaid()
+    {
+        var (ui, crafting) = Open();
+        crafting.NoRoom = "No room in the inventory.";
+        ui.Drain();
+        ui.Press("enter");
+        ui.Expect("No room in the inventory.");
+        Assert.Empty(crafting.Made);
     }
 
     [Fact]

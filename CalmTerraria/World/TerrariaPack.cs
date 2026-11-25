@@ -19,6 +19,18 @@ internal sealed class TerrariaPack : IPack
 
     private static Player Player => Main.LocalPlayer;
 
+    public int FreeSlots
+    {
+        get
+        {
+            var free = 0;
+            for (var slot = 0; slot < 50; slot++)
+                if (Player.inventory[slot].IsAir)
+                    free++;
+            return free;
+        }
+    }
+
     public IReadOnlyList<PackStack> Stacks()
     {
         var stacks = new List<PackStack>();
