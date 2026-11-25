@@ -15,6 +15,7 @@ key enter
 heard Omniscience
 key tab
 key tab
+key tab
 key enter
 heard Items
 type gel

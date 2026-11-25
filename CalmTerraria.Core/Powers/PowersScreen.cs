@@ -13,6 +13,10 @@ public interface IPowers
     /// <summary>The character takes no damage.</summary>
     bool GodMode { get; set; }
 
+    /// <summary>Storage is every chest in the world, wherever the
+    /// character is, not only the chests near them.</summary>
+    bool OmnipresentStorage { get; set; }
+
     /// <summary>Every item's name, alphabetical.</summary>
     IReadOnlyList<string> Items();
 
@@ -46,7 +50,7 @@ public interface IPowers
 }
 
 /// <summary>The powers: what a journey-mode character has and more,
-/// for any character. Two switches and six actions; the two long
+/// for any character. Three switches and six actions; the two long
 /// lists are found in by typing the start of a name.</summary>
 public sealed class PowersScreen
 {
@@ -68,6 +72,8 @@ public sealed class PowersScreen
         omniscience.Toggled += on => _powers.Omniscience = on;
         var god = new CheckBox(dialog, "God mode", _powers.GodMode);
         god.Toggled += on => _powers.GodMode = on;
+        var storage = new CheckBox(dialog, "Omnipresent storage", _powers.OmnipresentStorage);
+        storage.Toggled += on => _powers.OmnipresentStorage = on;
         new Button(dialog, "Give item").Activated += () =>
             Pick("Items", _powers.Items(), item =>
             {

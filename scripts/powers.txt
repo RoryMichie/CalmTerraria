@@ -15,6 +15,7 @@ key space
 key tab
 key space
 key tab
+key tab
 key enter
 heard Items
 type torch

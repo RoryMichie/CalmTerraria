@@ -10,7 +10,8 @@ namespace CalmTerraria.World;
 /// walking to each and opening it, and crafted from where the
 /// character stands.
 ///
-/// Near is about what is on screen. Locked chests are left out. Things
+/// Near is about what is on screen; with the omnipresent storage
+/// power it is every chest in the world. Locked chests are left out. Things
 /// put away go onto a stack of the same thing where there is one, then
 /// into a chest that already holds that thing, then into the nearest
 /// chest with room.
@@ -31,6 +32,7 @@ internal sealed class TerrariaStorage : IChest
     private static List<int> _near = new();
     private static uint _nearAt = uint.MaxValue;
     private static (int X, int Y) _nearFrom;
+    private static bool _nearEverywhere;
 
     /// <summary>The chests in reach, nearest first. Looked for once
     /// for each place the character stands, however often it is asked.</summary>
@@ -39,12 +41,17 @@ internal sealed class TerrariaStorage : IChest
         if (Main.netMode != NetmodeID.SinglePlayer || Main.gameMenu)
             return Array.Empty<int>();
         var at = WorldScanner.PlayerTile();
-        if (_nearAt == Main.GameUpdateCount && _nearFrom == at)
+        // The power: every chest in the world, wherever the character is.
+        var everywhere = TerrariaPowers.StorageEverywhere;
+        if (_nearAt == Main.GameUpdateCount && _nearFrom == at && _nearEverywhere == everywhere)
             return _near;
+        _nearEverywhere = everywhere;
         var found = new List<int>();
         for (var i = 0; i < Main.maxChests; i++)
         {
-            if (Main.chest[i] is not { } chest || Math.Abs(chest.x - at.X) > Across || Math.Abs(chest.y - at.Y) > UpDown)
+            if (Main.chest[i] is not { } chest)
+                continue;
+            if (!everywhere && (Math.Abs(chest.x - at.X) > Across || Math.Abs(chest.y - at.Y) > UpDown))
                 continue;
             if (!WorldGen.InWorld(chest.x, chest.y) || Chest.IsLocked(chest.x, chest.y))
                 continue;

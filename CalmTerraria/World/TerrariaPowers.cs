@@ -34,6 +34,37 @@ internal sealed class TerrariaPowers : IPowers
 
     public static bool GodModeOn { get; set; }
 
+    private static string StoragePath => Path.Combine(Main.SavePath, "CalmTerraria", "omnipresent-storage.txt");
+
+    private static bool? _storageEverywhere;
+
+    /// <summary>Remembered between sessions, as omniscience is.</summary>
+    public static bool StorageEverywhere
+    {
+        get => _storageEverywhere ??= File.Exists(StoragePath);
+        private set
+        {
+            _storageEverywhere = value;
+            if (value)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(StoragePath)!);
+                File.WriteAllText(StoragePath, "Storage is every chest in the world.");
+            }
+            else
+                File.Delete(StoragePath);
+        }
+    }
+
+    public bool OmnipresentStorage
+    {
+        get => StorageEverywhere;
+        set
+        {
+            StorageEverywhere = value;
+            Recipe.FindRecipes();
+        }
+    }
+
     public bool Omniscience
     {
         get => Omniscient;

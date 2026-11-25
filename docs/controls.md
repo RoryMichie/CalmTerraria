@@ -371,6 +371,10 @@ has and more, for any character.
   only what the character has explored. Remembered between sessions.
   The scanner takes a few seconds to catch up after it is switched.
 - God mode: no damage. Off again at the next launch.
+- Omnipresent storage: storage is every unlocked chest in the world,
+  wherever the character is, not only the chests near them. Taking,
+  putting away and crafting all reach it. Remembered between
+  sessions. Single player only, as storage is.
 - Give item: a list of every item; type the start of a name, Enter
   gives a full stack. The list stays open for more.
 - Spawn creature: the same for creatures; one appears twelve tiles

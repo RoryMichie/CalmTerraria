@@ -7,6 +7,7 @@ internal sealed class FakePowers : IPowers
 {
     public bool Omniscience { get; set; }
     public bool GodMode { get; set; }
+    public bool OmnipresentStorage { get; set; }
     public bool OnServer { get; set; }
     public List<string> Given { get; } = new();
     public List<string> Spawned { get; } = new();
@@ -74,10 +75,15 @@ public class PowersScreenTests
     [Fact]
     public void TheWalk()
     {
-        var (ui, _) = Open();
+        var (ui, powers) = Open();
         ui.Drain();
         ui.Press("tab");
         ui.Expect("God mode check box not checked");
+        ui.Press("tab");
+        ui.Expect("Omnipresent storage check box not checked");
+        ui.Press("space");
+        ui.Expect("checked");
+        Assert.True(powers.OmnipresentStorage);
         ui.Press("tab");
         ui.Expect("Give item button");
         ui.Press("tab");
@@ -96,6 +102,7 @@ public class PowersScreenTests
     public void GivingIsFoundByTypingAndTheListStaysForMore()
     {
         var (ui, powers) = Open();
+        ui.Press("tab");
         ui.Press("tab");
         ui.Press("tab");
         ui.Drain();
@@ -127,6 +134,7 @@ public class PowersScreenTests
         ui.Press("tab");
         ui.Press("tab");
         ui.Press("tab");
+        ui.Press("tab");
         ui.Press("enter");
         ui.Drain();
         ui.Press("enter");
@@ -138,7 +146,7 @@ public class PowersScreenTests
     public void TeleportingListsTheOtherPlayersOrSaysThereAreNone()
     {
         var (ui, powers) = Open();
-        for (var i = 0; i < 4; i++)
+        for (var i = 0; i < 5; i++)
             ui.Press("tab");
         ui.Drain();
         ui.Press("enter");
@@ -155,7 +163,7 @@ public class PowersScreenTests
     public void TheTimeButtonsSayWhatItIsNow()
     {
         var (ui, powers) = Open();
-        for (var i = 0; i < 7; i++)
+        for (var i = 0; i < 8; i++)
             ui.Press("tab");
         ui.Drain();
         ui.Press("enter");
