@@ -50,8 +50,12 @@ public sealed class SettingsScreen
         {
             _settings.ClassicKeys = on;
             _app.Announce(on
-                ? "Cursor on O, K, L and semicolon. Comma reads it. I uses, P interacts. J is quick mana."
-                : "Cursor on the pad around K. K reads it. Left bracket uses, right bracket interacts. G is quick mana.");
+                ? "Cursor on O, K, L and semicolon. Comma reads it. I uses, P interacts. "
+                    + "Brackets change scanner category, Page Up and Page Down go through what is found, "
+                    + "with Shift through kinds. J is quick mana."
+                : "Cursor on the pad around K. K reads it. Left bracket uses, right bracket interacts. "
+                    + "Scanner on the Page keys: Control for category, alone for kinds, Shift for each one. "
+                    + "G is quick mana.");
         };
         var tick = new CheckBox(mod, "Menu tick", _settings.MenuTick);
         tick.Toggled += on => _settings.MenuTick = on;

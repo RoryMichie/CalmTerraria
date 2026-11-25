@@ -92,12 +92,23 @@ public class KeymapTests
     }
 
     [Fact]
-    public void IAndPAreTheMouseButtonsAndTheBracketsStillAre()
+    public void IAndPAreTheMouseButtons()
     {
         Assert.Equal(Plain('['), Keymap.FromClassic(Plain('i')));
         Assert.Equal(Plain(']'), Keymap.FromClassic(Plain('p')));
-        Assert.Equal(Plain('['), Keymap.FromClassic(Plain('[')));
         Assert.Equal(Key.Char('['), Keymap.FromClassic(Key.Char('i')));
+    }
+
+    [Fact]
+    public void TheScannerIsOnTheBracketsAndThePageKeys()
+    {
+        // Brackets: category.
+        Assert.Equal(KeyCombo.WithCtrl(Key.PageUp), Keymap.FromClassic(Plain('[')));
+        Assert.Equal(KeyCombo.WithCtrl(Key.PageDown), Keymap.FromClassic(Plain(']')));
+        // Page keys alone: the next thing. With Shift: the next kind.
+        Assert.Equal(KeyCombo.WithShift(Key.PageDown), Keymap.FromClassic(KeyCombo.Plain(Key.PageDown)));
+        Assert.Equal(KeyCombo.Plain(Key.PageUp), Keymap.FromClassic(KeyCombo.WithShift(Key.PageUp)));
+        Assert.Equal(KeyCombo.WithCtrl(Key.PageDown), Keymap.FromClassic(KeyCombo.WithCtrl(Key.PageDown)));
     }
 
     [Fact]
@@ -112,7 +123,7 @@ public class KeymapTests
     {
         Assert.Equal(Plain('x'), Keymap.FromClassic(Plain('x')));
         Assert.Equal(KeyCombo.Plain(Key.Tab), Keymap.FromClassic(KeyCombo.Plain(Key.Tab)));
-        Assert.Equal(KeyCombo.WithShift(Key.PageDown), Keymap.FromClassic(KeyCombo.WithShift(Key.PageDown)));
+        Assert.Equal(KeyCombo.Plain(Key.Home), Keymap.FromClassic(KeyCombo.Plain(Key.Home)));
     }
 }
 

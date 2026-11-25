@@ -413,14 +413,17 @@ With Classic keys on, in a world:
   There are no diagonals. Shift with one of them skims.
 - Comma says what is under the cursor; Shift+comma asks about housing;
   Ctrl+comma brings the cursor back to the player.
-- I uses the held item at the cursor and P interacts. The brackets
-  still do the same.
+- I uses the held item at the cursor and P interacts.
+- The scanner: left and right bracket change category. Page Up and
+  Page Down go from one thing to the next, nearest first. Shift+Page
+  Up and Shift+Page Down go from one kind of thing to the next. Home,
+  Ctrl+Home and End are as in section 4.
 - J is the game's quick mana again, and H its quick heal as always.
   Switching the layout moves the game's quick mana binding between G
   and J by itself, where the player has not put it somewhere else.
 - U, N and M are the game's: M is its full-screen map.
 
-Everything else is as in the rest of this document: the scanner, X,
+Everything else is as in the rest of this document: X,
 Backspace, Z, apostrophe, backslash, Tab. Inside the mod's screens
 nothing changes, since letters there find things by name: using an
 item from a list is still the brackets.

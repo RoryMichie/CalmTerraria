@@ -31,7 +31,8 @@ public static class Keymap
 
     /// <summary>The keys of the mod's own layout that the classic one
     /// does not use for the same thing, and are not given another
-    /// meaning above: these go to the game. J is its quick mana.</summary>
+    /// meaning above: these go to the game. J is its quick mana and M
+    /// its map, as the earlier mod left them.</summary>
     private const string LeftToTheGame = "ujnm";
 
     /// <summary>The key in the mod's own layout, or null when the
@@ -46,6 +47,21 @@ public static class Keymap
         return LeftToTheGame.Contains(c) ? null : key;
     }
 
-    public static KeyCombo? FromClassic(KeyCombo combo) =>
-        FromClassic(combo.Key) is { } key ? combo with { Key = key } : null;
+    /// <summary>The scanner is laid out differently too: the brackets
+    /// change category, Page Up and Page Down go from one thing to the
+    /// next, and with Shift from one kind of thing to the next. The
+    /// brackets are therefore not the mouse buttons in this layout.</summary>
+    public static KeyCombo? FromClassic(KeyCombo combo)
+    {
+        if (!combo.Ctrl && !combo.Alt)
+        {
+            if (!combo.Shift && combo.Key == Key.Char('['))
+                return KeyCombo.WithCtrl(Key.PageUp);
+            if (!combo.Shift && combo.Key == Key.Char(']'))
+                return KeyCombo.WithCtrl(Key.PageDown);
+            if (combo.Key == Key.PageUp || combo.Key == Key.PageDown)
+                return combo with { Shift = !combo.Shift };
+        }
+        return FromClassic(combo.Key) is { } key ? combo with { Key = key } : null;
+    }
 }
