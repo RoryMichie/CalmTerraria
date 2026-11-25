@@ -69,6 +69,16 @@ each - "Air, 5. Grass, 1. Dirt, 12." - out to fifty tiles. Left and
 right look along the middle of the body; up starts above the head and
 down below the feet. The character does not move for that press.
 
+What the cursor and the scanner know is what is on the game's map,
+and the game maps what has been lit on screen. So that the dark is
+not a thing to be managed unseen, the character is taken to carry a
+light: what it would show goes on the map as they move, and stays
+there. It reaches about twelve tiles through open space and about
+four into solid ground, as light does, so ore is known when it is
+near open space the character has come close to, and not through a
+thickness of rock. Anything else unlit reads "Unknown". The
+Omniscience power does away with all of it.
+
 # 3. Clicking
 
 Left bracket and right bracket are the two mouse buttons, as in
