@@ -102,6 +102,11 @@ Work on an area:
   then the blocks go in. Solid ground already there is left, being as
   good as a wall, and chests are never touched.
 - X stops a job. The area stays marked for the next one.
+- With something from the scanner marked by Shift+X that is made of
+  one kind of tile - ore, gems, spikes - the Build list leads with
+  Mine: the vein miner. Every tile of it that touches, and nothing
+  round it, with the character's own pickaxe. The plan says how many
+  tiles, how far, and how many are too hard.
 - With anything marked - one tile after a first X, an area after a
   second, or something from the scanner after Shift+X - the Build
   list also has Clear path to it: a stair cut through the ground from

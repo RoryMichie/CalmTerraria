@@ -49,6 +49,7 @@ internal sealed class BuildTool : IBuild
     /// <summary>What the marked area is, when it was marked from the
     /// scanner.</summary>
     private string? _markedName;
+    private Feature? _markedFeature;
     private readonly Dictionary<int, Job> _offered = new();
 
     private Job? _job;
@@ -82,6 +83,7 @@ internal sealed class BuildTool : IBuild
             _a = (left, top);
             _b = (right, bottom);
             _markedName = feature.DisplayName;
+            _markedFeature = feature;
             Say($"Selected {feature.DisplayName}, {right - left + 1} by {bottom - top + 1}.");
         };
         shell.Build = this;
@@ -91,6 +93,7 @@ internal sealed class BuildTool : IBuild
         {
             _a = _b = null;
             _markedName = null;
+            _markedFeature = null;
             End();
         };
         shell.LeftWorld += End;
@@ -109,6 +112,7 @@ internal sealed class BuildTool : IBuild
             return;
         }
         _markedName = null;
+        _markedFeature = null;
         if (_a == null)
         {
             _a = _cursor.Tile;
@@ -162,6 +166,7 @@ internal sealed class BuildTool : IBuild
         var options = new List<BuildOption>();
         if (_job != null)
             return options;
+        OfferVein(Offer);
         OfferPath(Offer);
         if (_a == null || _b == null)
             return options;
@@ -377,6 +382,69 @@ internal sealed class BuildTool : IBuild
             steps.Add((x, y));
         }
         return steps;
+    }
+
+    /// <summary>The vein miner: for something marked from the scanner
+    /// that is made of one kind of tile - ore, gems, a run of spikes -
+    /// every tile of it that touches, and nothing round it. Mined as
+    /// all clearing is, with the character's own pickaxe, tile by
+    /// tile, so it is the same on a server as alone.</summary>
+    private void OfferVein(Action<Job, string, string> offer)
+    {
+        if (_markedFeature is not { } feature)
+            return;
+        var player = Main.LocalPlayer;
+        var (px, py) = WorldScanner.PlayerTile();
+        // What it is made of: the kind of tile under one of its points.
+        int type = -1;
+        var open = new Queue<(int X, int Y)>();
+        var vein = new HashSet<(int X, int Y)>();
+        var (left, top, right, bottom) = feature.Bounds;
+        foreach (var point in feature.Points)
+        {
+            for (var x = point.X; x <= point.X + 1; x++)
+            {
+                for (var y = point.Y; y <= point.Y + 1; y++)
+                {
+                    if (!WorldGen.InWorld(x, y, 2) || !Main.tile[x, y].HasTile)
+                        continue;
+                    var here = Main.tile[x, y].TileType;
+                    if (type < 0 && Main.tileSolid[here] && !Main.tileFrameImportant[here] && x >= left && x <= right && y >= top && y <= bottom
+                        && TileNames.At(x, y, Main.tile[x, y]) == feature.Kind.Name)
+                        type = here;
+                    if (here == type && vein.Add((x, y)))
+                        open.Enqueue((x, y));
+                }
+            }
+        }
+        if (type < 0)
+            return;
+        // Out from there to every tile of the same kind that touches.
+        while (open.Count > 0 && vein.Count < 4000)
+        {
+            var (x, y) = open.Dequeue();
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dy = -1; dy <= 1; dy++)
+                {
+                    var next = (X: x + dx, Y: y + dy);
+                    if (WorldGen.InWorld(next.X, next.Y, 2) && Main.tile[next.X, next.Y] is { HasTile: true } tile
+                        && tile.TileType == type && vein.Add(next))
+                        open.Enqueue(next);
+                }
+            }
+        }
+        var name = feature.DisplayName;
+        var tooHard = Best(item => item.pick) < 0 ? vein.Count : vein.Count(t => !player.HasEnoughPickPowerToHurtTile(t.X, t.Y));
+        // Nearest first, so what is in reach goes while the rest is walked to.
+        var targets = vein.Where(t => player.HasEnoughPickPowerToHurtTile(t.X, t.Y))
+            .OrderBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py)).ToList();
+        var nearest = vein.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
+        var plan = $"The whole of it: {vein.Count} tiles of {name}, and nothing round it. Nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}. "
+            + (Best(item => item.pick) < 0 ? "You have no pickaxe. "
+                : tooHard > 0 ? $"{tooHard} tiles are too hard for your pickaxe and are left. " : "")
+            + "It drops where it is mined, to be walked to and picked up.";
+        offer(new Job(Kind.Clear, 0, "Mining", "mined", targets), $"Mine {name}, {targets.Count} tiles", plan);
     }
 
     private void OfferPath(Action<Job, string, string> offer)
