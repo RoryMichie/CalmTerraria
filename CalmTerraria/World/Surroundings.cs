@@ -10,8 +10,7 @@ namespace CalmTerraria.World;
 /// at a glance from the backdrop and the screen round them, in a few
 /// words: the biome and the layer of the world, whether they are in a
 /// room or under something, and what the ground does to the left and
-/// to the right. Shift+Z is where that is in the world: how far the
-/// biome runs and how far the world's centre is.</summary>
+/// to the right. Shift+Z is the character's coordinates.</summary>
 internal sealed class Surroundings
 {
     /// <summary>How far to each side the lie of the ground is taken.</summary>
@@ -28,22 +27,13 @@ internal sealed class Surroundings
         shell.WorldCommands[KeyCombo.WithShift(Key.Char('z'))] = () => _host.App.Announce(Whereabouts());
     }
 
-    /// <summary>Where in the world: how far the biome runs, where the
-    /// scanner has it as a place, and how far the centre is.</summary>
-    private string Whereabouts()
+    /// <summary>The character's tile, as the game numbers the world:
+    /// X from the left edge, Y from the top.</summary>
+    private static string Whereabouts()
     {
         var (px, py) = WorldScanner.PlayerTile();
-        var parts = new List<string>();
-        if (_scanner.PlaceAt(px, py) is { } place)
-        {
-            var (left, _, right, _) = place.Bounds;
-            parts.Add($"{place.DisplayName} runs {Math.Max(0, px - left)} left, {Math.Max(0, right - px)} right.");
-        }
-        var centre = px - Main.maxTilesX / 2;
-        parts.Add(centre == 0 ? "At the world's centre." : $"World's centre {Math.Abs(centre)} {(centre < 0 ? "right" : "left")}.");
-        return string.Join(" ", parts);
+        return $"X {px}, Y {py}.";
     }
-
     private string Describe()
     {
         var player = Main.LocalPlayer;

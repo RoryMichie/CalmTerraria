@@ -70,6 +70,15 @@ internal sealed class Cursor
         commands[KeyCombo.WithShift(Key.Char('k'))] = () =>
         {
             var (x, y) = Tile;
+            // Where the game says little or nothing of why, the mod
+            // says; a gap is where the cursor goes.
+            if (Housing.Diagnose(x, y, out var gap) is { } wrong)
+            {
+                if (gap is { } at)
+                    Place(at.X, at.Y);
+                Say(wrong);
+                return;
+            }
             if (WorldGen.MoveTownNPC(x, y, -1))
                 Main.NewText(Lang.inter[39].Value, 255, 240, 20);
         };

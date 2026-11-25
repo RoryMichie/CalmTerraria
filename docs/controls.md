@@ -30,8 +30,13 @@ is from the character: "Dirt, 3 right 1 down".
   legs" - and then what they are standing in, if it is not air.
   Another player reads by name.
 - Shift+K asks the game whether the room at the cursor is fit to
-  live in, and reads its answer: what is missing, if anything.
-- Ctrl+K brings the cursor back to the player.
+  live in, and reads its answer: what is missing, if anything. Where
+  the game says only that it is not valid housing, the reason is
+  said: how many tiles it has when it is too small; where the gap is
+  when it is not closed in, with the cursor put on the gap; and, for
+  a room that is whole and furnished, why nobody can stand in it - a
+  floor of platforms, a door within two tiles of the only place to
+  stand, furniture on that place.- Ctrl+K brings the cursor back to the player.
 
 While the cursor is within reach it goes with the player. With the
 smart cursor off it clings: a step brings it back onto the character.
@@ -342,9 +347,9 @@ light". F1 reads the description again.
   then up 2. Right: flat 12, then a drop." A side that is level for
   thirty tiles is "flat". A room says how many of its tiles have no
   back wall only when some have none.
-- Shift+Z: where that is in the world. How far the biome runs to
-  either side, where the scanner has it as a place, and how far and
-  which way the world's centre is.- Apostrophe: what the character's informational accessories show -
+- Shift+Z: the character's coordinates, in tiles - "X 2140, Y 312."
+  X counts from the world's left edge and Y from its top, so Y grows
+  going down.- Apostrophe: what the character's informational accessories show -
   the time, the depth, the position and so on - in the game's own
   words, for those the character has.
 - The hotbar: the item is said when the selected slot changes.
