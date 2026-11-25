@@ -773,10 +773,12 @@ public sealed class ShopList : ListBox<ShopLine>
 }
 
 /// <summary>A job that can be done to the area the player marked.</summary>
+/// <param name="Key">Which job it is, the same for as long as it is
+/// offered whatever its counts do: "fill", "clear".</param>
 /// <param name="Name">What the list says: "Fill with Dirt Block, 60 tiles".</param>
-/// <param name="Plan">What doing it would take and give, and what
-/// could go wrong, read before it is started.</param>
-public sealed record BuildOption(int Id, string Name, string Plan);
+/// <param name="About">What doing it would take and give, and what
+/// is in the way, briefly: read after the name.</param>
+public sealed record BuildOption(string Key, string Name, string About);
 
 /// <summary>The area the player marked in the world and what can be
 /// done to it with what they hold.</summary>
@@ -785,9 +787,60 @@ public interface IBuild
     /// <summary>The area, as the list's name: "Build, 12 by 5".</summary>
     string Title { get; }
 
+    /// <summary>What can be done now. Asked often: the list follows
+    /// what is held and what the world has become.</summary>
     IReadOnlyList<BuildOption> Options();
 
-    void Start(int id);
+    void Start(string key);
+}
+
+/// <summary>A line of the build list: the job, then what it takes.</summary>
+public sealed partial class BuildLine : Element
+{
+    public BuildOption Option { get; internal set; }
+
+    public BuildLine(BuildOption option) => Option = option;
+
+    [Field]
+    public string Value => Option.Name + (About.Length > 0 ? "." : "");
+
+    [Field]
+    public string About => Option.About;
+}
+
+/// <summary>The jobs as lines that keep their object for as long as
+/// the job is offered, so the cursor stays on a job while its counts
+/// change.</summary>
+internal sealed class BuildLines
+{
+    private readonly IBuild _build;
+    private readonly Dictionary<string, BuildLine> _lines = new();
+    private List<BuildLine> _shown = new();
+
+    public BuildLines(IBuild build) => _build = build;
+
+    public IReadOnlyList<BuildLine> Lines()
+    {
+        var options = _build.Options();
+        var changed = options.Count != _shown.Count;
+        var shown = new List<BuildLine>(options.Count);
+        for (var i = 0; i < options.Count; i++)
+        {
+            if (!_lines.TryGetValue(options[i].Key, out var line))
+                _lines[options[i].Key] = line = new BuildLine(options[i]);
+            line.Option = options[i];
+            shown.Add(line);
+            changed |= i >= _shown.Count || !ReferenceEquals(_shown[i], line);
+        }
+        // The same list object while nothing moved: the framework asks often.
+        if (changed)
+        {
+            _shown = shown;
+            foreach (var gone in _lines.Keys.Where(key => !options.Any(option => option.Key == key)).ToList())
+                _lines.Remove(gone);
+        }
+        return _shown;
+    }
 }
 
 /// <summary>Which stop a freshly opened pack screen starts on.</summary>
@@ -881,10 +934,20 @@ public sealed class PackScreen
                 }
             };
         }
-        if (build != null && build.Options() is { Count: > 0 } options)
+        if (build != null && build.Options().Count > 0)
         {
-            var jobs = new ListBox(dialog, build.Title, options.Select(option => option.Name).ToList(), activateItems: true);
-            jobs.Activated += () => Plan(build, options[jobs.SelectedIndex], dialog);
+            // Each job reads what it would take after its name, and
+            // Enter starts it: the screen is put away, back to the
+            // world where the work happens.
+            var jobs = new ListBox<BuildLine>(dialog, build.Title, Array.Empty<BuildLine>(), activateItems: true);
+            jobs.BindItems(new BuildLines(build).Lines);
+            jobs.Activated += () =>
+            {
+                if (jobs.SelectedItem is not { } line)
+                    return;
+                dialog.Close();
+                build.Start(line.Option.Key);
+            };
             first ??= jobs;
         }
         var pack = new PackList(dialog, _pack, chest, shop);
@@ -928,24 +991,6 @@ public sealed class PackScreen
     }
 
     public void Close() => _dialog?.Close(nested: true);
-
-    /// <summary>What a job would take, before it is started: the plan
-    /// as a stop that does nothing, and Start. Starting puts the
-    /// screens away, back to the world where the work happens.</summary>
-    private void Plan(IBuild build, BuildOption option, Dialog screen)
-    {
-        var dialog = _app.OpenDialog();
-        _ = new CustomWidget(dialog, option.Plan);
-        var start = new Button(dialog, "Start");
-        _app.SetPrimary(start);
-        start.Activated += () =>
-        {
-            dialog.Close();
-            screen.Close();
-            build.Start(option.Id);
-        };
-        dialog.AnnounceOpened();
-    }
 
     private void Rename(IChest chest)
     {

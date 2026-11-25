@@ -34,10 +34,6 @@ heard Second corner
 key tab
 heard Build
 key enter
-wait 500
-key tab
-heard Start
-key enter
 heard Done
 wait 500
 log --- now clear it from where the character stands
@@ -45,10 +41,6 @@ key tab
 heard Build
 key end
 wait 300
-key enter
-wait 500
-key tab
-heard Start
 key enter
 wait 6300
 do items

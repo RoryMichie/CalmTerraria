@@ -44,10 +44,6 @@ key down
 key down
 wait 300
 key enter
-wait 800
-key tab
-heard Start
-key enter
 heard Done
 wait 800
 do ground

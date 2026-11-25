@@ -13,10 +13,6 @@ wait 300
 key tab
 heard Build
 key enter
-wait 800
-key tab
-heard Start
-key enter
 heard Done
 wait 500
 key end

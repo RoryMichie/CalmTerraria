@@ -92,9 +92,11 @@ Work on an area:
     first and from the foot; and, with a hammer carried, Remove walls;
   - an empty bucket or a sponge: Soak up the liquid;
   - a water bucket, where there is lava: Pour water on lava.
-- Enter on a job reads its plan first - how many tiles, how much is
-  carried, what clearing would give, what is in the way (tiles too
-  hard for the pickaxe, a chest, lava) - with a Start button after.
+- Each job in the list reads what it takes after its name - how much
+  is carried and how much short, what clearing gives, what is in the
+  way (tiles too hard for the pickaxe, a chest, lava). Enter starts
+  it. The list follows what is held and what the world has become
+  for as long as it is open.
 - The work is done by using the held item on one tile after another,
   as a hand on a mouse would: it costs the blocks, takes the time and
   breaks only what the tool can. While it runs the character reaches
@@ -125,14 +127,14 @@ Work on an area:
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with
   Mine: the vein miner. Every tile of it that touches, and nothing
-  round it, with the character's own pickaxe. The plan says how many
+  round it, with the character's own pickaxe. The line says how many
   tiles, how far, and how many are too hard.
 - With anything marked - one tile after a first X, an area after a
   second, or something from the scanner after Shift+X - the Build
   list also has Clear path to it: a stair cut through the ground from
   the character to the mark, one tile along for each tile up or down so
   it can be walked without jumping, doubling back where the thing is
-  straight above or below. Its plan says how long it is, what would
+  straight above or below. Its line says how long it is, what would
   come out, and what is in the way; it is cut in the order it is
   walked, and carries on as the character follows it.
 

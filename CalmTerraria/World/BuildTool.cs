@@ -50,7 +50,13 @@ internal sealed class BuildTool : IBuild
     /// scanner.</summary>
     private string? _markedName;
     private Feature? _markedFeature;
-    private readonly Dictionary<int, Job> _offered = new();
+    private readonly Dictionary<string, Job> _offered = new();
+    /// <summary>The list asks many times a frame; the world is looked
+    /// over once a frame.</summary>
+    private List<BuildOption>? _options;
+    private ulong _optionsFrame;
+
+    private delegate void Offering(string key, Job job, string name, string about);
 
     private Job? _job;
     private Queue<(int X, int Y)> _queue = new();
@@ -157,6 +163,14 @@ internal sealed class BuildTool : IBuild
 
     private static readonly string[] LiquidNames = { "water", "lava", "honey", "shimmer" };
 
+    /// <summary>How much of what a job uses is carried, against what
+    /// it needs. The job's name has already said what the thing is.</summary>
+    private static string Supply(int needed, int type)
+    {
+        var have = Carried(type);
+        return have >= needed ? $"You have {have}." : $"You have {have}, {needed - have} short.";
+    }
+
     private static int Carried(int type)
     {
         var total = 0;
@@ -168,6 +182,16 @@ internal sealed class BuildTool : IBuild
     }
 
     public IReadOnlyList<BuildOption> Options()
+    {
+        if (_options == null || _optionsFrame != _host.Frames)
+        {
+            _options = Survey();
+            _optionsFrame = _host.Frames;
+        }
+        return _options;
+    }
+
+    private List<BuildOption> Survey()
     {
         _offered.Clear();
         var options = new List<BuildOption>();
@@ -199,18 +223,10 @@ internal sealed class BuildTool : IBuild
                 for (var x = left; x <= right; x++)
                     yield return (x, y);
         }
-        void Offer(Job job, string name, string plan)
+        void Offer(string key, Job job, string name, string about)
         {
-            var id = options.Count;
-            _offered[id] = job;
-            options.Add(new BuildOption(id, name, plan));
-        }
-        string Supply(int needed, int type, string name)
-        {
-            var have = Carried(type);
-            return have >= needed
-                ? $"You have {have} {name}."
-                : $"You have {have} {name}, {needed - have} short.";
+            _offered[key] = job;
+            options.Add(new BuildOption(key, name, about.Trim()));
         }
 
         var all = Up().ToList();
@@ -225,7 +241,7 @@ internal sealed class BuildTool : IBuild
             // way and can be cut down or dug out - trees, plants, loose
             // things, not solid ground, which is as good as a wall, and
             // not chests - goes first, then the blocks go in.
-            void Build(Kind kind, List<(int X, int Y)> over, string doing, string done, string title, string what)
+            void Build(string key, Kind kind, List<(int X, int Y)> over, string doing, string done, string title)
             {
                 var open = over.Where(t => Open(t.X, t.Y)).ToList();
                 var inWay = over.Where(t => InWay(t.X, t.Y)).ToList();
@@ -235,10 +251,10 @@ internal sealed class BuildTool : IBuild
                 var solid = over.Count - needed;
                 var names = inWay.Select(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType] ? "Tree" : TileNames.At(t.X, t.Y, Main.tile[t.X, t.Y]))
                     .Distinct().OrderBy(n => n).ToList();
-                var plan = $"{needed} {what}. {Supply(needed, item, name)}"
-                    + (inWay.Count > 0 ? $" In the way and cleared first: {string.Join(", ", names)}." : "")
-                    + (solid > 0 ? $" {solid} tiles of solid ground are left as they are." : "")
-                    + (lava > 0 ? $" Lava in the area, {lava} tiles." : "");
+                var plan = Supply(needed, item)
+                    + (inWay.Count > 0 ? $" Clears first: {string.Join(", ", names)}." : "")
+                    + (solid > 0 ? $" Skips {solid} solid tiles." : "")
+                    + (lava > 0 ? $" {lava} tiles of lava." : "");
                 Job Placing() => new Job(kind, item, doing, done, over.Where(t => Open(t.X, t.Y)).ToList());
                 var job = inWay.Count == 0
                     ? Placing()
@@ -246,11 +262,11 @@ internal sealed class BuildTool : IBuild
                         inWay.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
                             .Concat(inWay.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList(),
                         Then: Placing);
-                Offer(job, $"{title} with {name}, {needed} tiles", plan);
+                Offer(key, job, $"{title} with {name}, {needed} tiles", plan);
             }
-            Build(Kind.Fill, all, "Filling", "filled", "Fill", "tiles to fill");
+            Build("fill", Kind.Fill, all, "Filling", "filled", "Fill");
             if (rim.Count < all.Count)
-                Build(Kind.Outline, rim, "Outlining", "placed", "Outline", "tiles round the edge");
+                Build("outline", Kind.Outline, rim, "Outlining", "placed", "Outline");
             OfferLevel(left, top, right, bottom, item, name, Offer);
         }
 
@@ -258,10 +274,8 @@ internal sealed class BuildTool : IBuild
         {
             var bare = all.Where(t => Main.tile[t.X, t.Y].WallType == 0).ToList();
             if (bare.Count > 0)
-                Offer(new Job(Kind.Wall, held.type, "Walling", "walled", bare),
-                    $"Wall with {held.Name}, {bare.Count} tiles",
-                    $"{bare.Count} tiles to wall. {Supply(bare.Count, held.type, held.Name)}"
-                    + " A wall needs a block or another wall beside it.");
+                Offer("wall", new Job(Kind.Wall, held.type, "Walling", "walled", bare),
+                    $"Wall with {held.Name}, {bare.Count} tiles", Supply(bare.Count, held.type));
         }
 
         OfferClear(Down().ToList(), lava, Offer);
@@ -280,12 +294,9 @@ internal sealed class BuildTool : IBuild
                 var wet = Down().Where(t => Main.tile[t.X, t.Y] is { LiquidAmount: > 0 } tile
                     && (liquid < 0 || tile.LiquidType == liquid)).ToList();
                 if (wet.Count > 0)
-                    Offer(new Job(Kind.Soak, held.type, "Soaking up", "emptied", wet),
+                    Offer("soak", new Job(Kind.Soak, held.type, "Soaking up", "emptied", wet),
                         $"Soak up {(liquid < 0 ? "liquid" : LiquidNames[liquid])} with {held.Name}, {wet.Count} tiles",
-                        $"{wet.Count} tiles of liquid. " + (held.type == ItemID.EmptyBucket
-                            ? $"Each scoop fills one bucket. {Supply(wet.Count, held.type, held.Name)}"
-                            : "A sponge is never used up.")
-                        + " Liquid runs in from the sides as it is taken, so the count is a start.");
+                        held.type == ItemID.EmptyBucket ? Supply(wet.Count, held.type) : "");
             }
             if (held.type is ItemID.WaterBucket or ItemID.BottomlessBucket && lava > 0)
             {
@@ -311,12 +322,11 @@ internal sealed class BuildTool : IBuild
                     return spots.OrderBy(spot => spot.Y).ThenBy(spot => spot.X).ToList();
                 }
                 var first = Beside();
-                Offer(new Job(Kind.Pour, held.type, "Pouring water at", "poured", first, Beside),
+                Offer("pour", new Job(Kind.Pour, held.type, "Pouring water at", "poured", first, Beside),
                     $"Pour water on lava, {lava} tiles of lava",
-                    $"{lava} tiles of lava. Water goes in beside it and runs onto it: thick lava turns to obsidian,"
-                    + " which a good pickaxe can then clear, and thin lava disappears. Water is left behind. "
-                    + (first.Count == 0 ? "There is no open tile beside the lava to pour into. " : "")
-                    + (held.type == ItemID.WaterBucket ? Supply(first.Count, held.type, held.Name) : "The bottomless bucket is never used up."));
+                    "Turns it to obsidian. "
+                    + (first.Count == 0 ? "No open tile beside the lava. " : "")
+                    + (held.type == ItemID.WaterBucket ? Supply(first.Count, held.type) : ""));
             }
         }
         return options;
@@ -399,7 +409,7 @@ internal sealed class BuildTool : IBuild
     /// away, and every hole under it is filled with the held block,
     /// so that the bottom edge of the area is one level floor to walk
     /// and build on. For ground that has been dug to pieces.</summary>
-    private void OfferLevel(int left, int top, int right, int bottom, int item, string name, Action<Job, string, string> offer)
+    private void OfferLevel(int left, int top, int right, int bottom, int item, string name, Offering offer)
     {
         var player = Main.LocalPlayer;
         var above = new List<(int X, int Y)>();
@@ -436,12 +446,9 @@ internal sealed class BuildTool : IBuild
             .Concat(above.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList();
         Job Filling() => new Job(Kind.Fill, item, "Filling the ground,", "filled", Holes());
         var job = ordered.Count == 0 ? Filling() : new Job(Kind.Clear, 0, "Levelling: clearing", "cleared", ordered, Then: Filling);
-        var have = Carried(item);
-        offer(job, $"Level with {name}, {right - left + 1} wide",
-            $"Flat ground {right - left + 1} tiles wide, along the bottom of the marked area. "
-            + $"{above.Count} tiles cleared from inside it, {under.Count} holes filled under it, down to {LevelDepth} deep. "
-            + (have >= under.Count ? $"You have {have} {name}." : $"You have {have} {name}, {under.Count - have} short.")
-            + (kept > 0 ? $" {kept} tiles are left: chests, or too hard for your tools." : ""));
+        offer("level", job, $"Level with {name}, {right - left + 1} wide",
+            $"Clears {above.Count} tiles, fills {under.Count} holes below. {Supply(under.Count, item)}"
+            + (kept > 0 ? $" Leaves {kept} it can't clear." : ""));
     }
 
     /// <summary>The vein miner: for something marked from the scanner
@@ -449,7 +456,7 @@ internal sealed class BuildTool : IBuild
     /// every tile of it that touches, and nothing round it. Mined as
     /// all clearing is, with the character's own pickaxe, tile by
     /// tile, so it is the same on a server as alone.</summary>
-    private void OfferVein(Action<Job, string, string> offer)
+    private void OfferVein(Offering offer)
     {
         if (_markedFeature is not { } feature)
             return;
@@ -500,14 +507,13 @@ internal sealed class BuildTool : IBuild
         var targets = vein.Where(t => player.HasEnoughPickPowerToHurtTile(t.X, t.Y))
             .OrderBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py)).ToList();
         var nearest = vein.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
-        var plan = $"The whole of it: {vein.Count} tiles of {name}, and nothing round it. Nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}. "
-            + (Best(item => item.pick) < 0 ? "You have no pickaxe. "
-                : tooHard > 0 ? $"{tooHard} tiles are too hard for your pickaxe and are left. " : "")
-            + "What it drops is brought to you at the end.";
-        offer(new Job(Kind.Clear, 0, "Mining", "mined", targets), $"Mine {name}, {targets.Count} tiles", plan);
+        var plan = $"Nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}."
+            + (Best(item => item.pick) < 0 ? " No pickaxe."
+                : tooHard > 0 ? $" {tooHard} too hard for your pickaxe." : "");
+        offer("mine", new Job(Kind.Clear, 0, "Mining", "mined", targets), $"Mine {name}, {targets.Count} tiles", plan);
     }
 
-    private void OfferPath(Action<Job, string, string> offer)
+    private void OfferPath(Offering offer)
     {
         // To what is marked: the one tile, after a first X, or the
         // nearest tile of the area. Something from the scanner is
@@ -539,12 +545,12 @@ internal sealed class BuildTool : IBuild
         var open = steps.Count(step => WorldGen.InWorld(step.X, step.Y + 1, 2)
             && !WorldGen.SolidTile(step.X, step.Y + 1) && !seen.Contains((step.X, step.Y + 1)));
         var lava = tiles.Count(t => IsLava(t.X, t.Y));
-        var intro = $"A stair to {what}, {Directions.Offset(target.X - px, target.Y - py)}, {steps.Count} steps. "
-            + (open > 0 ? $"{open} steps have nothing underfoot. " : "");
+        var intro = $"{steps.Count} steps, {Directions.Offset(target.X - px, target.Y - py)}. "
+            + (open > 0 ? $"{open} steps over a drop. " : "");
         OfferClear(tiles, lava, offer, $"Clear path to {what}", intro, keepOrder: true, walls: false);
     }
 
-    private void OfferClear(List<(int X, int Y)> all, int lava, Action<Job, string, string> offer,
+    private void OfferClear(List<(int X, int Y)> all, int lava, Offering offer,
         string? title = null, string? intro = null, bool keepOrder = false, bool walls = true)
     {
         var player = Main.LocalPlayer;
@@ -594,31 +600,31 @@ internal sealed class BuildTool : IBuild
             return;
         var plan = new List<string>();
         if (yield.Count > 0)
-            plan.Add("You would get " + string.Join(", ", yield.OrderByDescending(pair => pair.Value)
+            plan.Add("Gives " + string.Join(", ", yield.OrderByDescending(pair => pair.Value)
                 .Select(pair => $"{pair.Value} {pair.Key}")) + ".");
         if (objects.Count > 0)
-            plan.Add("Also removed: " + string.Join(", ", objects.OrderBy(name => name)) + ".");
+            plan.Add("Removes " + string.Join(", ", objects.OrderBy(name => name)) + ".");
         if (pick < 0)
-            plan.Add("You have no pickaxe.");
+            plan.Add("No pickaxe.");
         else if (tooHard > 0)
-            plan.Add($"{tooHard} tiles are too hard for your pickaxe and are left.");
+            plan.Add($"{tooHard} too hard for your pickaxe.");
         if (trees > 0)
-            plan.Add($"{trees} tiles of tree are left: you have no axe.");
+            plan.Add("No axe for the trees.");
         if (chests > 0)
-            plan.Add("A chest is in the area and is left: chests must be emptied and taken by hand.");
+            plan.Add("Leaves the chest.");
         if (hammer > 0)
-            plan.Add($"{hammer} tiles need a hammer and are left.");
+            plan.Add($"{hammer} need a hammer.");
         if (lava > 0)
-            plan.Add($"Lava in the area, {lava} tiles: opening it up lets it run.");
+            plan.Add($"{lava} tiles of lava.");
         if (targets.Count == 0)
-            plan.Insert(0, title == null ? "Nothing here can be cleared." : "Nothing on the way can be cleared.");
+            plan.Insert(0, "Nothing can be cleared.");
         // Trees first and from the bottom: one cut at the foot brings
         // down everything above it, which is then already done.
         // A path is cut in the order it is walked.
         var ordered = keepOrder ? targets
             : targets.Where(t => Main.tileAxe[Main.tile[t.X, t.Y].TileType]).OrderByDescending(t => t.Y)
                 .Concat(targets.Where(t => !Main.tileAxe[Main.tile[t.X, t.Y].TileType])).ToList();
-        offer(new Job(Kind.Clear, 0, "Clearing", "cleared", ordered), $"{title ?? "Clear"}, {ordered.Count} tiles",
+        offer(title == null ? "clear" : "path", new Job(Kind.Clear, 0, "Clearing", "cleared", ordered), $"{title ?? "Clear"}, {ordered.Count} tiles",
             (intro ?? "") + string.Join(" ", plan));
         if (!walls)
             return;
@@ -628,9 +634,7 @@ internal sealed class BuildTool : IBuild
         {
             var walled = all.Where(t => Main.tile[t.X, t.Y].WallType != 0).ToList();
             if (walled.Count > 0)
-                offer(new Job(Kind.Unwall, 0, "Taking down", "taken down", walled), $"Remove walls, {walled.Count} tiles",
-                    $"{walled.Count} tiles of wall. A wall only comes off where it has an open edge, so they go from the outside in;"
-                    + " walls behind solid ground all round cannot be reached.");
+                offer("unwall", new Job(Kind.Unwall, 0, "Taking down", "taken down", walled), $"Remove walls, {walled.Count} tiles", "");
         }
     }
 
@@ -645,9 +649,12 @@ internal sealed class BuildTool : IBuild
         return best;
     }
 
-    public void Start(int id)
+    public void Start(string key)
     {
-        if (!_offered.TryGetValue(id, out var job) || (job.Targets.Count == 0 && job.More == null))
+        // The job as the world is now, not as it was when last listed.
+        _options = Survey();
+        _optionsFrame = _host.Frames;
+        if (!_offered.TryGetValue(key, out var job) || (job.Targets.Count == 0 && job.More == null))
         {
             Say("Nothing to do.");
             return;

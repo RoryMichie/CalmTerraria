@@ -50,6 +50,10 @@ internal sealed class SruiHost : IDisposable
     /// <summary>Milliseconds since the host started.</summary>
     public ulong Now => (ulong)_clock.ElapsedMilliseconds;
 
+    /// <summary>How many frames the host has run: for work that is
+    /// asked for many times a frame and need be done once.</summary>
+    public ulong Frames { get; private set; }
+
     public SruiHost(ILog log)
     {
         _log = log;
@@ -87,6 +91,7 @@ internal sealed class SruiHost : IDisposable
     /// for this frame, so what it read can be replaced.</summary>
     public void Frame()
     {
+        Frames++;
         while (_injected.TryDequeue(out var injected))
             Dispatch(injected);
         while (_keyboard.TryRead(out var ev))
