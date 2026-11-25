@@ -1,0 +1,26 @@
+# Critters in the scanner.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1000
+do spawn Bunny 6 0
+do spawn Bird 9 -3
+do spawn Worm 4 0
+wait 1500
+key end
+key ctrl+pageup
+key ctrl+pageup
+wait 300
+key pagedown
+key pagedown
+key ctrl+k
+key l
+key l
+key l
+key l
+quit

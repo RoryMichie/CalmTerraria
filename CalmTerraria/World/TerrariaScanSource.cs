@@ -29,11 +29,12 @@ internal sealed class TerrariaScanSource : IScanSource
     public const string Players = "Players";
     public const string People = "People";
     public const string Enemies = "Enemies";
+    public const string Critters = "Critters";
     public const string Items = "Items";
 
     public static readonly string[] CategoryOrder =
     {
-        Waypoints, Players, Containers, Treasure, Ores, Gems, Stations, Plants, Liquids, Hazards, Places, People, Enemies, Items,
+        Waypoints, Players, Containers, Treasure, Ores, Gems, Stations, Plants, Liquids, Hazards, Places, People, Enemies, Critters, Items,
     };
 
     private readonly List<ScanKind> _kinds = new();

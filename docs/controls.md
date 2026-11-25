@@ -155,6 +155,10 @@ Factorio Access's keys.
   from there said. Never inside the ground. Something that has gone
   since the scan is said to be gone.
 
+Critters - birds, bunnies, worms, fireflies, whatever a bug net
+catches - have their own category, after Enemies, for those near
+enough to be on screen.
+
 A chest that has been given a name is listed under Containers by that
 name, as its own entry: "Ores, Chest".
 

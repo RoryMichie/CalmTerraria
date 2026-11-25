@@ -310,7 +310,12 @@ internal sealed class WorldScanner
             string category;
             if (npc.townNPC)
                 category = TerrariaScanSource.People;
-            else if (!npc.friendly && npc.lifeMax > 5 && !npc.CountsAsACritter && OnScreen(npc.Center, out _, out _))
+            else if (!OnScreen(npc.Center, out _, out _))
+                continue;
+            else if (npc.CountsAsACritter || npc.catchItem > 0)
+                // The small harmless things: what a bug net is for.
+                category = TerrariaScanSource.Critters;
+            else if (!npc.friendly && npc.lifeMax > 5)
                 category = TerrariaScanSource.Enemies;
             else
                 continue;
