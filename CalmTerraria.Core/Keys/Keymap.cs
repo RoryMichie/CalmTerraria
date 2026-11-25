@@ -62,6 +62,10 @@ public static class Keymap
             if (combo.Key == Key.PageUp || combo.Key == Key.PageDown)
                 return combo with { Shift = !combo.Shift };
         }
+        // Home goes there, as the earlier mod's does; with Control it
+        // only sends the cursor.
+        if (!combo.Shift && !combo.Alt && combo.Key == Key.Home)
+            return combo with { Ctrl = !combo.Ctrl };
         return FromClassic(combo.Key) is { } key ? combo with { Key = key } : null;
     }
 }

@@ -112,6 +112,13 @@ public class KeymapTests
     }
 
     [Fact]
+    public void HomeGoesThereAndControlHomeSendsTheCursor()
+    {
+        Assert.Equal(KeyCombo.WithCtrl(Key.Home), Keymap.FromClassic(KeyCombo.Plain(Key.Home)));
+        Assert.Equal(KeyCombo.Plain(Key.Home), Keymap.FromClassic(KeyCombo.WithCtrl(Key.Home)));
+    }
+
+    [Fact]
     public void TheRestOfThePadGoesToTheGame()
     {
         foreach (var c in "ujnm")
@@ -123,7 +130,7 @@ public class KeymapTests
     {
         Assert.Equal(Plain('x'), Keymap.FromClassic(Plain('x')));
         Assert.Equal(KeyCombo.Plain(Key.Tab), Keymap.FromClassic(KeyCombo.Plain(Key.Tab)));
-        Assert.Equal(KeyCombo.Plain(Key.Home), Keymap.FromClassic(KeyCombo.Plain(Key.Home)));
+        Assert.Equal(KeyCombo.Plain(Key.End), Keymap.FromClassic(KeyCombo.Plain(Key.End)));
     }
 }
 

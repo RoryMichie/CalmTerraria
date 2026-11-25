@@ -7,10 +7,11 @@ using Terraria;
 namespace CalmTerraria.World;
 
 /// <summary>Z: where the character is. What a sighted player takes in
-/// at a glance from the backdrop and the screen round them: the
-/// biome and how far it runs, the layer of the world, whether they
-/// are indoors and in what, and how level the ground is to either
-/// side. One line, the most telling thing first.</summary>
+/// at a glance from the backdrop and the screen round them, in a few
+/// words: the biome and the layer of the world, whether they are in a
+/// room or under something, and what the ground does to the left and
+/// to the right. Shift+Z is where that is in the world: how far the
+/// biome runs and how far the world's centre is.</summary>
 internal sealed class Surroundings
 {
     /// <summary>How far to each side the lie of the ground is taken.</summary>
@@ -24,38 +25,43 @@ internal sealed class Surroundings
         _host = host;
         _scanner = scanner;
         shell.WorldCommands[KeyCombo.Plain(Key.Char('z'))] = () => _host.App.Announce(Describe());
+        shell.WorldCommands[KeyCombo.WithShift(Key.Char('z'))] = () => _host.App.Announce(Whereabouts());
+    }
+
+    /// <summary>Where in the world: how far the biome runs, where the
+    /// scanner has it as a place, and how far the centre is.</summary>
+    private string Whereabouts()
+    {
+        var (px, py) = WorldScanner.PlayerTile();
+        var parts = new List<string>();
+        if (_scanner.PlaceAt(px, py) is { } place)
+        {
+            var (left, _, right, _) = place.Bounds;
+            parts.Add($"{place.DisplayName} runs {Math.Max(0, px - left)} left, {Math.Max(0, right - px)} right.");
+        }
+        var centre = px - Main.maxTilesX / 2;
+        parts.Add(centre == 0 ? "At the world's centre." : $"World's centre {Math.Abs(centre)} {(centre < 0 ? "right" : "left")}.");
+        return string.Join(" ", parts);
     }
 
     private string Describe()
     {
         var player = Main.LocalPlayer;
         var (px, py) = WorldScanner.PlayerTile();
-        var parts = new List<string> { Biome(player) + ", " + Layer(player) };
-
-        // How far the biome runs, where the scanner has it as a place.
-        if (_scanner.PlaceAt(px, py) is { } place)
-        {
-            var (left, _, right, _) = place.Bounds;
-            parts.Add($"{place.DisplayName} runs {Math.Max(0, px - left)} left and {Math.Max(0, right - px)} right");
-        }
-
-        var centre = px - Main.maxTilesX / 2;
-        parts.Add(centre == 0 ? "at the world's centre" : $"{Math.Abs(centre)} {(centre < 0 ? "left" : "right")} of the world's centre");
-
-        var shelter = Shelter(px, py);
+        var parts = new List<string> { $"{Biome(player)}, {Layer(player)}." };
+        var (shelter, enclosed) = Shelter(px, py, player.ZoneOverworldHeight || player.ZoneSkyHeight);
         parts.Add(shelter);
         // Indoors the walls are not the lie of the land.
-        if (!shelter.StartsWith("Enclosed", StringComparison.Ordinal) && Ground(px, py) is { } ground)
-            parts.Add(ground);
+        if (!enclosed)
+            parts.Add(Ground(px, py));
         if (player.lavaWet)
-            parts.Add("standing in lava");
+            parts.Add("In lava.");
         else if (player.honeyWet)
-            parts.Add("standing in honey");
+            parts.Add("In honey.");
         else if (player.wet)
-            parts.Add("standing in water");
-        return string.Join(". ", parts.Select(part => char.ToUpperInvariant(part[0]) + part[1..])) + ".";
+            parts.Add("In water.");
+        return string.Join(" ", parts);
     }
-
     /// <summary>The most particular thing true of where they stand:
     /// a dungeon before a corruption, a corruption before a forest.</summary>
     private static string Biome(Player player)
@@ -84,22 +90,22 @@ internal sealed class Surroundings
     }
 
     private static string Layer(Player player) =>
-        player.ZoneSkyHeight ? "in the sky"
-        : player.ZoneOverworldHeight ? "on the surface"
+        player.ZoneSkyHeight ? "sky"
+        : player.ZoneOverworldHeight ? "surface"
         : player.ZoneDirtLayerHeight ? "underground"
-        : player.ZoneRockLayerHeight ? "in the caverns"
-        : "in the underworld";
+        : player.ZoneRockLayerHeight ? "caverns"
+        : "underworld";
 
     private static bool Solid(int x, int y) =>
         Main.tile[x, y] is { HasTile: true } tile && !tile.IsActuated && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType];
 
-    /// <summary>Indoors or out. Enclosed is closed all round by
-    /// solid tiles - a shut door counts, an open one does not - with
-    /// its size and what it is mostly built of. Whether it has a wall
-    /// behind it throughout, which the game wants of a room for
-    /// someone to live in, is said too. Short of enclosed: whether
-    /// there is anything overhead.</summary>
-    private static string Shelter(int px, int py)
+    /// <summary>Indoors or out. A room is closed all round by solid
+    /// tiles - a shut door counts, an open one does not - and is said
+    /// with its size and what it is mostly built of. The game wants a
+    /// wall behind every tile of a room for someone to live in it, so
+    /// tiles without one are said; a room that has them all says
+    /// nothing more. Short of a room: what is overhead, if anything.</summary>
+    private static (string Text, bool Enclosed) Shelter(int px, int py, bool surface)
     {
         const int limit = 900, reach = 70;
         var inside = new HashSet<(int X, int Y)>();
@@ -138,18 +144,17 @@ internal sealed class Surroundings
         {
             int left = inside.Min(t => t.X), right = inside.Max(t => t.X), top = inside.Min(t => t.Y), bottom = inside.Max(t => t.Y);
             var bare = inside.Count(t => Main.tile[t.X, t.Y].WallType == 0);
-            var of = made.Count == 0 ? "" : ", mostly " + string.Join(" and ", made.OrderByDescending(pair => pair.Value).Take(2).Select(pair => pair.Key));
-            var walls = bare == 0 ? "walled behind throughout" : bare == inside.Count ? "no wall behind it" : $"{bare} of its {inside.Count} tiles have no wall behind";
-            return $"Enclosed, {right - left + 1} wide and {bottom - top + 1} high{of}; {walls}";
+            var of = made.Count == 0 ? "" : ", " + made.OrderByDescending(pair => pair.Value).First().Key;
+            var walls = bare == 0 ? "" : bare == inside.Count ? " No back wall." : $" {bare} tiles without back wall.";
+            return ($"Room, {right - left + 1} wide, {bottom - top + 1} high{of}.{walls}", true);
         }
         for (var y = py - 2; y >= Math.Max(1, py - 40); y--)
         {
             if (Solid(px, y))
-                return $"Not enclosed. {TileNames.At(px, y, Main.tile[px, y])} overhead, {py - 1 - y} above the head";
+                return ($"{TileNames.At(px, y, Main.tile[px, y])} overhead, {py - 1 - y} up.", false);
         }
-        return "In the open, nothing overhead";
+        return (surface ? "Open sky." : "Nothing close overhead.", false);
     }
-
     /// <summary>The first solid tile at or below a height in a column.</summary>
     private static int? Floor(int x, int from)
     {
@@ -167,44 +172,33 @@ internal sealed class Surroundings
         return null;
     }
 
-    /// <summary>How level the ground is: how far it runs flat each
-    /// way from the feet, and how much it rises and falls beyond.</summary>
-    private static string? Ground(int px, int py)
+    /// <summary>What the ground does to each side, as it would be
+    /// walked: how far it runs level from the feet, and what ends
+    /// that - a step up, a step down, or no floor at all.</summary>
+    private static string Ground(int px, int py)
     {
         if (Floor(px, py + 1) is not { } here)
-            return "No ground under the feet";
-        int Flat(int direction)
+            return "No ground underfoot.";
+        string? Side(int direction)
         {
             var run = 0;
+            int? floor = here;
             for (var step = 1; step <= Look; step++, run++)
-                if (Floor(px + direction * step, here - 3) != here)
-                    break;
-            return run;
-        }
-        int left = Flat(-1), right = Flat(1);
-        int rise = 0, drop = 0, gaps = 0;
-        for (var x = px - Look; x <= px + Look; x++)
-        {
-            if (Floor(x, here - 3) is { } floor)
             {
-                rise = Math.Max(rise, here - floor);
-                drop = Math.Max(drop, floor - here);
+                floor = Floor(px + direction * step, here - 3);
+                if (floor != here)
+                    break;
             }
-            else
-                gaps++;
+            // Level as far as is looked.
+            if (floor == here)
+                return null;
+            var then = floor is not { } at ? "a drop" : at < here ? $"up {here - at}" : $"down {at - here}";
+            return run == 0 ? then : $"flat {run}, then {then}";
         }
-        var flat = left >= Look && right >= Look
-            ? $"Ground flat for {Look} and more each way"
-            : $"Ground flat {left} left and {right} right";
-        if (rise == 0 && drop == 0 && gaps == 0)
-            return flat;
-        var beyond = new List<string>();
-        if (rise > 0)
-            beyond.Add($"rises {rise}");
-        if (drop > 0)
-            beyond.Add($"drops {drop}");
-        if (gaps > 0)
-            beyond.Add($"{gaps} columns with no floor");
-        return $"{flat}; within {Look} it {string.Join(", ", beyond)}";
+        var left = Side(-1);
+        var right = Side(1);
+        if (left == null && right == null)
+            return "Flat both ways.";
+        return $"Left: {left ?? "flat"}. Right: {right ?? "flat"}.";
     }
 }

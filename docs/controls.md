@@ -320,13 +320,16 @@ light". F1 reads the description again.
   it, once; and nothing is crafted that would have nowhere to go.
   Under the cursor, something lying loose reads with "dropped"
   after it, so it is not taken for the thing standing there.
-- Z: where the character is, in one line. The biome and the layer
-  of the world; how far the biome runs to either side, where the
-  scanner has it as a place; how far from the world's centre;
-  whether they are in a room, how big and of what, or what if
-  anything is overhead; how far the ground runs flat each way and
-  how much it rises, drops or gives out within thirty tiles.
-- Apostrophe: what the character's informational accessories show -
+- Z: where the character is, in a few words. The biome and the layer
+  of the world; then a room with its size and what it is built of, or
+  what is overhead, or "Open sky."; then, outside a room, what the
+  ground does to each side as it would be walked - "Left: flat 4,
+  then up 2. Right: flat 12, then a drop." A side that is level for
+  thirty tiles is "flat". A room says how many of its tiles have no
+  back wall only when some have none.
+- Shift+Z: where that is in the world. How far the biome runs to
+  either side, where the scanner has it as a place, and how far and
+  which way the world's centre is.- Apostrophe: what the character's informational accessories show -
   the time, the depth, the position and so on - in the game's own
   words, for those the character has.
 - The hotbar: the item is said when the selected slot changes.
@@ -416,8 +419,9 @@ With Classic keys on, in a world:
 - I uses the held item at the cursor and P interacts.
 - The scanner: left and right bracket change category. Page Up and
   Page Down go from one thing to the next, nearest first. Shift+Page
-  Up and Shift+Page Down go from one kind of thing to the next. Home,
-  Ctrl+Home and End are as in section 4.
+  Up and Shift+Page Down go from one kind of thing to the next. Home
+  teleports the character to the selected thing, and Ctrl+Home only
+  moves the cursor there: the other way round from section 4.
 - J is the game's quick mana again, and H its quick heal as always.
   Switching the layout moves the game's quick mana binding between G
   and J by itself, where the player has not put it somewhere else.
