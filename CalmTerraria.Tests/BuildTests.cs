@@ -25,7 +25,7 @@ public class BuildListTests
         var build = new FakeBuild();
         var screen = new PackScreen(ui.App, new FakePack().Add("Acorn", 5), () => { });
         screen.Open(build: build);
-        ui.Expect("Build, 12 by 5 list Fill with Dirt Block, 60 tiles. You have 136.");
+        ui.Expect("Build, 12 by 5 list Fill with Dirt Block, 60 tiles. You have 136. alt b");
         ui.Press("down");
         ui.Expect("Clear, 37 tiles. Gives 30 Dirt, 7 Stone. 4 tiles of lava.");
     }
@@ -69,6 +69,6 @@ public class BuildListTests
         var build = new FakeBuild();
         build.Jobs.Clear();
         new PackScreen(ui.App, new FakePack().Add("Acorn", 5), () => { }).Open(build: build);
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
     }
 }

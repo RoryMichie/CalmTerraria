@@ -18,13 +18,13 @@ public class StorageTests
     public void StorageComesAfterTheInventoryThenWhatCanBeDoneWithIt()
     {
         var (ui, _, _) = Open();
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("tab");
-        ui.Expect("Chest list Gold Bar, 15. Material");
+        ui.Expect("Chest list Gold Bar, 15. Material alt s");
         ui.Press("tab");
         ui.Expect("Storage actions list Quick stack");
         ui.Press("tab");
-        ui.Expect("Equipment list Head, empty");
+        ui.Expect("Equipment list Head, empty alt e");
     }
 
     [Fact]
@@ -93,8 +93,8 @@ public class StorageTests
         ui.Drain();
         ui.Press("tab");
         ui.Press("tab");
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("tab");
-        ui.Expect("Equipment list Head, empty");
+        ui.Expect("Equipment list Head, empty alt e");
     }
 }

@@ -76,17 +76,17 @@ public sealed partial class PackLine : Element
         Where = where;
     }
 
-    // A full stop before the description, where there is one, so the
-    // two are heard as two.
+    // The description is part of the line's own text, after a full
+    // stop so the two are heard as two: a field of its own would be
+    // read after everything the list says of itself.
     [Field]
     public string Value => (Count > 1 ? $"{Name}, {Count}" : Name) + (Where == null ? "" : $", {Where}")
-        + (About.Length > 0 ? "." : "");
+        + (About.Length > 0 ? ". " + About : "");
 
     /// <summary>What the game says about the item, read after it
     /// each time the line is landed on.</summary>
     internal Func<string>? Describe { get; set; }
 
-    [Field]
     public string About => Describe?.Invoke() ?? "";
 }
 
@@ -508,11 +508,10 @@ public sealed partial class CraftLine : Element
     public CraftLine(Craftable recipe) => Recipe = recipe;
 
     [Field]
-    public string Value => (Recipe.Count > 1 ? $"{Recipe.Name}, {Recipe.Count}" : Recipe.Name) + (About.Length > 0 ? "." : "");
+    public string Value => (Recipe.Count > 1 ? $"{Recipe.Name}, {Recipe.Count}" : Recipe.Name) + (About.Length > 0 ? ". " + About : "");
 
     internal Func<int, string>? Describe { get; set; }
 
-    [Field]
     public string About => Describe?.Invoke(Recipe.Id) ?? "";
 }
 
@@ -711,11 +710,10 @@ public sealed partial class ShopLine : Element
 
     [Field]
     public string Value => (Item.Count > 1 ? $"{Item.Name}, {Item.Count}, {Item.Price}" : $"{Item.Name}, {Item.Price}")
-        + (About.Length > 0 ? "." : "");
+        + (About.Length > 0 ? ". " + About : "");
 
     internal Func<int, string>? Describe { get; set; }
 
-    [Field]
     public string About => Describe?.Invoke(Item.Slot) ?? "";
 }
 
@@ -821,9 +819,8 @@ public sealed partial class BuildLine : Element
     public BuildLine(BuildOption option) => Option = option;
 
     [Field]
-    public string Value => Option.Name + (About.Length > 0 ? "." : "");
+    public string Value => Option.Name + (About.Length > 0 ? ". " + About : "");
 
-    [Field]
     public string About => Option.About;
 }
 
@@ -863,7 +860,27 @@ internal sealed class BuildLines
 }
 
 /// <summary>Which stop a freshly opened pack screen starts on.</summary>
-public enum PackFocus { First, Last, Chat }
+public enum PackFocus { First, Last, Chat, World, Build, Carried, Storage, Equipment, Crafting, Powers, Settings, History }
+
+/// <summary>Alt with a letter goes straight to a stop of the pack
+/// screen: from the world, where it brings the screen up there, and
+/// from any other stop of the screen.</summary>
+public static class PackKeys
+{
+    public static readonly IReadOnlyDictionary<PackFocus, char> Letters = new Dictionary<PackFocus, char>
+    {
+        [PackFocus.World] = 'g',
+        [PackFocus.Build] = 'b',
+        [PackFocus.Carried] = 'i',
+        [PackFocus.Storage] = 's',
+        [PackFocus.Equipment] = 'e',
+        [PackFocus.Crafting] = 'c',
+        [PackFocus.Powers] = 'p',
+        [PackFocus.Settings] = 'o',
+        [PackFocus.History] = 'h',
+        [PackFocus.Chat] = 'm',
+    };
+}
 
 /// <summary>The screen behind Escape in a world: the inventory, what
 /// is worn, what can be made, the powers, and the way out of the world.
@@ -927,6 +944,8 @@ public sealed class PackScreen
         });
         Widget? first = null;
         ChatBox? box = null;
+        // The stops Alt and a letter go to.
+        var stops = new Dictionary<PackFocus, Widget> { [PackFocus.World] = world };
         if (notice != null)
             first = new CustomWidget(dialog, notice);
         if (talk != null)
@@ -974,15 +993,17 @@ public sealed class PackScreen
                 build.Start(line.Option.Key);
             };
             first ??= jobs;
+            stops[PackFocus.Build] = jobs;
         }
         // Storage is for when nothing else is in front of the player.
         if (chest != null || shop != null || talk != null)
             storage = null;
         var pack = new PackList(dialog, _pack, chest, shop, storage);
         first ??= pack;
+        stops[PackFocus.Carried] = pack;
         if (storage != null)
         {
-            _ = new ChestList(dialog, storage, _pack);
+            stops[PackFocus.Storage] = new ChestList(dialog, storage, _pack);
             var actions = new ListBox(dialog, "Storage actions", StorageActions, activateItems: true);
             actions.Activated += () =>
             {
@@ -994,13 +1015,13 @@ public sealed class PackScreen
                 }
             };
         }
-        _ = new EquipList(dialog, _pack);
+        stops[PackFocus.Equipment] = new EquipList(dialog, _pack);
         if (_crafting != null)
-            _ = new CraftList(dialog, _crafting);
+            stops[PackFocus.Crafting] = new CraftList(dialog, _crafting);
         if (_powers is { } powers)
-            new Button(dialog, "Powers").Activated += powers.Open;
+            (stops[PackFocus.Powers] = new Button(dialog, "Powers")).Activated += powers.Open;
         if (_settings is { } settings)
-            new Button(dialog, "Settings").Activated += settings.Open;
+            (stops[PackFocus.Settings] = new Button(dialog, "Settings")).Activated += settings.Open;
         var exit = new Button(dialog, "Save and exit");
         exit.Activated += () =>
         {
@@ -1017,7 +1038,11 @@ public sealed class PackScreen
             // The newest is the one worth landing on.
             messages.SelectedIndex = int.MaxValue;
             box = new ChatBox(dialog, _chat);
+            stops[PackFocus.History] = messages;
+            stops[PackFocus.Chat] = box;
         }
+        foreach (var (stop, widget) in stops)
+            widget.AddShortcut(KeyCombo.WithAlt(Key.Char(PackKeys.Letters[stop])));
         dialog.Closed += () =>
         {
             _dialog = null;
@@ -1026,8 +1051,8 @@ public sealed class PackScreen
         Widget start = focus switch
         {
             PackFocus.Last => (Widget?)box ?? exit,
-            PackFocus.Chat when box != null => box,
-            _ => first,
+            PackFocus.First or PackFocus.World => first,
+            _ => stops.GetValueOrDefault(focus, first),
         };
         start.Focus();
         dialog.AnnounceOpened();

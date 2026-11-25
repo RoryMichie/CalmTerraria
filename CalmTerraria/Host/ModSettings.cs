@@ -12,6 +12,8 @@ internal sealed class ModSettings : ISettings
     private static string File(string name) => Path.Combine(Main.SavePath, "CalmTerraria", name);
 
     private static bool? _classic, _noTick;
+    /// <summary>Whether the file that silences shortcut keys is there.</summary>
+    private static bool? _shortcuts;
 
     /// <summary>The classic key layout is in use.</summary>
     public static bool Classic => _classic ??= System.IO.File.Exists(File("classic-keys.txt"));
@@ -28,6 +30,23 @@ internal sealed class ModSettings : ISettings
         }
         else
             System.IO.File.Delete(File(name));
+    }
+
+    /// <summary>Shortcut keys are said with the stops that have them.</summary>
+    public static bool Shortcuts => !(_shortcuts ??= System.IO.File.Exists(File("no-shortcut-keys.txt")));
+
+    /// <summary>Called when what is spoken has changed.</summary>
+    public Action? SpeechChanged { get; set; }
+
+    public bool SayShortcuts
+    {
+        get => Shortcuts;
+        set
+        {
+            _shortcuts = !value;
+            Mark("no-shortcut-keys.txt", !value, "Shortcut keys are not said.");
+            SpeechChanged?.Invoke();
+        }
     }
 
     /// <summary>Called when the key layout has changed, with whether

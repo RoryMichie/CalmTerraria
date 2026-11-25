@@ -12,6 +12,9 @@ internal sealed class LogReader : IReader
     private readonly ILog _log;
     private readonly SpeechVerbosity _verbosity = new();
 
+    /// <summary>What is left out of what is written, as it is left out of what is said.</summary>
+    public SpeechVerbosity Verbosity => _verbosity;
+
     private readonly Action<string> _heard;
 
     public LogReader(ILog log, Action<string> heard)

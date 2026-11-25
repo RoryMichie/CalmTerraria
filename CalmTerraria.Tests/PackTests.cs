@@ -89,7 +89,7 @@ public class PackScreenTests
     public void OpensOnTheInventoryAlphabeticalWithStacksMerged()
     {
         var (ui, _, _) = Open();
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("down");
         ui.Expect("Copper Helmet. 7 melee damage. Material");
         ui.Press("down");
@@ -104,7 +104,7 @@ public class PackScreenTests
         var (ui, _, _) = Open();
         ui.Drain();
         ui.Press("tab");
-        ui.Expect("Equipment list Head, empty");
+        ui.Expect("Equipment list Head, empty alt e");
         ui.Press("tab");
         ui.Expect("Save and exit button");
     }
@@ -145,7 +145,7 @@ public class PackScreenTests
         var (ui, pack, _) = Open();
         ui.Press("end");
         ui.Press("delete");
-        ui.Expect("Trashed.", "Wood, 300.");
+        ui.Expect("Trashed.", "Wood, 300. 7 melee damage. Material");
         Assert.Single(pack.Inventory, s => s.Name == "Wood");
     }
 
@@ -248,7 +248,7 @@ public class PackScreenTests
             .Add("Wooden Arrow", 12)
             .Add("Zebra Statue")
             .Add("Acorn", 5));
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("down");
         ui.Expect("Wooden Arrow, 12. 7 melee damage. Material");
         ui.Press("down");
@@ -265,7 +265,7 @@ public class PackScreenTests
         var ui = new TestApp();
         var pack = new FakePack { FreeSlots = 0 }.Add("Acorn", 5);
         new PackScreen(ui.App, pack, () => { }).Open();
-        ui.Expect("Carried, full list Acorn, 5");
+        ui.Expect("Carried, full list Acorn, 5 alt i");
     }
 
     [Fact]

@@ -225,6 +225,21 @@ crafting, Powers, Settings, Save and exit, then the chat list and the message
 box - chat is last, so from the world it is Shift+Tab away and the
 things done with the hands are forwards.
 
+Alt with a letter goes straight to a stop, from the world - which
+brings the screen up on it - and from anywhere on the screen:
+
+- Alt+G: the world (the game).
+- Alt+I: the inventory.
+- Alt+S: storage. Alt+B: the build list. Each says so when there is
+  none.
+- Alt+E: equipment. Alt+C: crafting.
+- Alt+P: Powers. Alt+O: Settings (options).
+- Alt+H: the chat list (history). Alt+M: the message box.
+
+A stop that has one says its key after it is read - "Crafting list
+Torch, 3. Provides light alt c" - unless that is switched off in
+Settings. These are the same in the classic key layout.
+
 - Carried (the inventory): alphabetical, with what is in the game's
   coin and ammunition slots kept apart at the end and marked -
   "Silver Coin, 40, coin slot", "Wooden Arrow, 99, ammo slot". Arrows
@@ -423,6 +438,8 @@ Mod:
   hands that know it. See section 10.
 - Menu tick: the game's tick on moving through a list. On unless
   switched off.
+- Say shortcut keys: a stop with an Alt key says it after it is read.
+  On unless switched off.
 
 Game:
 

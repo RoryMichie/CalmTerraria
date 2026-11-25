@@ -70,7 +70,7 @@ public class TalkTests
         ui.Press("enter");
         Assert.Equal(1, chosen);
         ui.Press("tab");
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class TalkTests
             talk: new Talk("Sign", "Keep out.", Array.Empty<string>()));
         ui.Expect("Sign: Keep out.");
         ui.Press("tab");
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
     }
 }
 
@@ -136,7 +136,7 @@ public class ShopTests
     {
         var (ui, pack, shop) = Open();
         ui.Press("tab");
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("enter");
         ui.Drain();
         ui.Press("enter");

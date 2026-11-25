@@ -53,6 +53,9 @@ public static class Keymap
     /// brackets are therefore not the mouse buttons in this layout.</summary>
     public static KeyCombo? FromClassic(KeyCombo combo)
     {
+        // Alt and a letter is a stop of the pack screen in either layout.
+        if (combo.Alt)
+            return combo;
         if (!combo.Ctrl && !combo.Alt)
         {
             if (!combo.Shift && combo.Key == Key.Char('['))

@@ -145,6 +145,7 @@ public sealed class CalmTerrariaMod : Mod
                 TerrariaPack.Say = text => _host.App.Announce(text);
                 FixGameBindings();
                 _shell.Settings.KeysChanged = FixGameBindings;
+                _shell.Settings.SpeechChanged = _host.ApplySettings;
                 _ = new Surroundings(_host, _shell, scanner);
                 _ = new Spy(_host, _shell);
                 _ = new HazardWatch(_host, _shell);

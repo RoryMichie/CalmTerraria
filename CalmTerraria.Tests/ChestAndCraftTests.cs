@@ -128,9 +128,9 @@ public class ChestTests
         ui.Press("tab");
         ui.Expect("Chest actions list Loot all");
         ui.Press("tab");
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("tab");
-        ui.Expect("Equipment list Head, empty");
+        ui.Expect("Equipment list Head, empty alt e");
     }
 
     [Fact]
@@ -294,7 +294,7 @@ public class ChestTests
         ui.Press("enter");
         ui.ExpectNoSpeech();
         ui.Press("tab");
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public class CraftTests
     public void TheListIsAlphabeticalAndSaysHowManyAreMade()
     {
         var (ui, _) = Open();
-        ui.Expect("Crafting list Torch, 3. Provides light");
+        ui.Expect("Crafting list Torch, 3. Provides light alt c");
         ui.Press("down");
         ui.Expect("Work Bench. Provides light");
     }

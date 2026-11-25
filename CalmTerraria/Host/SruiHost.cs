@@ -27,6 +27,7 @@ internal sealed class SruiHost : IDisposable
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private readonly HashSet<XnaKeys> _hiddenUntilReleased = new();
     private SpeechReader? _reader;
+    private readonly LogReader _logReader;
 
     public SruiApp App { get; } = SruiApp.Headless();
 
@@ -58,7 +59,7 @@ internal sealed class SruiHost : IDisposable
     {
         _log = log;
         _keyboard = new SdlKeyboard();
-        App.AddReader(new LogReader(log, text => Spoke?.Invoke(text)));
+        App.AddReader(_logReader = new LogReader(log, text => Spoke?.Invoke(text)));
         App.AddReader(new ClickReader());
         try
         {
@@ -71,6 +72,17 @@ internal sealed class SruiHost : IDisposable
         {
             _log.Error("Speech is unavailable.", e);
         }
+        ApplySettings();
+    }
+
+    /// <summary>What the settings say of speech, put into effect.</summary>
+    public void ApplySettings()
+    {
+        var shortcuts = ModSettings.Shortcuts;
+        _logReader.Verbosity.Shortcuts = shortcuts;
+        App.SpeechVerbosity.Shortcuts = shortcuts;
+        if (_reader != null)
+            _reader.Verbosity.Shortcuts = shortcuts;
     }
 
     public void TakeKeyboard() => OwnsKeyboard = true;

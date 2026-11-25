@@ -52,6 +52,23 @@ internal sealed class Shell
         WorldCommands[KeyCombo.Plain(Key.Tab)] = () => OpenPack(focus: PackFocus.First);
         WorldCommands[KeyCombo.WithShift(Key.Tab)] = () => OpenPack(focus: PackFocus.Last);
         WorldCommands[KeyCombo.Plain(Key.Enter)] = () => OpenPack(focus: PackFocus.Chat);
+        // Alt and a letter: straight to one stop. In the world, Alt+G
+        // is where the player already is.
+        foreach (var (stop, letter) in PackKeys.Letters)
+        {
+            var to = stop;
+            WorldCommands[KeyCombo.WithAlt(Key.Char(letter))] = () =>
+            {
+                if (to == PackFocus.World)
+                    _host.App.Announce("World");
+                else if (to == PackFocus.Storage && !World.TerrariaStorage.Available)
+                    _host.App.Announce("No chests in reach.");
+                else if (to == PackFocus.Build && (Build == null || Build.Options().Count == 0))
+                    _host.App.Announce("Nothing marked to build on.");
+                else
+                    OpenPack(focus: to);
+            };
+        }
         _pack.Closed += () =>
         {
             World.TerrariaStorage.End();

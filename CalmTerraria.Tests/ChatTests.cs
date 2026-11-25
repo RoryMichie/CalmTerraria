@@ -25,7 +25,7 @@ public class ChatAndRingTests
     {
         var (ui, screen, _, chat) = Make();
         screen.Open(focus: PackFocus.Chat);
-        ui.Expect("Message edit blank");
+        ui.Expect("Message edit blank alt m");
         ui.Type("hi all");
         ui.Drain();
         ui.Press("enter");
@@ -55,7 +55,7 @@ public class ChatAndRingTests
         screen.Open(focus: PackFocus.Chat);
         ui.Drain();
         ui.Press("shift+tab");
-        ui.Expect("Chat list Rory was slain by a zombie.");
+        ui.Expect("Chat list Rory was slain by a zombie. alt h");
         ui.Press("up");
         ui.Expect("Austin: hello");
     }
@@ -65,7 +65,7 @@ public class ChatAndRingTests
     {
         var (ui, screen, _, _) = Make();
         screen.Open(focus: PackFocus.Last);
-        ui.Expect("Message edit blank");
+        ui.Expect("Message edit blank alt m");
         ui.Press("tab");
         ui.Expect("World");
         Assert.False(screen.IsOpen);
@@ -76,7 +76,7 @@ public class ChatAndRingTests
     {
         var (ui, screen, _, _) = Make();
         screen.Open();
-        ui.Expect("Carried list Acorn, 5");
+        ui.Expect("Carried list Acorn, 5 alt i");
         ui.Press("shift+tab");
         ui.Expect("World");
         Assert.False(screen.IsOpen);
