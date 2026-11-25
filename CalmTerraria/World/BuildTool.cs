@@ -58,6 +58,7 @@ internal sealed class BuildTool : IBuild
     private (int X, int Y)? _current;
     private int _budget, _wait, _rounds;
     private bool _progress, _toldFar, _smartCursorWas;
+    private float _zoomWas = 1f;
     private (int X, int Y) _cursorWas;
 
     public BuildTool(SruiHost host, Shell shell, Cursor cursor, WorldScanner scanner)
@@ -655,6 +656,10 @@ internal sealed class BuildTool : IBuild
         _smartCursorWas = Main.SmartCursorWanted_Mouse;
         // Smart cursor chooses its own tile; this work chooses each one.
         Main.SmartCursorWanted_Mouse = false;
+        // The reach is the screen, so the screen is made as much of
+        // the world as it can be for as long as the work lasts.
+        _zoomWas = Main.GameZoomTarget;
+        Main.GameZoomTarget = 1f;
         Working = true;
         _dug = null;
         Begin(job);
@@ -701,6 +706,7 @@ internal sealed class BuildTool : IBuild
         _cursor.Drive(null, false);
         _cursor.MoveSilently(_cursorWas.X, _cursorWas.Y);
         Main.SmartCursorWanted_Mouse = _smartCursorWas;
+        Main.GameZoomTarget = _zoomWas;
     }
 
     private bool Done((int X, int Y) at)
@@ -915,7 +921,14 @@ internal sealed class BuildTool : IBuild
             if (_gaveUpWalking && !_toldFar)
             {
                 _toldFar = true;
-                Say($"Walk closer: {_far.Count + _failed.Count} left, nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}.");
+                // Sideways is walked; up and down is the player's to
+                // do something about, and walking is not it.
+                var offset = Directions.Offset(nearest.X - px, nearest.Y - py);
+                var left = _far.Count + _failed.Count;
+                var upDown = Math.Abs(nearest.Y - py) > Math.Abs(nearest.X - px);
+                Say(!upDown ? $"Walk closer: {left} left, nearest {offset}."
+                    : nearest.Y < py ? $"Too high to reach from here: {left} left, nearest {offset}. It carries on from higher up."
+                    : $"Too far down to reach from here: {left} left, nearest {offset}. It carries on from lower down.");
             }
             _queue = new Queue<(int X, int Y)>(_far);
             _far = new List<(int X, int Y)>();
@@ -961,8 +974,19 @@ internal sealed class BuildTool : IBuild
     {
         var failed = _failed.Count;
         var done = _job!.Failed;
+        // Where the work is from where the character has ended up, if
+        // the job walked them any way off from it.
+        string? where = null;
+        if (_job.Targets.Count > 0)
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            var nearest = _job.Targets.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
+            if (Math.Abs(nearest.X - px) > 6 || Math.Abs(nearest.Y - py) > 8)
+                where = $"It is {Directions.Offset(nearest.X - px, nearest.Y - py)}.";
+        }
         End();
-        Say((failed == 0 ? "Done." : $"Done. {failed} could not be {done}.") + (also == null ? "" : " " + also));
+        Say((failed == 0 ? "Done." : $"Done. {failed} could not be {done}.")
+            + (also == null ? "" : " " + also) + (where == null ? "" : " " + where));
     }
 
     // ── Fetching ──
@@ -1128,9 +1152,15 @@ internal sealed class BuildTool : IBuild
         }
         else
         {
-            if (goal.X == px)
+            var (_, py) = WorldScanner.PlayerTile();
+            // Walking is sideways. A tile that is out of reach because
+            // it is too far above or below - off the top of the screen,
+            // on a tall job - is no nearer for any amount of it, and
+            // walking towards its column only carries the character
+            // off across the world.
+            var visible = (int)(Main.screenHeight / 32f / Math.Max(0.1f, Main.GameViewMatrix.Zoom.Y)) - 2;
+            if (Math.Abs(goal.X - px) <= 1 || Math.Abs(goal.Y - py) > Math.Min(visible, ReachY))
             {
-                // Straight above or below: walking will not reach it.
                 GiveUpWalking();
                 return;
             }
@@ -1172,6 +1202,17 @@ internal sealed class BuildTool : IBuild
             _walk = Walk.No;
             WalkDirection = 0;
             WalkJump = false;
+            return;
+        }
+        // No further than it is any use to go: to the tile's own
+        // column when walking closer, a few steps when stepping aside.
+        _walkFrames++;
+        var overshot = _walk == Walk.Closer
+            ? Math.Abs(_walkGoal.X - px) <= 1 || Math.Sign(_walkGoal.X - px) != _walkDirection
+            : _walkFrames > 400;
+        if (overshot)
+        {
+            GiveUpWalking();
             return;
         }
         // Not into lava, and not off an edge with nothing under it.

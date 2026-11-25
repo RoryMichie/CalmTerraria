@@ -116,6 +116,11 @@ Work on an area:
 - After clearing or mining, what was dug or cut down is brought to
   the character from wherever the work was, and picked up. What the
   inventory has no room for is counted and left.
+- The reach of a job is what is on screen, so the view is zoomed
+  right out for as long as it runs. Walking is only ever sideways:
+  what is too high or too far down is said as that, and the job
+  carries on once the character is higher or lower. A job that
+  leaves the character away from the work says where the work is.
 - X stops a job. The area stays marked for the next one.
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with

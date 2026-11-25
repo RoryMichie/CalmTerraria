@@ -1,0 +1,81 @@
+# A job taller than the screen must not walk the character away.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold Wood 300
+do state
+key ctrl+k
+key l
+key l
+key m
+key x
+key l
+key l
+key l
+key l
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key i
+key x
+heard Second corner
+key tab
+heard Build
+key down
+wait 300
+key enter
+wait 500
+key tab
+heard Start
+key enter
+wait 12000
+do state
+key x
+wait 300
+quit
