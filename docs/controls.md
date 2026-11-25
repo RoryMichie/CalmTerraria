@@ -159,6 +159,10 @@ Critters - birds, bunnies, worms, fireflies, whatever a bug net
 catches - have their own category, after Enemies, for those near
 enough to be on screen.
 
+Buildings are under Places: anything made of worked wood or brick, or
+standing in front of a wall somebody put up. That is the player's own
+building, and the cabins and ruins the world came with.
+
 A chest that has been given a name is listed under Containers by that
 name, as its own entry: "Ores, Chest".
 

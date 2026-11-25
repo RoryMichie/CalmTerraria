@@ -1,0 +1,55 @@
+# A wood outline is found by the scanner as a building.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold Wood 300
+key ctrl+k
+key l
+key l
+key l
+key l
+key l
+key l
+key m
+key x
+key l
+key l
+key l
+key l
+key l
+key i
+key i
+key i
+key i
+key x
+heard Second corner
+key tab
+heard Build
+key down
+wait 300
+key enter
+wait 500
+key tab
+heard Start
+key enter
+heard Done
+wait 500
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+wait 300
+key pagedown
+key pagedown
+quit

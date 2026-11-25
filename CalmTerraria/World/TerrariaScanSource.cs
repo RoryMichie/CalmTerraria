@@ -47,6 +47,7 @@ internal sealed class TerrariaScanSource : IScanSource
     private readonly int[] _liquidKinds;
     private readonly int _lava;
     private readonly int _spiderNest;
+    private readonly int _building;
 
     public TerrariaScanSource()
     {
@@ -96,6 +97,25 @@ internal sealed class TerrariaScanSource : IScanSource
         Place("Hallow", 50, TileID.HallowedGrass, TileID.Pearlstone);
         Place("Underground desert", 200, TileID.HardenedSand, TileID.Sandstone);
         _spiderNest = Add(new ScanKind("Spider nest", Places, CellSize: 16, MinTiles: 100));
+
+        // Buildings: what is made of worked wood or brick, or stands
+        // in front of a wall somebody put up. The player's own, and
+        // the cabins and ruins the world came with - which is where
+        // its chests are. Last, so that a dungeon or a temple, which
+        // are brick too, keep their own names.
+        var built = new List<int>
+        {
+            TileID.WoodBlock, TileID.Ebonwood, TileID.RichMahogany, TileID.Pearlwood, TileID.Shadewood,
+            TileID.SpookyWood, TileID.DynastyWood, TileID.BorealWood, TileID.PalmWood,
+        };
+        for (var type = 0; type < types; type++)
+            if (_placeOfType[type] < 0 && _categoryOfType[type] == null && TileID.Search.TryGetName(type, out var name)
+                && name.Contains("Brick", StringComparison.Ordinal))
+                built.Add(type);
+        _building = Add(new ScanKind("Building", Places, CellSize: 16, MinTiles: 8));
+        foreach (var type in built)
+            if (_placeOfType[type] < 0)
+                _placeOfType[type] = _building;
 
         _liquidKinds = new[] { "Water", "Lava", "Honey", "Shimmer" }
             .Select(name => Add(new ScanKind(name, Liquids, CellSize: 2, MinTiles: 40)))
@@ -154,7 +174,10 @@ internal sealed class TerrariaScanSource : IScanSource
             return _lava;
         if (tile.LiquidAmount >= 128)
             return _liquidKinds[Math.Min(tile.LiquidType, _liquidKinds.Length - 1)];
-        return tile.WallType == WallID.SpiderUnsafe ? _spiderNest : -1;
+        if (tile.WallType == WallID.SpiderUnsafe)
+            return _spiderNest;
+        // A wall somebody put up: the inside of a building.
+        return tile.WallType > 0 && tile.WallType < Main.wallHouse.Length && Main.wallHouse[tile.WallType] ? _building : -1;
     }
 
     private int ThingAt(int x, int y, Tile tile, int type, string category)
