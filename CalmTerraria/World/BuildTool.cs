@@ -77,7 +77,7 @@ internal sealed class BuildTool : IBuild
             }
             if (scanner.Selected is not { } feature)
             {
-                Say("The scanner is not on anything.");
+                Say("Nothing selected in the scanner.");
                 return;
             }
             var (left, top, right, bottom) = feature.Bounds;
@@ -314,7 +314,7 @@ internal sealed class BuildTool : IBuild
                 Offer(new Job(Kind.Pour, held.type, "Pouring water at", "poured", first, Beside),
                     $"Pour water on lava, {lava} tiles of lava",
                     $"{lava} tiles of lava. Water goes in beside it and runs onto it: thick lava turns to obsidian,"
-                    + " which a good pickaxe can then clear, and a thin film just goes. It leaves water behind. "
+                    + " which a good pickaxe can then clear, and thin lava disappears. Water is left behind. "
                     + (first.Count == 0 ? "There is no open tile beside the lava to pour into. " : "")
                     + (held.type == ItemID.WaterBucket ? Supply(first.Count, held.type, held.Name) : "The bottomless bucket is never used up."));
             }
@@ -503,7 +503,7 @@ internal sealed class BuildTool : IBuild
         var plan = $"The whole of it: {vein.Count} tiles of {name}, and nothing round it. Nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}. "
             + (Best(item => item.pick) < 0 ? "You have no pickaxe. "
                 : tooHard > 0 ? $"{tooHard} tiles are too hard for your pickaxe and are left. " : "")
-            + "It drops where it is mined, to be walked to and picked up.";
+            + "What it drops is brought to you at the end.";
         offer(new Job(Kind.Clear, 0, "Mining", "mined", targets), $"Mine {name}, {targets.Count} tiles", plan);
     }
 
@@ -540,7 +540,7 @@ internal sealed class BuildTool : IBuild
             && !WorldGen.SolidTile(step.X, step.Y + 1) && !seen.Contains((step.X, step.Y + 1)));
         var lava = tiles.Count(t => IsLava(t.X, t.Y));
         var intro = $"A stair to {what}, {Directions.Offset(target.X - px, target.Y - py)}, {steps.Count} steps. "
-            + (open > 0 ? $"{open} steps of it have nothing underfoot: mind the drop. " : "");
+            + (open > 0 ? $"{open} steps have nothing underfoot. " : "");
         OfferClear(tiles, lava, offer, $"Clear path to {what}", intro, keepOrder: true, walls: false);
     }
 
@@ -751,13 +751,13 @@ internal sealed class BuildTool : IBuild
         {
             slot = Best(item => item.hammer);
             if (slot < 0)
-                return "The hammer is gone";
+                return "No hammer";
         }
         else if (_job.Kind == Kind.Clear)
         {
             slot = Main.tileAxe[Main.tile[at.X, at.Y].TileType] ? Best(item => item.axe) : Best(item => item.pick);
             if (slot < 0)
-                return "The tool for it is gone";
+                return Main.tileAxe[Main.tile[at.X, at.Y].TileType] ? "No axe" : "No pickaxe";
         }
         else
         {
@@ -766,7 +766,7 @@ internal sealed class BuildTool : IBuild
                 if (inventory[i].type == _job.Item)
                     slot = i;
             if (slot < 0)
-                return "None left";
+                return $"Out of {Lang.GetItemNameValue(_job.Item)}";
         }
         if (slot == player.selectedItem)
             return null;
@@ -927,8 +927,8 @@ internal sealed class BuildTool : IBuild
                 var left = _far.Count + _failed.Count;
                 var upDown = Math.Abs(nearest.Y - py) > Math.Abs(nearest.X - px);
                 Say(!upDown ? $"Walk closer: {left} left, nearest {offset}."
-                    : nearest.Y < py ? $"Too high to reach from here: {left} left, nearest {offset}. It carries on from higher up."
-                    : $"Too far down to reach from here: {left} left, nearest {offset}. It carries on from lower down.");
+                    : nearest.Y < py ? $"Too high to reach from here: {left} left, nearest {offset}. The job continues when you are higher up."
+                    : $"Too far down to reach from here: {left} left, nearest {offset}. The job continues when you are lower down.");
             }
             _queue = new Queue<(int X, int Y)>(_far);
             _far = new List<(int X, int Y)>();
@@ -1068,7 +1068,7 @@ internal sealed class BuildTool : IBuild
         };
     }
 
-    /// <summary>The foreman. Work is called out as it goes, a run of
+    /// <summary>Progress reports. Work is said as it goes, a run of
     /// one thing at a time: when the thing changes, every few seconds
     /// of the same, and at the end.</summary>
     private void Tally(string name)
@@ -1089,11 +1089,12 @@ internal sealed class BuildTool : IBuild
             var name = _tallyName;
             Say(_job.Kind switch
             {
-                Kind.Clear when name == Tree => "There goes a tree.",
-                Kind.Clear or Kind.Unwall => _tally == 1 && name != "walls" ? $"Off goes {name}." : $"Off go {_tally} {name}.",
-                Kind.Wall => $"Up go {_tally} {name}.",
-                Kind.Soak => $"Away go {_tally} {name}.",
-                _ => $"In go {_tally} {name}.",
+                Kind.Clear when name == Tree => "Tree felled.",
+                Kind.Clear => $"Cleared {_tally} {name}.",
+                Kind.Unwall => $"Removed {_tally} {name}.",
+                Kind.Soak => $"Soaked up {_tally} {name}.",
+                Kind.Pour => $"Poured {_tally} {name}.",
+                _ => $"Placed {_tally} {name}.",
             });
         }
         _tally = 0;
@@ -1226,7 +1227,7 @@ internal sealed class BuildTool : IBuild
                 && (Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType]);
         if (lava || !floor)
         {
-            Say(lava ? "Lava that way: not walking into it." : "A drop that way: not walking off it.");
+            Say(lava ? "Lava ahead, stopped walking." : "Drop ahead, stopped walking.");
             GiveUpWalking();
             return;
         }
@@ -1297,7 +1298,7 @@ internal sealed class BuildTool : IBuild
         Shout();
         var left = _queue.Count + _failed.Count + _far.Count + _aside.Count + (_current == null ? 0 : 1);
         End();
-        Say($"{why}, {left} to go.");
+        Say($"{why}. Stopped, {left} left.");
     }
 }
 

@@ -182,8 +182,8 @@ internal static class ItemKeys
             return pack.Use(at) switch
             {
                 UseResult.Started => "",
-                UseResult.Paused => "Not while paused: come in with Tab, not Escape.",
-                UseResult.Busy => "Still using the last thing.",
+                UseResult.Paused => "Can't use items while paused. Open this screen with Tab instead of Escape.",
+                UseResult.Busy => "Still using the previous item.",
                 _ => "Can't be used.",
             };
         }

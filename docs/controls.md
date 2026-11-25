@@ -102,7 +102,7 @@ Work on an area:
   closer: 12 left, nearest 48 right" - and it carries on as the
   character comes nearer.
 - The work is called out as it goes, a run of one thing at a time:
-  "There goes a tree." "Off go 13 Dirt Block." "In go 15 Stone Block."
+  "Tree felled." "Cleared 13 Dirt Block." "Placed 15 Stone Block."
 - The job walks the character itself: aside, when a block is to go
   where they stand, and closer, when what is left is out of reach. It
   walks as a player would, jumping a step, and will not walk into lava

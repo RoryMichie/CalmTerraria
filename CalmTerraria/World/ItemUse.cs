@@ -58,7 +58,7 @@ internal static class ItemUse
                 // The game would not: on cooldown, nothing to use it
                 // on, or not a thing that is used this way.
                 Restore();
-                _say?.Invoke("It wouldn't be used just now.");
+                _say?.Invoke("Couldn't use it.");
             }
             return;
         }

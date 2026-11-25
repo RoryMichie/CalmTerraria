@@ -47,9 +47,9 @@ it is not.
 
 The mod is meant to run without any other accessibility mod.
 
-- **Title screen.** A list: Single player, Exit. Pick a character,
-  then a world; Escape goes back one step. Creating either is not
-  built yet.
+- **Title screen.** A list: Single player, Join by address, New
+  character, New world, Exit. Pick a character, then a world; Escape
+  goes back one step.
 - **Scanner.** What the map has revealed, as category, kind, and
   instance, nearest first: containers, treasure, ores, gems, crafting
   stations, plants, liquids and oceans, places such as the dungeon or

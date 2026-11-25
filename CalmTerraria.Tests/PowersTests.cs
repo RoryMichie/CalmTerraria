@@ -130,7 +130,7 @@ public class PowersScreenTests
         ui.Press("enter");
         ui.Drain();
         ui.Press("enter");
-        ui.Expect("Not on a server.");
+        ui.Expect("Can't do that while on a server.");
         Assert.Empty(powers.Spawned);
     }
 

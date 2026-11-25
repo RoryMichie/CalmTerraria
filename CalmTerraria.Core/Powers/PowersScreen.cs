@@ -50,7 +50,7 @@ public interface IPowers
 /// lists are found in by typing the start of a name.</summary>
 public sealed class PowersScreen
 {
-    private const string Refused = "Not on a server.";
+    private const string Refused = "Can't do that while on a server.";
 
     private readonly SruiApp _app;
     private readonly IPowers _powers;

@@ -108,7 +108,7 @@ internal sealed class Waypoints
     {
         if (_scanner.Selected is not { } feature || !_shown.TryGetValue(feature, out var index) || index >= _points.Count)
         {
-            _host.App.Announce("The scanner is not on a waypoint.");
+            _host.App.Announce("No waypoint selected in the scanner.");
             return;
         }
         _points.RemoveAt(index);

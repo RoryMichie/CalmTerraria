@@ -144,7 +144,7 @@ internal sealed class Cursor
         if (scoops)
         {
             if (tile.LiquidAmount == 0)
-                return "Nothing to take up here.";
+                return "No liquid here.";
             if (item.type == Terraria.ID.ItemID.SuperAbsorbantSponge && tile.LiquidType != Terraria.ID.LiquidID.Water)
                 return $"This sponge takes water; that is {there}.";
             if (item.type == Terraria.ID.ItemID.LavaAbsorbantSponge && tile.LiquidType != Terraria.ID.LiquidID.Lava)
@@ -152,9 +152,9 @@ internal sealed class Cursor
             return null;
         }
         if (tile.HasTile && !tile.IsActuated && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType])
-            return "Solid here: it pours into an open tile.";
+            return "Can't pour into a solid tile.";
         if (tile.LiquidAmount > 0 && tile.LiquidType != pours)
-            return $"There is {there} in this tile: it pours into an empty one beside it.";
+            return $"Can't pour here, this tile holds {there}. Pour into an empty tile beside it.";
         if (tile.LiquidAmount >= 200)
             return "Already full.";
         return null;

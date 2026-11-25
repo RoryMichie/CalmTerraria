@@ -219,7 +219,7 @@ public class PackScreenTests
         Assert.Null(pack.Held);
         pack.UseGives = UseResult.Paused;
         ui.Type('[');
-        ui.Expect("Not while paused: come in with Tab, not Escape.");
+        ui.Expect("Can't use items while paused. Open this screen with Tab instead of Escape.");
         pack.UseGives = UseResult.NotUsable;
         ui.Type('[');
         ui.Expect("Can't be used.");

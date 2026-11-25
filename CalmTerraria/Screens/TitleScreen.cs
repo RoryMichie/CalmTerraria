@@ -290,7 +290,7 @@ internal sealed class TitleScreen
         var players = Main.PlayerList.ToList();
         if (players.Count == 0)
         {
-            _app.Announce("No characters. Creating one is not built yet.");
+            _app.Announce("No characters. Make one with New character.");
             return;
         }
         var dialog = _characters = _app.OpenDialog();
@@ -329,7 +329,7 @@ internal sealed class TitleScreen
         var worlds = Main.WorldList.ToList();
         if (worlds.Count == 0)
         {
-            _app.Announce("No worlds. Creating one is not built yet.");
+            _app.Announce("No worlds. Make one with New world.");
             return;
         }
         var dialog = _app.OpenDialog();

@@ -48,7 +48,7 @@ internal static class Travel
     {
         var player = Main.LocalPlayer;
         if (Footing(x, y) is not { } spot)
-            return "No footing anywhere near it. Not moved.";
+            return "Can't teleport: nowhere to stand near it.";
         // Feet on the bottom of that tile, body across it and the next.
         Move(new Vector2(spot.X * 16f + 16f - player.width / 2f, (spot.Y + 1) * 16f - player.height));
         if (Touches(spot, x, y))
