@@ -143,6 +143,7 @@ public sealed class CalmTerrariaMod : Mod
                 _shell.WorldFrame += Travel.Update;
                 _shell.WorldFrame += TerrariaStorage.Tick;
                 _shell.WorldFrame += Sight.Update;
+                _shell.WorldFrame += Hand.Update;
                 TerrariaPack.Say = text => _host.App.Announce(text);
                 FixGameBindings();
                 _shell.Settings.KeysChanged = FixGameBindings;

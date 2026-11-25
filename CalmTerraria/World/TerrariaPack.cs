@@ -53,15 +53,9 @@ internal sealed class TerrariaPack : IPack
 
     public void Hold(int slot)
     {
-        var player = Player;
         // Only the hotbar can be held from. Anything else changes
-        // places with what is in the hand now.
-        if (player.selectedItem >= HotbarSlots)
-            player.selectedItem = 0;
-        if (slot < HotbarSlots)
-            player.selectedItem = slot;
-        else
-            Utils.Swap(ref player.inventory[slot], ref player.inventory[player.selectedItem]);
+        // places with what is in the hand, until another slot is chosen.
+        Hand.Take(slot);
         SoundEngine.PlaySound(SoundID.Grab);
     }
 

@@ -713,6 +713,8 @@ internal sealed class BuildTool : IBuild
         _cursor.Drive(null, false);
         _cursor.MoveSilently(_cursorWas.X, _cursorWas.Y);
         Main.SmartCursorWanted_Mouse = _smartCursorWas;
+        // A tool the job took from the pack goes back there.
+        Hand.Return();
         Main.GameZoomTarget = _zoomWas;
     }
 
@@ -782,12 +784,7 @@ internal sealed class BuildTool : IBuild
         // at the tile to no effect. Button up until the hand is free.
         if (player.itemAnimation > 0)
             return Switching;
-        if (player.selectedItem >= 10)
-            player.selectedItem = 0;
-        if (slot < 10)
-            player.selectedItem = slot;
-        else
-            Utils.Swap(ref inventory[slot], ref inventory[player.selectedItem]);
+        Hand.Take(slot);
         return null;
     }
 

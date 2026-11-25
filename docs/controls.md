@@ -357,8 +357,13 @@ be bought back. Each line of the inventory then says what the shop
 gives for it, before its description - "Wood, 300. Sells for 1
 copper each. Material" - or "Worth nothing."
 
-Holding swaps the item into the hand; the number keys still switch
-between the last ten things held.
+Holding something that is not in the hotbar puts it in the hand in
+place of the selected hotbar slot, for as long as it is held: choose
+another slot with a number key, or hold something else, and what was
+in that slot is back in it and the thing is back in the pack. A build
+job that takes a tool or blocks from the pack gives the slot back when
+it stops. An empty hotbar slot simply keeps what is put in it. To put
+something in the hotbar for good, use a digit on it in the inventory.
 
 How many: wherever more than one of something could be moved - taking
 from or storing in a chest, selling, buying something that stacks,
