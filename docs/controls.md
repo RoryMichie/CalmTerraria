@@ -316,6 +316,11 @@ safe, brings the same screen with two tab stops in front:
   opened.
 - Chest actions: Loot all, Deposit all, Quick stack, Restock, and
   Rename for chests in the world.
+- Deposit all and money: into a piggy bank, a safe, a defender's
+  forge or a void vault, the money carried goes in with everything
+  else, and is changed up into larger coins. Into a chest in the
+  world it goes only when the chest has money in it already, which
+  is the game's own rule.
 
 Storage: with chests near the character - within 50 tiles to either
 side and 30 above or below, about what is on screen - and nothing

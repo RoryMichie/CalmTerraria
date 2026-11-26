@@ -156,8 +156,20 @@ internal sealed class TerrariaChest : IChest
         Recipe.FindRecipes();
     }
 
+    /// <summary>The game's own button puts money away only where
+    /// there is money already, so that a chest is not handed a purse
+    /// by accident. The character's own - piggy bank, safe and the
+    /// rest - are where money is kept: there it always goes in, and
+    /// the game then makes change of it as it does.</summary>
     public void DepositAll()
     {
+        if (Player.chest < -1)
+        {
+            var inventory = Player.inventory;
+            for (var slot = 0; slot < 58; slot++)
+                if (inventory[slot].type is >= ItemID.CopperCoin and <= ItemID.PlatinumCoin && !inventory[slot].favorited)
+                    Deposit(slot, inventory[slot].stack);
+        }
         ChestUI.DepositAll(ContainerTransferContext.FromUnknown(Player));
         Recipe.FindRecipes();
     }

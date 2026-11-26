@@ -1,0 +1,9 @@
+# Deposit all into a piggy bank with no money in it: the money goes in.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do godmode
+do piggy
+wait 500
+quit

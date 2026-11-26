@@ -281,6 +281,34 @@ internal static class DebugCommands
             var (px, py) = WorldScanner.PlayerTile();
             log.Info($"Where: {px}, {py}, {(Main.LocalPlayer.velocity.Y == 0f ? "standing" : "in the air")}.");
         });
+        // piggy - money in the purse and an empty piggy bank: what the
+        // game's own deposit-all does with it, then what the mod's does.
+        autopilot.Register("piggy", _ =>
+        {
+            RequireTestWorld();
+            var player = Main.LocalPlayer;
+            string Money(Item[] items) => string.Join(" ", items.Where(i => !i.IsAir && i.type is >= ItemID.CopperCoin and <= ItemID.PlatinumCoin)
+                .Select(i => $"{i.stack} {i.Name}").DefaultIfEmpty("none"));
+            foreach (var item in player.bank.item)
+                item.TurnToAir();
+            for (var slot = 50; slot < 54; slot++)
+                player.inventory[slot].TurnToAir();
+            player.inventory[50].SetDefaults(ItemID.GoldCoin);
+            player.inventory[51].SetDefaults(ItemID.SilverCoin);
+            player.inventory[51].stack = 45;
+            player.inventory[52].SetDefaults(ItemID.CopperCoin);
+            player.inventory[52].stack = 85;
+            player.chest = -2;
+            Terraria.UI.ChestUI.DepositAll(Terraria.DataStructures.ContainerTransferContext.FromUnknown(player));
+            log.Info($"Piggy: the game's own: carried {Money(player.inventory)}; banked {Money(player.bank.item)}.");
+            new TerrariaChest().DepositAll();
+            log.Info($"Piggy: the mod's: carried {Money(player.inventory)}; banked {Money(player.bank.item)}.");
+            player.inventory[50].SetDefaults(ItemID.SilverCoin);
+            player.inventory[50].stack = 60;
+            new TerrariaChest().DepositAll();
+            log.Info($"Piggy: 60 silver more: carried {Money(player.inventory)}; banked {Money(player.bank.item)}.");
+            player.chest = -1;
+        });
         // ground - how flat that stretch is now: open tiles in the floor, solid ones above it.
         autopilot.Register("ground", _ =>
         {
