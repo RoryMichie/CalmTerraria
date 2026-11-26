@@ -463,6 +463,9 @@ light". F1 reads the description again.
   faster than they can run, throwing spikes. That is said the moment
   it starts, with where it is - "Rolling Cactus loose, 8 right." -
   and the same for a boulder. It is two tiles high: a jump clears it.
+  When to jump is a sound: two quick notes like the fish on the line
+  but much higher, a little under half a second before it arrives on
+  the character's level. Jump on hearing it.
   No job mines a rolling cactus or the ground it stands on; the plan
   says what it leaves.
 - Breath: "Holding breath." once a quarter of it is gone, "Breath

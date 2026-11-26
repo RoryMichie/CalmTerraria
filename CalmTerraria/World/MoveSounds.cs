@@ -68,6 +68,7 @@ internal sealed class MoveSounds
         }
         Bump(player);
         Fall(player);
+        Dodge(player);
         // A fish on the player's own line: the float is being pulled.
         var biting = false;
         foreach (var projectile in Main.ActiveProjectiles)
@@ -258,6 +259,81 @@ internal sealed class MoveSounds
             _broken = true;
             _log.Error("The wall knock failed; movement sounds are off for this session.", e);
         }
+    }
+
+    // ── Something rolling at the character ──
+    // A boulder or a rolling cactus is on the character in a second or
+    // two and is quicker than they are: it is jumped, and the jump has
+    // to be timed. A jump is clear of it for about two thirds of a
+    // second, so the cue comes a little under half a second before it
+    // arrives - time to hear it and press, and still be up when the
+    // thing goes under. How long until it arrives is worked out each
+    // frame from how far off it is, how fast the two are closing, and
+    // how fast that is growing: the thing gathers speed all the way,
+    // and taken at its speed of the moment it would be a third late.
+
+    public static int Dodges { get; private set; }
+
+    /// <summary>The game's way of moving a boulder.</summary>
+    private const int BoulderStyle = 25;
+    /// <summary>How long before it arrives the cue sounds, in frames.</summary>
+    private const float DodgeFrames = 27f;
+
+    private string? _dodgeWav;
+    /// <summary>What has been cued, and for how many frames; -1 once
+    /// it has arrived.</summary>
+    private readonly Dictionary<int, int> _cued = new();
+    /// <summary>How fast each was closing a frame ago.</summary>
+    private readonly Dictionary<int, float> _closing = new();
+
+    private void Dodge(Player player)
+    {
+        var live = new HashSet<int>();
+        foreach (var projectile in Main.ActiveProjectiles)
+        {
+            if (!projectile.hostile || projectile.damage <= 0 || projectile.aiStyle != BoulderStyle)
+                continue;
+            live.Add(projectile.identity);
+            var across = projectile.Center.X - player.Center.X;
+            // How fast the space between them is shrinking, and how
+            // much of it there is, edge to edge.
+            var closing = -Math.Sign(across) * (projectile.velocity.X - player.velocity.X);
+            var gap = Math.Abs(across) - (projectile.width + player.width) / 2f;
+            var gathering = _closing.TryGetValue(projectile.identity, out var before) ? Math.Clamp(closing - before, 0f, 0.2f) : 0f;
+            _closing[projectile.identity] = closing;
+            if (_cued.TryGetValue(projectile.identity, out var since))
+            {
+                if (closing <= 0f && gap > 32f)
+                    // Gone by or turned back: news again if it returns.
+                    _cued.Remove(projectile.identity);
+                else if (since >= 0 && gap <= 0f)
+                {
+                    _log.Info($"Dodge: arrived {since} frames after the cue.");
+                    _cued[projectile.identity] = -1;
+                }
+                else if (since >= 0)
+                    _cued[projectile.identity] = since + 1;
+                continue;
+            }
+            // On the character's own level: it would hit them where they stand.
+            var level = Math.Abs(projectile.Center.Y - player.Center.Y) < (projectile.height + player.height) / 2f + 8f;
+            if (!level || closing <= 0f || gap <= 0f)
+                continue;
+            // gap = closing * t + gathering * t * t / 2, for t.
+            var frames = gathering > 0.001f
+                ? (MathF.Sqrt(closing * closing + 2f * gathering * gap) - closing) / gathering
+                : gap / closing;
+            if (frames > DodgeFrames)
+                continue;
+            _cued[projectile.identity] = 0;
+            Dodges++;
+            _log.Info($"Dodge: cue with it {gap / 16f:0.0} tiles off, closing at {closing:0.0}.");
+            Play(ref _dodgeWav, "dodge", Tones.Dodge, Volume);
+        }
+        foreach (var gone in _cued.Keys.Where(identity => !live.Contains(identity)).ToList())
+            _cued.Remove(gone);
+        foreach (var gone in _closing.Keys.Where(identity => !live.Contains(identity)).ToList())
+            _closing.Remove(gone);
     }
 
     private void Play(ref string? wav, string name, Func<float[]> tone, float volume)

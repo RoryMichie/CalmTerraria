@@ -38,6 +38,16 @@ public static class Tones
         return first.Concat(new float[(int)(SampleRate * 0.03f)]).Concat(second).ToArray();
     }
 
+    /// <summary>Jump now: something rolling along the ground is about
+    /// to arrive. The fish's two quick notes, well above them, so the
+    /// one is never taken for the other.</summary>
+    public static float[] Dodge()
+    {
+        var first = Blip(frequency: 1480f, fall: 1f, seconds: 0.04f, decay: 45f, harmonics: 0.2f);
+        var second = Blip(frequency: 1980f, fall: 1f, seconds: 0.05f, decay: 40f, harmonics: 0.2f);
+        return first.Concat(new float[(int)(SampleRate * 0.02f)]).Concat(second).ToArray();
+    }
+
     /// <summary>Low health: a heartbeat, two soft thumps, the second a
     /// little lower. Pitched where small speakers and headphones still
     /// carry it, not down where a real one sits.</summary>

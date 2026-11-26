@@ -1,0 +1,36 @@
+# The cue to jump something rolling: when it comes, and that a jump on it clears the thing.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do health 400
+do arena
+wait 1500
+log --- from 8 tiles, not jumped
+do cactus 8
+do dig 8 1
+wait 2500
+do shots
+do moves
+log --- from 8 tiles, jumped a fifth of a second after the cue would come
+do arena
+wait 1000
+do cactus 8
+do shots
+do dig 8 1
+wait 650
+hold Space 450
+wait 1500
+do shots
+do moves
+log --- from 4 tiles: cued at once
+do arena
+wait 1000
+do cactus 4
+do dig 4 1
+wait 2000
+do shots
+do moves
+quit
