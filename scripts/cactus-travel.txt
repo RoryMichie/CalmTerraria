@@ -1,0 +1,16 @@
+# Travelling to a rolling cactus: stood clear of it, not on it.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do arena
+wait 1500
+do cactus 8
+do shots
+do travel 8 1
+wait 3000
+do shots
+do where
+quit

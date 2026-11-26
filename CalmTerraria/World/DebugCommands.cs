@@ -339,6 +339,18 @@ internal static class DebugCommands
                         + $"at {(projectile.Center.X - player.Center.X) / 16f:0.0},{(projectile.Center.Y - player.Center.Y) / 16f:0.0} moving {projectile.velocity.X:0.0},{projectile.velocity.Y:0.0}");
             log.Info("Shots: " + (lines.Count == 0 ? "none" : string.Join("; ", lines)) + $". Health {player.statLife}.");
         });
+        // travel 6 1 - the character put at the tile that far right and
+        // down, as the scanner's Ctrl+Home puts them.
+        autopilot.Register("travel", args =>
+        {
+            RequireTestWorld();
+            var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var (px, py) = WorldScanner.PlayerTile();
+            var said = Travel.To(px + int.Parse(parts[0]), py + int.Parse(parts[1]), _ => { });
+            var (nx, ny) = WorldScanner.PlayerTile();
+            log.Info($"Travel: now {nx - px} right {ny - py} down of where they were; said '{said}'. "
+                + $"A weapon cuts a rolling cactus: {Main.tileCut[TileID.RollingCactus]}.");
+        });
         // ground - how flat that stretch is now: open tiles in the floor, solid ones above it.
         autopilot.Register("ground", _ =>
         {
