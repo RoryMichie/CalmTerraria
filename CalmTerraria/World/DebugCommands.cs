@@ -351,6 +351,14 @@ internal static class DebugCommands
             log.Info($"Travel: now {nx - px} right {ny - py} down of where they were; said '{said}'. "
                 + $"A weapon cuts a rolling cactus: {Main.tileCut[TileID.RollingCactus]}.");
         });
+        // furnace - on the arena, a furnace standing just right of the character.
+        autopilot.Register("furnace", _ =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            var placed = WorldGen.PlaceObject(px + 3, py + 1, TileID.Furnaces, mute: true);
+            log.Info($"Debug: furnace placed {placed}; beside one as the game has it: {Main.LocalPlayer.adjTile[TileID.Furnaces]}.");
+        });
         // ground - how flat that stretch is now: open tiles in the floor, solid ones above it.
         autopilot.Register("ground", _ =>
         {

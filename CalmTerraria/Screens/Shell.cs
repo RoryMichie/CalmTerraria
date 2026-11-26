@@ -180,9 +180,20 @@ internal sealed class Shell
             _host.App.Announce("Paused.");
         }
         World.TerrariaStorage.Begin();
-        Recipe.FindRecipes();
+        Stations();
         _pack.Open(null, notice, focus, build: Build,
             storage: World.TerrariaStorage.Available ? new World.TerrariaStorage() : null);
+    }
+
+    /// <summary>What can be made, from where the character stands
+    /// now. The game looks for the furnace or the work bench beside
+    /// the character only while its own inventory is open, which with
+    /// this screen it never is: left to the game, what is in reach is
+    /// what was in reach the last time a chest was opened.</summary>
+    private static void Stations()
+    {
+        Main.LocalPlayer.AdjTiles();
+        Recipe.FindRecipes();
     }
 
     /// <summary>The pack screen, opened on the reason a chest did not
@@ -249,7 +260,7 @@ internal sealed class Shell
         }
         _context = context;
         _host.TakeKeyboard();
-        Recipe.FindRecipes();
+        Stations();
         _pack.Open(chest, talk: talk, choose: index => _talk.Press(buttons[index]), shop: shop);
     }
 

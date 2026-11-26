@@ -61,6 +61,8 @@ internal sealed class TerrariaStorage : IChest
     private static readonly HashSet<int> _silent = new();
     /// <summary>Changed this frame: the others are told at its end.</summary>
     private static readonly HashSet<int> _written = new();
+    /// <summary>A chest's contents arrived: what can be made has changed.</summary>
+    private static bool _recipesStale;
     /// <summary>The chest each other player last opened, and when.</summary>
     private static readonly Dictionary<int, (int Chest, uint At)> _opened = new();
 
@@ -170,6 +172,11 @@ internal sealed class TerrariaStorage : IChest
         if (!Remote)
             return;
         Flush();
+        if (_recipesStale)
+        {
+            _recipesStale = false;
+            Recipe.FindRecipes();
+        }
         var now = Main.GameUpdateCount;
         foreach (var (chest, (_, at)) in _pending.ToList())
         {
@@ -217,7 +224,10 @@ internal sealed class TerrariaStorage : IChest
                     _pending[chest] = (asked.Answers - 1, asked.At);
                 _known.Add(chest);
                 Forget();
-                Recipe.FindRecipes(canDelayCheck: true);
+                // Not here, in the middle of a message; and not left
+                // to the game, which looks again only while drawing
+                // its own inventory.
+                _recipesStale = true;
                 return true;
             }
             int player = reader.ReadByte();

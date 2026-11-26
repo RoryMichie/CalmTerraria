@@ -1,0 +1,27 @@
+# Beside a furnace with ore in the pack, and no chest opened first: bars can be made.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do furnace
+do hold TungstenOre 20
+wait 500
+key tab
+heard Carried
+key tab
+key tab
+heard Crafting
+type tungsten
+wait 800
+key enter
+wait 1500
+key escape
+key escape
+wait 500
+do inv
+quit
