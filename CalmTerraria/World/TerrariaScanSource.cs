@@ -91,7 +91,7 @@ internal sealed class TerrariaScanSource : IScanSource
             if (TileID.Sets.IsATreeTrunk[type] || type == TileID.PalmTree)
                 _categoryOfType[type] = Plants;
         Mark(Hazards, TileID.Spikes, TileID.WoodenSpikes, TileID.Traps, TileID.Boulder, TileID.Explosives,
-            TileID.PressurePlates, TileID.GeyserTrap, TileID.LandMine);
+            TileID.PressurePlates, TileID.GeyserTrap, TileID.LandMine, TileID.RollingCactus);
 
         Place("Dungeon", 200, TileID.BlueDungeonBrick, TileID.GreenDungeonBrick, TileID.PinkDungeonBrick);
         Place("Jungle temple", 100, TileID.LihzahrdBrick);

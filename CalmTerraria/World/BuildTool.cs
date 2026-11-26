@@ -365,6 +365,14 @@ internal sealed class BuildTool : IBuild
         return Main.tileAxe[type] || !Main.tileSolid[type] || Main.tileSolidTop[type];
     }
 
+    /// <summary>A rolling cactus, or the ground it stands on. Mined,
+    /// either lets the cactus loose, and it rolls at the character
+    /// faster than they can run: no job touches them.</summary>
+    private static bool SetsRolling(int x, int y) => IsCactus(x, y) || IsCactus(x, y - 1);
+
+    private static bool IsCactus(int x, int y) =>
+        WorldGen.InWorld(x, y) && Main.tile[x, y] is { HasTile: true, TileType: TileID.RollingCactus };
+
     private static bool IsLava(int x, int y) =>
         WorldGen.InWorld(x, y) && Main.tile[x, y] is { LiquidAmount: > 0 } tile && tile.LiquidType == LiquidID.Lava;
 
@@ -435,7 +443,7 @@ internal sealed class BuildTool : IBuild
                     continue;
                 var type = tile.TileType;
                 var cut = Main.tileAxe[type] ? Best(i => i.axe) >= 0 : Best(i => i.pick) >= 0 && player.HasEnoughPickPowerToHurtTile(x, y);
-                if (TileID.Sets.BasicChest[type] || TileID.Sets.BasicDresser[type] || Main.tileHammer[type] || !cut)
+                if (TileID.Sets.BasicChest[type] || TileID.Sets.BasicDresser[type] || Main.tileHammer[type] || !cut || SetsRolling(x, y))
                     kept++;
                 else
                     above.Add((x, y));
@@ -516,12 +524,14 @@ internal sealed class BuildTool : IBuild
         var name = feature.DisplayName;
         var tooHard = Best(item => item.pick) < 0 ? vein.Count : vein.Count(t => !player.HasEnoughPickPowerToHurtTile(t.X, t.Y));
         // Nearest first, so what is in reach goes while the rest is walked to.
-        var targets = vein.Where(t => player.HasEnoughPickPowerToHurtTile(t.X, t.Y))
+        var cacti = vein.Count(t => SetsRolling(t.X, t.Y));
+        var targets = vein.Where(t => player.HasEnoughPickPowerToHurtTile(t.X, t.Y) && !SetsRolling(t.X, t.Y))
             .OrderBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py)).ToList();
         var nearest = vein.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
         var plan = $"Nearest {Directions.Offset(nearest.X - px, nearest.Y - py)}."
             + (Best(item => item.pick) < 0 ? " No pickaxe."
-                : tooHard > 0 ? $" {tooHard} too hard for your pickaxe." : "");
+                : tooHard > 0 ? $" {tooHard} too hard for your pickaxe." : "")
+            + (cacti > 0 ? $" Leaves {cacti} that would set a rolling cactus loose." : "");
         offer("mine", new Job(Kind.Clear, 0, "Mining", "mined", targets), $"Mine {name}, {targets.Count} tiles", plan);
     }
 
@@ -571,13 +581,18 @@ internal sealed class BuildTool : IBuild
         var targets = new List<(int X, int Y)>();
         var yield = new Dictionary<string, int>();
         var objects = new HashSet<string>();
-        int tooHard = 0, chests = 0, hammer = 0, trees = 0;
+        int tooHard = 0, chests = 0, hammer = 0, trees = 0, cacti = 0;
         foreach (var (x, y) in all)
         {
             var tile = Main.tile[x, y];
             if (!tile.HasTile)
                 continue;
             var type = tile.TileType;
+            if (SetsRolling(x, y))
+            {
+                cacti++;
+                continue;
+            }
             if (TileID.Sets.BasicChest[type] || TileID.Sets.BasicDresser[type])
             {
                 chests++;
@@ -608,7 +623,7 @@ internal sealed class BuildTool : IBuild
             else
                 yield[name] = yield.GetValueOrDefault(name) + 1;
         }
-        if (targets.Count == 0 && tooHard + chests + hammer + trees == 0)
+        if (targets.Count == 0 && tooHard + chests + hammer + trees + cacti == 0)
             return;
         var plan = new List<string>();
         if (yield.Count > 0)
@@ -626,6 +641,8 @@ internal sealed class BuildTool : IBuild
             plan.Add("Leaves the chest.");
         if (hammer > 0)
             plan.Add($"{hammer} need a hammer.");
+        if (cacti > 0)
+            plan.Add("Leaves the rolling cactus and the ground under it.");
         if (lava > 0)
             plan.Add($"{lava} tiles of lava.");
         if (targets.Count == 0)

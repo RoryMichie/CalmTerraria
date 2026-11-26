@@ -1,0 +1,39 @@
+# A rolling cactus: said where it stands, left alone by a job, called out when loose.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold IronPickaxe
+log --- standing near: said
+do cactus 4
+wait 500
+log --- clearing an area with it in: left alone
+key ctrl+k
+key m
+key l
+key l
+key l
+key x
+key l
+key l
+key l
+key m
+key x
+heard Second corner
+key tab
+heard Build
+wait 300
+key enter
+heard Done
+wait 500
+do shots
+log --- let loose
+do dig 4 1
+wait 1500
+do shots
+quit

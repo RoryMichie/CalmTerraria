@@ -6,10 +6,15 @@ using Terraria.ID;
 
 namespace CalmTerraria.World;
 
-/// <summary>What kills by being walked into, said before it is: lava
-/// and spikes within a few tiles of the character. Once per approach -
-/// said as it comes near, then not again until the character has been
-/// clear of that kind for a while.</summary>
+/// <summary>What kills by being walked into, said before it is: lava,
+/// spikes and a standing rolling cactus within a few tiles of the
+/// character. Once per approach - said as it comes near, then not
+/// again until the character has been clear of that kind for a while.
+///
+/// And what has come loose and is rolling: a boulder or a rolling
+/// cactus, said once with where it is, the moment it starts. It is on
+/// the character in about a second, so that is all the warning there
+/// is time for; the sound of it coming is the flight sounds' business.</summary>
 internal sealed class HazardWatch
 {
     /// <summary>How far to each side, above and below is watched.</summary>
@@ -35,13 +40,50 @@ internal sealed class HazardWatch
             return null;
         var tile = Main.tile[x, y];
         if (tile.HasTile)
-            return tile.TileType is TileID.Spikes or TileID.WoodenSpikes ? "Spikes" : null;
+            return tile.TileType switch
+            {
+                TileID.Spikes or TileID.WoodenSpikes => "Spikes",
+                TileID.RollingCactus => "Rolling cactus",
+                _ => null,
+            };
         return tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Lava ? "Lava" : null;
+    }
+
+    /// <summary>How far off something rolling is news.</summary>
+    private const float RollingAcross = 45f, RollingUpDown = 25f;
+    /// <summary>The game's way of moving a boulder.</summary>
+    private const int BoulderStyle = 25;
+
+    private readonly HashSet<int> _rolling = new();
+
+    /// <summary>For autopilot scripts: how many were called out.</summary>
+    public static int Rolled { get; private set; }
+
+    private void Rolling()
+    {
+        var player = Main.LocalPlayer;
+        var live = new HashSet<int>();
+        foreach (var projectile in Main.ActiveProjectiles)
+        {
+            if (!projectile.hostile || projectile.damage <= 0 || projectile.aiStyle != BoulderStyle)
+                continue;
+            var offset = (projectile.Center - player.Center) / 16f;
+            if (Math.Abs(offset.X) > RollingAcross || Math.Abs(offset.Y) > RollingUpDown)
+                continue;
+            live.Add(projectile.identity);
+            if (!_rolling.Add(projectile.identity))
+                continue;
+            Rolled++;
+            _host.App.Announce($"{projectile.Name} loose, {Directions.Offset((int)MathF.Round(offset.X), (int)MathF.Round(offset.Y))}.");
+        }
+        _rolling.IntersectWith(live);
     }
 
     private void Update()
     {
         _frame++;
+        if (!Main.LocalPlayer.dead)
+            Rolling();
         if (_frame % EveryFrames != 0 || _host.OwnsKeyboard || Main.LocalPlayer.dead)
             return;
         var (px, py) = WorldScanner.PlayerTile();

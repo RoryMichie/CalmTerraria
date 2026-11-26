@@ -309,6 +309,36 @@ internal static class DebugCommands
             log.Info($"Piggy: 60 silver more: carried {Money(player.inventory)}; banked {Money(player.bank.item)}.");
             player.chest = -1;
         });
+        // cactus 10 - on the arena, a rolling cactus standing that many
+        // tiles to the right of the character (left, if negative).
+        autopilot.Register("cactus", args =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            var x = px + int.Parse(args.Trim());
+            var placed = WorldGen.PlaceObject(x, py + 1, TileID.RollingCactus, mute: true);
+            LastPlaced = (x, py + 1);
+            log.Info($"Debug: rolling cactus at {x}, {py + 1}: placed {placed}, tile there {Main.tile[x, py + 1].HasTile} type {Main.tile[x, py + 1].TileType}.");
+        });
+        // dig 10 2 - the tile that far right and down of the character, dug out.
+        autopilot.Register("dig", args =>
+        {
+            RequireTestWorld();
+            var parts = args.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var (px, py) = WorldScanner.PlayerTile();
+            WorldGen.KillTile(px + int.Parse(parts[0]), py + int.Parse(parts[1]), noItem: true);
+        });
+        // shots - everything hostile in the air or rolling.
+        autopilot.Register("shots", _ =>
+        {
+            var player = Main.LocalPlayer;
+            var lines = new List<string>();
+            foreach (var projectile in Main.ActiveProjectiles)
+                if (projectile.hostile)
+                    lines.Add($"{projectile.Name} type {projectile.type} style {projectile.aiStyle} damage {projectile.damage} size {projectile.width}x{projectile.height} "
+                        + $"at {(projectile.Center.X - player.Center.X) / 16f:0.0},{(projectile.Center.Y - player.Center.Y) / 16f:0.0} moving {projectile.velocity.X:0.0},{projectile.velocity.Y:0.0}");
+            log.Info("Shots: " + (lines.Count == 0 ? "none" : string.Join("; ", lines)) + $". Health {player.statLife}.");
+        });
         // ground - how flat that stretch is now: open tiles in the floor, solid ones above it.
         autopilot.Register("ground", _ =>
         {

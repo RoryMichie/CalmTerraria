@@ -453,10 +453,18 @@ light". F1 reads the description again.
 - A chest that will not open says why: "Locked.", "Out of reach", or,
   for one another player has open, the pack screen with "Chest, in
   use by" and their name where the chest's list would be.
-- Lava or spikes close by are said once as they come within a few
-  tiles - "Lava, 3 right 1 down." - and again only after being clear
-  of them. The scanner has a Hazards category: lava in any amount,
-  spikes, traps, boulders, explosives, pressure plates.
+- Lava, spikes or a standing rolling cactus close by are said once
+  as they come within a few tiles - "Lava, 3 right 1 down." - and
+  again only after being clear of them. The scanner has a Hazards
+  category: lava in any amount, spikes, traps, boulders, rolling
+  cacti, explosives, pressure plates.
+- A rolling cactus hurts to touch where it stands. Mined, or with the
+  ground dug from under it, it comes loose and rolls at the character
+  faster than they can run, throwing spikes. That is said the moment
+  it starts, with where it is - "Rolling Cactus loose, 8 right." -
+  and the same for a boulder. It is two tiles high: a jump clears it.
+  No job mines a rolling cactus or the ground it stands on; the plan
+  says what it leaves.
 - Breath: "Holding breath." once a quarter of it is gone, "Breath
   half gone.", "Breath low, a quarter left.", "Drowning." when there
   is none and it hurts, and "Breath restored." when it is full again.
