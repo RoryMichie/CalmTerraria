@@ -135,6 +135,13 @@ public sealed class CalmTerrariaMod : Mod
                 _ = new Waypoints(_host, _shell, scanner, cursor);
                 _ = new BuildTool(_host, _shell, cursor, scanner);
                 _autopilot?.Register("fetched", _ => Logger.Info($"Fetch:{BuildTool.Report}"));
+                // The listener faces into the screen, +Y, so that along
+                // X is left and right. Set on the way into every world
+                // and before anything sounds: left to the first sound
+                // that happened to want it, everything placed before
+                // then was heard from a listener facing right, which
+                // puts all of it off to the left.
+                _shell.EnteredWorld += () => _host.App.Audio.SetListener(0f, 0f, 0f, 90f);
                 _ = new MoveSounds(_host, _shell, Logger);
                 _autopilot?.Register("moves", _ => Logger.Info($"Moves: {MoveSounds.Jumps} jumps, {MoveSounds.Landings} landings, {MoveSounds.Beats} heartbeats, {MoveSounds.Bumps} bumps, {MoveSounds.Bites} bites, {MoveSounds.Dodges} dodges, {MoveSounds.Falls} falls of which {MoveSounds.HardFalls} far"));
                 _ = new FlightSounds(_host, _shell, Logger);

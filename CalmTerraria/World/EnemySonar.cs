@@ -122,8 +122,6 @@ internal sealed class EnemySonar
             var folder = Path.Combine(Main.SavePath, "CalmTerraria", "sounds");
             Tones.WriteWav(_contactWav = Path.Combine(folder, "sonar-contact.wav"), Tones.Contact());
             Tones.WriteWav(_reachWav = Path.Combine(folder, "sonar-reach.wav"), Tones.InReach());
-            // Face +Y, so positions along X read as left and right.
-            audio.SetListener(0f, 0f, 0f, 90f);
         }
         var contact = ping.Contact;
         if (!_voices.TryGetValue(contact.Id, out var voice))
