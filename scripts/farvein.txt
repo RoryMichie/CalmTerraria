@@ -1,0 +1,28 @@
+# The vein miner on veins out of reach: the job goes to them itself.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do godmode
+do recall
+wait 1500
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+key shift+pagedown
+key shift+pagedown
+key shift+pagedown
+key shift+pagedown
+key shift+pagedown
+key shift+pagedown
+wait 300
+key shift+x
+wait 300
+key tab
+heard Build
+key enter
+heard Done
+wait 1500
+key end
+key c
+quit

@@ -21,7 +21,7 @@ namespace CalmTerraria.World;
 /// costs the blocks, takes the time, and obeys what the tool can
 /// break. What it does not obey is arm's length - while a job runs the
 /// player reaches anything on screen - and when tiles are further than
-/// that it says so and carries on as the player walks nearer.</summary>
+/// that the job takes the character to them itself.</summary>
 internal sealed class BuildTool : IBuild
 {
     /// <summary>How far a job reaches beyond the game's own, in tiles.
@@ -63,7 +63,7 @@ internal sealed class BuildTool : IBuild
     private List<(int X, int Y)> _failed = new(), _far = new();
     private (int X, int Y)? _current;
     private int _budget, _wait, _rounds;
-    private bool _progress, _toldFar, _smartCursorWas;
+    private bool _progress, _smartCursorWas;
     private float _zoomWas = 1f;
     private (int X, int Y) _cursorWas;
 
@@ -687,9 +687,10 @@ internal sealed class BuildTool : IBuild
         _failed = new List<(int X, int Y)>();
         _far = new List<(int X, int Y)>();
         _aside = new List<(int X, int Y)>();
-        _toldAside = false;
+        _movedAside = false;
+        _movedFor = null;
         _current = null;
-        _progress = _toldFar = false;
+        _progress = false;
         _wait = 0;
         _tally = _tallyAge = 0;
         _tallyName = "";
@@ -817,8 +818,8 @@ internal sealed class BuildTool : IBuild
             if (Done(now))
             {
                 _progress = true;
-                _toldFar = false;
                 _gaveUpWalking = false;
+                _movedAside = false;
                 _current = null;
                 Tally(_currentName);
             }
@@ -899,44 +900,76 @@ internal sealed class BuildTool : IBuild
             // Something went in: what would not attach before may now.
             Requeue();
             _progress = false;
-            _toldAside = false;
             return;
         }
         if (_aside.Count > 0)
         {
-            // The game will not put a block where a character is.
-            if (!_gaveUpWalking && _walk == Walk.No)
-                StartWalking(Walk.Aside, _aside[0]);
-            if (_gaveUpWalking && !_toldAside)
+            // The game will not put a block where a character is. The
+            // character is walked out of the way; where walking will
+            // not do it - walled in, an edge, lava - they are stood on
+            // the nearest ground that is clear of the work.
+            if (_walk != Walk.No)
             {
-                _toldAside = true;
-                Say($"Step aside: {_aside.Count} left where you are standing.");
             }
-            Requeue();
-            _wait = 10;
-            return;
+            else if (!_gaveUpWalking)
+                StartWalking(Walk.Aside, _aside[0]);
+            else if (!_movedAside)
+            {
+                _movedAside = true;
+                var pending = new HashSet<(int X, int Y)>(_job.Targets.Where(t => !Done(t)));
+                bool Clear((int X, int Y) feet)
+                {
+                    for (var column = feet.X; column <= feet.X + 1; column++)
+                    for (var row = feet.Y - 2; row <= feet.Y; row++)
+                        if (pending.Contains((column, row)))
+                            return false;
+                    return true;
+                }
+                var (px, py) = WorldScanner.PlayerTile();
+                if (Travel.To(px, py, _ => { }, Clear) != Travel.Nowhere)
+                    Say("Moved aside.");
+            }
+            else
+            {
+                // Nowhere to stand that is out of the way.
+                _failed.AddRange(_aside);
+                _aside = new List<(int X, int Y)>();
+            }
+            if (_aside.Count > 0)
+            {
+                Requeue();
+                _wait = 10;
+                return;
+            }
         }
         if (_far.Count > 0)
         {
             var (px, py) = WorldScanner.PlayerTile();
             var nearest = _far.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
+            _wait = 10;
             if (!_gaveUpWalking && _walk == Walk.No)
                 StartWalking(Walk.Closer, nearest);
-            if (_gaveUpWalking && !_toldFar)
+            // Walking is sideways and stops at an edge. What it cannot
+            // get to, the character is put beside: on the thing where
+            // there is room, on the nearest footing where there is not.
+            if (_gaveUpWalking)
             {
-                _toldFar = true;
-                // Sideways is walked; up and down is the player's to
-                // do something about, and walking is not it.
-                var offset = Directions.Offset(nearest.X - px, nearest.Y - py);
-                var left = _far.Count + _failed.Count;
-                var upDown = Math.Abs(nearest.Y - py) > Math.Abs(nearest.X - px);
-                Say(!upDown ? $"Walk closer: {left} left, nearest {offset}."
-                    : nearest.Y < py ? $"Too high to reach from here: {left} left, nearest {offset}. The job continues when you are higher up."
-                    : $"Too far down to reach from here: {left} left, nearest {offset}. The job continues when you are lower down.");
+                if (_movedFor == nearest || Travel.To(nearest.X, nearest.Y, _ => { }) == Travel.Nowhere)
+                {
+                    // Beside it, and it is still out of reach.
+                    _far.Remove(nearest);
+                    _failed.Add(nearest);
+                }
+                else
+                {
+                    Say("Moved closer.");
+                    _wait = 30;
+                }
+                _movedFor = nearest;
+                _gaveUpWalking = false;
             }
             _queue = new Queue<(int X, int Y)>(_far);
             _far = new List<(int X, int Y)>();
-            _wait = 10;
             return;
         }
         // Work that makes more work: give what was poured a moment to
@@ -1106,15 +1139,19 @@ internal sealed class BuildTool : IBuild
     }
 
     private List<(int X, int Y)> _aside = new();
-    private bool _toldAside;
+    /// <summary>Whether the character has been stood clear of the
+    /// work since anything last went in, and the far tile they were
+    /// last put beside.</summary>
+    private bool _movedAside;
+    private (int X, int Y)? _movedFor;
 
     // ── Walking ──
     // The job walks the character itself: out of the way of a block
     // that is to go where they stand, and nearer to what is out of
     // reach. It walks as a player does - left, right, a jump at a
-    // step - and will not walk into lava or off a drop. When it
-    // cannot get where it wants, it says what it wanted and leaves
-    // the walking to the player.
+    // step - and will not walk into lava or off a drop. Where it
+    // cannot walk, the character is put there: the job never asks
+    // the player to do its walking.
 
     private enum Walk { No, Aside, Closer, Fetch }
 
@@ -1231,7 +1268,6 @@ internal sealed class BuildTool : IBuild
                 && (Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType]);
         if (lava || !floor)
         {
-            Say(lava ? "Lava ahead, stopped walking." : "Drop ahead, stopped walking.");
             GiveUpWalking();
             return;
         }

@@ -132,17 +132,20 @@ Work on an area:
 - The work is done by using the held item on one tile after another,
   as a hand on a mouse would: it costs the blocks, takes the time and
   breaks only what the tool can. While it runs the character reaches
-  anything on screen. Tiles further than that are said - "Walk
-  closer: 12 left, nearest 48 right" - and it carries on as the
-  character comes nearer.
+  anything on screen, and the job takes the character to whatever is
+  further off than that.
 - The work is called out as it goes, a run of one thing at a time:
   "Tree felled." "Cleared 13 Dirt Block." "Placed 15 Stone Block."
-- The job walks the character itself: aside, when a block is to go
-  where they stand, and closer, when what is left is out of reach. It
-  walks as a player would, jumping a step, and will not walk into lava
-  or off a drop. It says nothing while it can do this itself; where it
-  cannot get to, it says what it wanted and
-  leaves the walking to the player.
+- The job moves the character itself, and never asks for it to be
+  done: aside, when a block is to go where they stand, and closer,
+  when what is left is out of reach. It walks as a player would,
+  jumping a step, and says nothing while it does. Where walking will
+  not get there - the thing is above or below, or there is a drop or
+  lava on the way - the character is put there, as Ctrl+Home in the
+  scanner would put them: on the thing where there is room, on the
+  nearest footing where there is not. That is said: "Moved closer."
+  "Moved aside." A tile that is out of reach even from there is
+  counted with what could not be done, at the end.
 - Filling and outlining clear their own way first: trees, plants and
   loose things where the blocks are to go are cut down or dug out,
   then the blocks go in. Solid ground already there is left, being as
@@ -151,10 +154,8 @@ Work on an area:
   the character from wherever the work was, and picked up. What the
   inventory has no room for is counted and left.
 - The reach of a job is what is on screen, so the view is zoomed
-  right out for as long as it runs. Walking is only ever sideways:
-  what is too high or too far down is said as that, and the job
-  carries on once the character is higher or lower. A job that
-  leaves the character away from the work says where the work is.
+  right out for as long as it runs. A job that leaves the character
+  away from the work says where the work is.
 - X stops a job. The area stays marked for the next one.
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with
@@ -187,8 +188,8 @@ Factorio Access's keys.
 - The scan also refreshes by itself: whenever the category is
   changed, and at the first scanner key after five seconds without
   one, or when something in it has gone - an item picked up, an enemy
-  killed, a pot smashed, a vein dug into, a tree felled. It never
-  otherwise changes in the middle of a run of key
+  killed, a pot smashed, a tree felled, one tile dug out of a vein.
+  It never otherwise changes in the middle of a run of key
   presses. Home
   never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance. The character

@@ -198,6 +198,10 @@ internal sealed class WorldScanner
     /// spot, each time the list is taken.</summary>
     private const int NearAcross = 160, NearDown = 100;
 
+    /// <summary>The most tiles one entry is counted over again to see
+    /// whether it is as it was listed.</summary>
+    private const int CountLimit = 4096;
+
     /// <summary>The background survey takes seconds to go round the
     /// whole world, so what it last saw near the player may be what
     /// the player has since dug out, poured on or built. So the part
@@ -210,7 +214,8 @@ internal sealed class WorldScanner
         if (_source == null)
             return _latest!;
         var (px, py) = PlayerTile();
-        int left = px - NearAcross, top = py - NearDown, right = px + NearAcross, bottom = py + NearDown;
+        int left = Math.Max(0, px - NearAcross), top = Math.Max(0, py - NearDown);
+        int right = Math.Min(_source.Width - 1, px + NearAcross), bottom = Math.Min(_source.Height - 1, py + NearDown);
         var survey = new Surveyor(_source, left, top, right, bottom);
         while (survey.Step(64))
         {
@@ -228,17 +233,36 @@ internal sealed class WorldScanner
         {
             if (feature.Kind.Category == TerrariaScanSource.Liquids || feature.Kind.Name == "Lava")
                 continue;
-            var (kind, points) = (feature.Kind, feature.Points);
-            feature.Exists = () =>
-            {
-                foreach (var (x, y) in points)
+            var (kind, points, tiles) = (feature.Kind, feature.Points, feature.Tiles);
+            bool Is(int x, int y) => source.KindAt(x, y) is >= 0 and var at && ReferenceEquals(source.Kinds[at], kind);
+            var size = kind.CellSize;
+            // Counted again, tile for tile, over the squares it was
+            // gathered from and no further than was surveyed: one tile
+            // out of a vein is a different vein. Something too big for
+            // that to be quick is tried at one tile in each square.
+            if (size > 0 && points.Count * size * size <= CountLimit)
+                feature.Exists = () =>
                 {
-                    var at = source.KindAt(x, y);
-                    if (at < 0 || !ReferenceEquals(source.Kinds[at], kind))
-                        return false;
-                }
-                return true;
-            };
+                    var count = 0;
+                    foreach (var (x, y) in points)
+                    {
+                        int x0 = Math.Max(left, x / size * size), y0 = Math.Max(top, y / size * size);
+                        int x1 = Math.Min(right, x / size * size + size - 1), y1 = Math.Min(bottom, y / size * size + size - 1);
+                        for (var column = x0; column <= x1; column++)
+                        for (var row = y0; row <= y1; row++)
+                            if (Is(column, row))
+                                count++;
+                    }
+                    return count == tiles;
+                };
+            else
+                feature.Exists = () =>
+                {
+                    foreach (var (x, y) in points)
+                        if (!Is(x, y))
+                            return false;
+                    return true;
+                };
         }
         return _latest!.Where(feature => !Inside(feature)).Concat(near);
     }

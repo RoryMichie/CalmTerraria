@@ -25,12 +25,17 @@ internal static class Travel
     private static int _arrivingFrames;
     private static Vector2 _held;
     private static Action<string>? _say;
+    private static Func<(int X, int Y), bool>? _allowed;
 
     /// <summary>Go to a tile. What to say about where that left the
     /// character relative to it, or null when they are on it.</summary>
-    public static string? To(int x, int y, Action<string> say)
+    /// <param name="allowed">Which places to stand will do, by the tile
+    /// the feet are on, where not every one will: a job that is about
+    /// to put blocks where the character would be.</param>
+    public static string? To(int x, int y, Action<string> say, Func<(int X, int Y), bool>? allowed = null)
     {
         _say = say;
+        _allowed = allowed;
         if (Main.netMode == NetmodeID.MultiplayerClient && !Loaded(x, y))
         {
             // Not sent yet: go, hold still, and stand properly when
@@ -44,11 +49,14 @@ internal static class Travel
         return Stand(x, y);
     }
 
+    /// <summary>What is said when the character could not be moved.</summary>
+    public const string Nowhere = "Can't teleport: nowhere to stand near it.";
+
     private static string? Stand(int x, int y)
     {
         var player = Main.LocalPlayer;
         if (Footing(x, y) is not { } spot)
-            return "Can't teleport: nowhere to stand near it.";
+            return Nowhere;
         // Feet on the bottom of that tile, body across it and the next.
         Move(new Vector2(spot.X * 16f + 16f - player.width / 2f, (spot.Y + 1) * 16f - player.height));
         if (Touches(spot, x, y))
@@ -107,7 +115,7 @@ internal static class Travel
             {
                 var spot = (X: x + dx, Y: y + dy);
                 long score = dx * dx + dy * dy + (Touches(spot, x, y) ? 0 : 1_000_000);
-                if (score >= bestScore || !Stands(spot.X, spot.Y))
+                if (score >= bestScore || !Stands(spot.X, spot.Y) || _allowed?.Invoke(spot) == false)
                     continue;
                 best = spot;
                 bestScore = score;
