@@ -48,6 +48,17 @@ internal sealed class TerrariaScanSource : IScanSource
     private readonly int _lava;
     private readonly int _spiderNest;
     private readonly int _building;
+    private readonly int _desert;
+
+    /// <summary>How far in from the edge of the world the game calls
+    /// the surface a beach.</summary>
+    private const int BeachTiles = 380;
+
+    /// <summary>Sand is a desert only on the surface and away from the
+    /// oceans: a beach is sand too, and so are pockets in the caverns
+    /// and the fill of the underground desert, which has its own name.</summary>
+    private static bool SurfaceDesert(int x, int y) =>
+        y < Main.worldSurface && x >= BeachTiles && x <= Main.maxTilesX - BeachTiles;
 
     public TerrariaScanSource()
     {
@@ -96,6 +107,8 @@ internal sealed class TerrariaScanSource : IScanSource
         Place("Crimson", 50, TileID.CrimsonGrass, TileID.Crimstone);
         Place("Hallow", 50, TileID.HallowedGrass, TileID.Pearlstone);
         Place("Underground desert", 200, TileID.HardenedSand, TileID.Sandstone);
+        Place("Desert", 300, TileID.Sand, TileID.Ebonsand, TileID.Crimsand, TileID.Pearlsand);
+        _desert = _kinds.Count - 1;
         _spiderNest = Add(new ScanKind("Spider nest", Places, CellSize: 16, MinTiles: 100));
 
         // Buildings: what is made of worked wood or brick, or stands
@@ -162,8 +175,11 @@ internal sealed class TerrariaScanSource : IScanSource
             int type = tile.TileType;
             if (type < _placeOfType.Length)
             {
-                if (_placeOfType[type] >= 0)
-                    return _placeOfType[type];
+                var place = _placeOfType[type];
+                if (place == _desert && !SurfaceDesert(x, y))
+                    place = -1;
+                if (place >= 0)
+                    return place;
                 if (_categoryOfType[type] is { } category)
                     return ThingAt(x, y, tile, type, category);
             }

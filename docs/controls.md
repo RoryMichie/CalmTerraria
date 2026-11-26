@@ -207,6 +207,10 @@ Buildings are under Places: anything made of worked wood or brick, or
 standing in front of a wall somebody put up. That is the player's own
 building, and the cabins and ruins the world came with.
 
+A desert is under Places too: sand on the surface, away from the
+oceans, where a beach is sand as well. What lies under it is the
+Underground desert, its own entry.
+
 A chest that has been given a name is listed under Containers by that
 name, as its own entry: "Ores, Chest".
 
@@ -406,6 +410,12 @@ light". F1 reads the description again.
   then up 2. Right: flat 12, then a drop." A side that is level for
   thirty tiles is "flat". A room says how many of its tiles have no
   back wall only when some have none.
+- Crossing into a biome says it, unasked, name first: "Jungle
+  biome." "Desert biome." It is said once the character has been in
+  it for a second, so walking along a border is not a run of them.
+  Ground that is no biome in particular is said by its layer:
+  "Underground biome." "Caverns biome." Nothing is said on first
+  coming into a world; Z reads where that is.
 - C: the character's coordinates, in tiles - "2140, 312." The
   first counts from the world's left edge and the second from its
   top, so the second grows going down.- Apostrophe: what the character's informational accessories show -

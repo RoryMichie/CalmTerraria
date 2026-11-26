@@ -25,6 +25,58 @@ internal sealed class Surroundings
         _scanner = scanner;
         shell.WorldCommands[KeyCombo.Plain(Key.Char('z'))] = () => _host.App.Announce(Describe());
         shell.WorldCommands[KeyCombo.Plain(Key.Char('c'))] = () => _host.App.Announce(Whereabouts());
+        shell.EnteredWorld += () =>
+        {
+            _biome = null;
+            _pending = null;
+        };
+        shell.WorldFrame += Crossing;
+    }
+
+    /// <summary>How long the character must have been in a biome
+    /// before it is said, so that a border walked along, or a zone the
+    /// game is in two minds about, is not said over and over.</summary>
+    private const ulong SettleMs = 1000;
+
+    /// <summary>The biome last said, or null on first coming into a
+    /// world, where the one stood in is taken without a word.</summary>
+    private string? _biome;
+    private string? _pending;
+    private ulong _pendingSince;
+
+    /// <summary>A sighted player knows a biome has been crossed into
+    /// as the backdrop changes. Said unasked, name first.</summary>
+    private void Crossing()
+    {
+        var player = Main.LocalPlayer;
+        if (player.dead)
+            return;
+        var now = Biome(player);
+        // Ground that is nothing in particular is the layer it is in,
+        // which is what the game calls those biomes.
+        if (now == "Plain ground")
+            now = player.ZoneDirtLayerHeight ? "Underground" : "Caverns";
+        if (_biome == null)
+        {
+            _biome = now;
+            return;
+        }
+        if (now == _biome)
+        {
+            _pending = null;
+            return;
+        }
+        if (now != _pending)
+        {
+            _pending = now;
+            _pendingSince = _host.Now;
+            return;
+        }
+        if (_host.Now - _pendingSince < SettleMs)
+            return;
+        _biome = now;
+        _pending = null;
+        _host.App.Announce($"{now} biome.");
     }
 
     /// <summary>The character's tile, as the game numbers the world:
