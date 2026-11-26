@@ -9,7 +9,8 @@ namespace CalmTerraria.World;
 /// the waypoints and the scanner. The game's own teleport, so a server
 /// is told the way a Rod of Discord tells it.
 ///
-/// The character is never put inside the ground or left in mid-air.
+/// The character is never put inside the ground or left in mid-air,
+/// nor on or against what hurts to touch: spikes, a rolling cactus.
 /// It is stood on the thing, if there is room to stand on it - so
 /// that an item on the ground is picked up - and otherwise on the
 /// nearest footing, however far that is, with how far the thing then
@@ -132,7 +133,21 @@ internal static class Travel
             for (var row = y - 2; row <= y; row++)
                 if (WorldGen.SolidTile(column, row) || Main.tile[column, row] is { LiquidAmount: > 0, LiquidType: LiquidID.Lava })
                     return false;
+        // Nothing that hurts under the feet, overhead, or to either side.
+        for (var column = x - 1; column <= x + 2; column++)
+            for (var row = y - 3; row <= y + 1; row++)
+                if (Hurts(column, row))
+                    return false;
         return Floor(x, y + 1) || Floor(x + 1, y + 1);
+    }
+
+    private static bool Hurts(int x, int y)
+    {
+        if (!WorldGen.InWorld(x, y))
+            return false;
+        var tile = Main.tile[x, y];
+        return tile.HasTile && !tile.IsActuated
+            && (tile.TileType == TileID.RollingCactus || TileID.Sets.TouchDamageImmediate[tile.TileType] > 0 || TileID.Sets.TouchDamageHot[tile.TileType]);
     }
 
     private static bool Floor(int x, int y)
