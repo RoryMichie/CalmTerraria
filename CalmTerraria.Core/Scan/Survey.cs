@@ -73,8 +73,14 @@ public sealed class Feature
     /// once it is gone. The snapshot keeps the entry either way.</summary>
     public Func<(int X, int Y)?>? Live { get; set; }
 
-    /// <summary>A moving thing that is no longer there.</summary>
-    public bool Gone => Live != null && Live() == null;
+    /// <summary>For something that stays put: whether it is still
+    /// there, whole. A pot that has been smashed, a vein that has been
+    /// dug into.</summary>
+    public Func<bool>? Exists { get; set; }
+
+    /// <summary>A thing that is no longer there, or no longer as it
+    /// was listed.</summary>
+    public bool Gone => (Live != null && Live() == null) || (Exists != null && !Exists());
 
     /// <summary>The size worth saying, or null.</summary>
     public int? SaidTiles => Kind.Sized && Tiles > 1 ? Tiles : null;

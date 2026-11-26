@@ -187,7 +187,8 @@ Factorio Access's keys.
 - The scan also refreshes by itself: whenever the category is
   changed, and at the first scanner key after five seconds without
   one, or when something in it has gone - an item picked up, an enemy
-  killed. It never otherwise changes in the middle of a run of key
+  killed, a pot smashed, a vein dug into, a tree felled. It never
+  otherwise changes in the middle of a run of key
   presses. Home
   never refreshes; it goes to what was last read.
 - Home: move the cursor to the selected instance. The character

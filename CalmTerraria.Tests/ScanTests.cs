@@ -237,6 +237,20 @@ public class ScanListTests
     }
 
     [Fact]
+    public void AThingThatStaysPutIsGoneOnceItNoLongerExists()
+    {
+        var pot = new ScanKind("Pot", "Ores");
+        var whole = true;
+        var list = new ScanList(Order, () => (5, 0));
+        list.Refresh(new[] { new Feature(pot, 8, 0) { Exists = () => whole } });
+        Assert.False(list.AnyGone);
+        Assert.Equal("Pot, 3 right", list.Read());
+        whole = false;
+        Assert.True(list.AnyGone);
+        Assert.Equal("Pot, gone", list.Read());
+    }
+
+    [Fact]
     public void AMovingThingIsReadWhereItIsNowAndSaidGoneWhenItIs()
     {
         var zombie = new ScanKind("Zombie", "Ores");

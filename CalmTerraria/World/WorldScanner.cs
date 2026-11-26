@@ -218,7 +218,28 @@ internal sealed class WorldScanner
         bool Inside(Feature feature) =>
             feature.Bounds.Left > left + 2 && feature.Bounds.Right < right - 2
             && feature.Bounds.Top > top + 2 && feature.Bounds.Bottom < bottom - 2;
-        var near = Refine(survey.Finish()).Where(Inside);
+        var near = Refine(survey.Finish()).Where(Inside).ToList();
+        // What is here can be smashed, mined or cut down between one
+        // scanner key and the next, and the list is then retaken
+        // before it is read. Liquids are left out: they are never
+        // still, and a list that moved with them would never settle.
+        var source = _source;
+        foreach (var feature in near)
+        {
+            if (feature.Kind.Category == TerrariaScanSource.Liquids || feature.Kind.Name == "Lava")
+                continue;
+            var (kind, points) = (feature.Kind, feature.Points);
+            feature.Exists = () =>
+            {
+                foreach (var (x, y) in points)
+                {
+                    var at = source.KindAt(x, y);
+                    if (at < 0 || !ReferenceEquals(source.Kinds[at], kind))
+                        return false;
+                }
+                return true;
+            };
+        }
         return _latest!.Where(feature => !Inside(feature)).Concat(near);
     }
 
