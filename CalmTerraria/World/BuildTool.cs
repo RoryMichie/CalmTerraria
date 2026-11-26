@@ -669,6 +669,11 @@ internal sealed class BuildTool : IBuild
         Main.GameZoomTarget = 1f;
         Working = true;
         _dug = null;
+        _stoodBy = false;
+        // Work that leaves nothing more to do there lets the area go
+        // when it is done. Clearing, a path, taking walls down and
+        // moving liquid are as often the first of two jobs.
+        _letsGo = key is "fill" or "outline" or "level" or "wall" or "mine";
         Begin(job);
     }
 
@@ -697,7 +702,7 @@ internal sealed class BuildTool : IBuild
         _rounds = 0;
         _walk = Walk.No;
         _gaveUpWalking = false;
-        Say($"{job.Doing} {job.Targets.Count} tiles. X stops.");
+        Say($"{job.Doing} {job.Targets.Count} tiles.");
     }
 
     private void End()
@@ -995,6 +1000,7 @@ internal sealed class BuildTool : IBuild
             }
         }
         Shout();
+        StandByWork();
         // What was dug or cut down lies where it fell, which with a
         // long reach is not where the character is: go and get it.
         if (_dug is { } dug)
@@ -1020,10 +1026,46 @@ internal sealed class BuildTool : IBuild
             var nearest = _job.Targets.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
             if (Math.Abs(nearest.X - px) > 6 || Math.Abs(nearest.Y - py) > 8)
                 where = $"It is {Directions.Offset(nearest.X - px, nearest.Y - py)}.";
+            else if (_stoodBy)
+                where = "Moved beside it.";
         }
         End();
+        // Done with, and nothing left over to try again: the area is
+        // let go, so the next X is a first corner.
+        if (failed == 0 && _letsGo)
+        {
+            _a = _b = null;
+            _markedName = null;
+            _markedFeature = null;
+        }
         Say((failed == 0 ? "Done." : $"Done. {failed} could not be {done}.")
             + (also == null ? "" : " " + also) + (where == null ? "" : " " + where));
+    }
+
+    private bool _letsGo, _stoodBy;
+
+    /// <summary>The character ends beside what was done. A job reaches
+    /// a long way and may have carried them about; when it is over they
+    /// are stood by the nearest of the work - just outside it, where
+    /// the work was building, and not shut in.</summary>
+    private void StandByWork()
+    {
+        var targets = _job!.Targets;
+        if (targets.Count == 0)
+            return;
+        var (px, py) = WorldScanner.PlayerTile();
+        var nearest = targets.MinBy(t => Math.Abs(t.X - px) + Math.Abs(t.Y - py));
+        if (Math.Abs(nearest.X - px) <= 6 && Math.Abs(nearest.Y - py) <= 8)
+            return;
+        Func<(int X, int Y), bool>? outside = null;
+        if (_job.Kind is Kind.Fill or Kind.Outline)
+        {
+            var (left, top, right, bottom) = (targets.Min(t => t.X), targets.Min(t => t.Y), targets.Max(t => t.X), targets.Max(t => t.Y));
+            // The body is two tiles across and three up from the feet.
+            outside = feet => feet.X + 1 < left || feet.X > right || feet.Y < top || feet.Y - 2 > bottom;
+        }
+        if (Travel.To(nearest.X, nearest.Y, _ => { }, outside) != Travel.Nowhere)
+            _stoodBy = true;
     }
 
     // ── Fetching ──

@@ -154,9 +154,16 @@ Work on an area:
   the character from wherever the work was, and picked up. What the
   inventory has no room for is counted and left.
 - The reach of a job is what is on screen, so the view is zoomed
-  right out for as long as it runs. A job that leaves the character
-  away from the work says where the work is.
-- X stops a job. The area stays marked for the next one.
+  right out for as long as it runs.
+- When a job is done the character is beside what was done: if the
+  work has left them further off than a few tiles, they are stood by
+  the nearest of it - just outside it, for a fill or an outline - and
+  "Moved beside it." is said after "Done."
+- A job that leaves nothing more to do there lets the area go when it
+  finishes with nothing left over: Fill, Outline, Level, Wall and
+  Mine. The next X is a first corner. Clear, Clear path, Remove
+  walls and the liquid jobs keep the area marked for the next job.
+- X stops a job. The area stays marked.
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with
   Mine: the vein miner. Every tile of it that touches, and nothing
