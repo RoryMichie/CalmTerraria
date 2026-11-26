@@ -413,8 +413,11 @@ light". F1 reads the description again.
 - Crossing into a biome says it, unasked, name first: "Jungle
   biome." "Desert biome." It is said once the character has been in
   it for a second, so walking along a border is not a run of them.
-  Ground that is no biome in particular is said by its layer:
-  "Underground biome." "Caverns biome." Nothing is said on first
+  Crossing into a layer of the world is said the same way: "Surface
+  layer." "Underground layer." "Cavern layer." Both at once are one
+  line, biome first: "Jungle biome. Underground layer." Coming out
+  of a biome into ground that is none in particular says the layer.
+  Nothing is said on first
   coming into a world; Z reads where that is.
 - C: the character's coordinates, in tiles - "2140, 312." The
   first counts from the world's left edge and the second from its

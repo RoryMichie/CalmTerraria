@@ -40,8 +40,8 @@ internal sealed class Surroundings
 
     /// <summary>The biome last said, or null on first coming into a
     /// world, where the one stood in is taken without a word.</summary>
-    private string? _biome;
-    private string? _pending;
+    private (string Biome, string Layer)? _biome;
+    private (string Biome, string Layer)? _pending;
     private ulong _pendingSince;
 
     /// <summary>A sighted player knows a biome has been crossed into
@@ -51,11 +51,7 @@ internal sealed class Surroundings
         var player = Main.LocalPlayer;
         if (player.dead)
             return;
-        var now = Biome(player);
-        // Ground that is nothing in particular is the layer it is in,
-        // which is what the game calls those biomes.
-        if (now == "Plain ground")
-            now = player.ZoneDirtLayerHeight ? "Underground" : "Caverns";
+        var now = (Biome(player), Layer(player));
         if (_biome == null)
         {
             _biome = now;
@@ -74,9 +70,20 @@ internal sealed class Surroundings
         }
         if (_host.Now - _pendingSince < SettleMs)
             return;
+        var (wasBiome, wasLayer) = _biome.Value;
+        var (biome, layer) = now;
         _biome = now;
         _pending = null;
-        _host.App.Announce($"{now} biome.");
+        // Ground that is no biome in particular has only its layer to
+        // be told by. The underworld is both, and is said once.
+        var plain = biome == "Plain ground";
+        var parts = new List<string>();
+        if (biome != wasBiome && !plain)
+            parts.Add($"{biome} biome.");
+        if ((layer != wasLayer || (biome != wasBiome && plain)) && biome != "Underworld")
+            parts.Add(layer == "caverns" ? "Cavern layer." : $"{char.ToUpperInvariant(layer[0])}{layer[1..]} layer.");
+        if (parts.Count > 0)
+            _host.App.Announce(string.Join(" ", parts));
     }
 
     /// <summary>The character's tile, as the game numbers the world:
