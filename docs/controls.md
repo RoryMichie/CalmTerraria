@@ -164,6 +164,9 @@ Work on an area:
   Mine. The next X is a first corner. Clear, Clear path, Remove
   walls and the liquid jobs keep the area marked for the next job.
 - X stops a job. The area stays marked.
+- Shift+X while a job runs says how far through it is: "Outlining
+  47 of 96 done." It is the stage the job is on - a fill that clears
+  its way first counts the clearing, then the filling.
 - With something from the scanner marked by Shift+X that is made of
   one kind of tile - ore, gems, spikes - the Build list leads with
   Mine: the vein miner. Every tile of it that touches, and nothing

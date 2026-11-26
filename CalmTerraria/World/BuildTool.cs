@@ -78,7 +78,7 @@ internal sealed class BuildTool : IBuild
         {
             if (_job != null)
             {
-                Say("A job is running. X stops it.");
+                Say(Progress());
                 return;
             }
             if (scanner.Selected is not { } feature)
@@ -107,6 +107,18 @@ internal sealed class BuildTool : IBuild
     }
 
     private void Say(string text) => _host.App.Announce(text);
+
+    /// <summary>Shift+X while a job runs: how far through it is. The
+    /// stage it is on, where it has more than one - the way is cleared
+    /// before blocks go in - and roughly, since work can make work.</summary>
+    private string Progress()
+    {
+        if (_fetching)
+            return "Picking up what was dug.";
+        var left = _queue.Count + _failed.Count + _far.Count + _aside.Count + (_current == null ? 0 : 1);
+        var total = Math.Max(_job!.Targets.Count, left);
+        return $"{_job.Doing} {total - left} of {total} done.";
+    }
 
     private void Mark()
     {
