@@ -115,7 +115,7 @@ internal sealed class MoveSounds
 
     /// <summary>The game's own measure: a fall of more than this many
     /// tiles hurts, unless something worn prevents it.</summary>
-    private const int SafeFall = 25;
+    internal const int SafeFall = 25;
 
     /// <summary>Falling: a whistle for as long as it lasts, sinking in
     /// pitch as the fall goes on, and fluttering once the fall is

@@ -1,0 +1,49 @@
+# A job walking the character aside jumps a step once, and gives up at a wall.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do ledge
+do hold Wood 300
+do where
+log --- blocks where the character stands, nearer the left: up the ledge
+key ctrl+k
+key m
+key j
+key x
+key l
+key l
+key l
+key l
+key l
+key x
+heard Second corner
+key tab
+heard Build
+key enter
+heard Done
+wait 500
+do where
+log --- against the wall, nearer the right: no jumping at it, put aside at once
+hold D 2500
+wait 500
+do where
+key ctrl+k
+key m
+key x
+key j
+key j
+key x
+heard Second corner
+key tab
+heard Build
+key enter
+heard Done
+wait 500
+do where
+quit

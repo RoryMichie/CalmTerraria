@@ -139,8 +139,9 @@ Work on an area:
 - The job moves the character itself, and never asks for it to be
   done: aside, when a block is to go where they stand, and closer,
   when what is left is out of reach. It walks as a player would,
-  jumping a step, and says nothing while it does. Where walking will
-  not get there - the thing is above or below, or there is a drop or
+  jumping a step and dropping off a ledge, and says nothing while it
+  does. Where walking will not get there - the thing is above or
+  below, or there is a wall of ground, a fall long enough to hurt or
   lava on the way - the character is put there, as Ctrl+Home in the
   scanner would put them: on the thing where there is room, on the
   nearest footing where there is not. That is said: "Moved closer."

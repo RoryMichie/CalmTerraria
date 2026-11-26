@@ -261,6 +261,26 @@ internal static class DebugCommands
             }
             log.Info($"Debug: pockmarked {px + 3}..{px + 18}, floor at {floor}.");
         });
+        // ledge - a step three tiles high just left of the character,
+        // and a wall too tall to jump a little further right.
+        autopilot.Register("ledge", _ =>
+        {
+            RequireTestWorld();
+            var (px, py) = WorldScanner.PlayerTile();
+            var floor = py + 2;
+            for (var x = px - 6; x <= px - 2; x++)
+                for (var y = floor - 3; y < floor; y++)
+                    WorldGen.PlaceTile(x, y, TileID.Stone, mute: true, forced: true);
+            for (var y = floor - 12; y < floor; y++)
+                WorldGen.PlaceTile(px + 8, y, TileID.Stone, mute: true, forced: true);
+            log.Info($"Debug: ledge at {px - 6}..{px - 2}, wall at {px + 8}, floor at {floor}.");
+        });
+        // where - the character's tile, and whether they are on the ground.
+        autopilot.Register("where", _ =>
+        {
+            var (px, py) = WorldScanner.PlayerTile();
+            log.Info($"Where: {px}, {py}, {(Main.LocalPlayer.velocity.Y == 0f ? "standing" : "in the air")}.");
+        });
         // ground - how flat that stretch is now: open tiles in the floor, solid ones above it.
         autopilot.Register("ground", _ =>
         {

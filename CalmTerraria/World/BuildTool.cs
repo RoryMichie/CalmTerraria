@@ -1202,16 +1202,17 @@ internal sealed class BuildTool : IBuild
     // ── Walking ──
     // The job walks the character itself: out of the way of a block
     // that is to go where they stand, and nearer to what is out of
-    // reach. It walks as a player does - left, right, a jump at a
-    // step - and will not walk into lava or off a drop. Where it
-    // cannot walk, the character is put there: the job never asks
-    // the player to do its walking.
+    // reach. It walks as a player does - left, right, down off a
+    // ledge, one jump at a step a jump gets up - and will not walk
+    // into lava or off a drop long enough to hurt. Where it cannot
+    // walk, the character is put there: the job never asks the
+    // player to do its walking.
 
     private enum Walk { No, Aside, Closer, Fetch }
 
     private Walk _walk;
     private (int X, int Y) _walkGoal;
-    private int _walkDirection, _stuckFrames, _jumpFrames, _hops, _walkFrames;
+    private int _walkDirection, _stuckFrames, _jumpFrames, _hops, _hopAt, _walkFrames;
     private float _walkLastX;
     private bool _gaveUpWalking;
 
@@ -1254,8 +1255,7 @@ internal sealed class BuildTool : IBuild
             // on a tall job - is no nearer for any amount of it, and
             // walking towards its column only carries the character
             // off across the world.
-            var visible = (int)(Main.screenHeight / 32f / Math.Max(0.1f, Main.GameViewMatrix.Zoom.Y)) - 2;
-            if (Math.Abs(goal.X - px) <= 1 || Math.Abs(goal.Y - py) > Math.Min(visible, ReachY))
+            if (Math.Abs(goal.X - px) <= 1 || Math.Abs(goal.Y - py) > ReachDown())
             {
                 GiveUpWalking();
                 return;
@@ -1263,9 +1263,40 @@ internal sealed class BuildTool : IBuild
             _walkDirection = Math.Sign(goal.X - px);
         }
         _stuckFrames = _jumpFrames = _hops = _walkFrames = 0;
+        _hopAt = int.MinValue;
         _walkLastX = player.position.X;
         // Said only when it cannot be done: walking that is happening
         // is heard in the footsteps, and needs no announcing.
+    }
+
+    /// <summary>How far above or below the character a tile can be
+    /// and still be worked: the reach, or the screen where that is
+    /// the less.</summary>
+    private static int ReachDown() =>
+        Math.Min((int)(Main.screenHeight / 32f / Math.Max(0.1f, Main.GameViewMatrix.Zoom.Y)) - 2, ReachY);
+
+    /// <summary>How high a step is jumped: under what a jump clears,
+    /// which is six tiles and a half.</summary>
+    private const int Hop = 5;
+
+    /// <summary>Whether a jump gets the character over what it is
+    /// against: room to stand in the next column no higher than a
+    /// jump goes, and nothing over the character's head on the way
+    /// up. A cliff or a wall of ground is not jumped at.</summary>
+    private bool Jumpable(Player player)
+    {
+        var feet = (int)((player.position.Y + player.height - 1f) / 16f);
+        var left = (int)(player.position.X / 16f);
+        var right = (int)((player.position.X + player.width - 1f) / 16f);
+        var wall = _walkDirection < 0 ? (int)((player.position.X - 2f) / 16f) : (int)((player.position.X + player.width + 1f) / 16f);
+        for (var up = 1; up <= Hop; up++)
+        {
+            if (WorldGen.SolidTile(left, feet - 2 - up) || WorldGen.SolidTile(right, feet - 2 - up))
+                return false;
+            if (!WorldGen.SolidTile(wall, feet - up) && !WorldGen.SolidTile(wall, feet - up - 1) && !WorldGen.SolidTile(wall, feet - up - 2))
+                return true;
+        }
+        return false;
     }
 
     private void GiveUpWalking()
@@ -1311,38 +1342,52 @@ internal sealed class BuildTool : IBuild
             GiveUpWalking();
             return;
         }
-        // Not into lava, and not off an edge with nothing under it.
+        // Not into lava, and not off an edge with a fall under it
+        // that would hurt: a drop the game itself calls harmless is
+        // walked off like any other step down. The feet are a tile
+        // under the middle of the body, the ground one under that.
         var ahead = px + _walkDirection;
+        var deepest = py + 2 + (player.noFallDmg ? 40 : MoveSounds.SafeFall + player.extraFall - 3);
+        var floor = -1;
+        for (var row = py + 1; row <= deepest && floor < 0; row++)
+            if (WorldGen.InWorld(ahead, row) && Main.tile[ahead, row] is { HasTile: true, IsActuated: false } tile
+                && (Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType]))
+                floor = row;
         var lava = false;
-        for (var row = py - 1; row <= py + 3 && !lava; row++)
+        for (var row = py - 1; row <= Math.Max(py + 3, floor) && !lava; row++)
             lava = IsLava(ahead, row) || IsLava(ahead + _walkDirection, row);
-        var floor = false;
-        for (var row = py + 1; row <= py + 8 && !floor; row++)
-            floor = WorldGen.InWorld(ahead, row) && Main.tile[ahead, row] is { HasTile: true } tile
-                && (Main.tileSolid[tile.TileType] || Main.tileSolidTop[tile.TileType]);
-        if (lava || !floor)
+        // Nor down to where the thing would be out of reach overhead.
+        var tooDeep = _walk == Walk.Closer && floor > py + 2 && floor - 2 - _walkGoal.Y > ReachDown();
+        if (lava || floor < 0 || tooDeep)
         {
             GiveUpWalking();
             return;
         }
-        // Against a step: jump it. Against a wall: stop trying.
-        if (Math.Abs(player.position.X - _walkLastX) < 0.5f)
-            _stuckFrames++;
-        else
-            _stuckFrames = 0;
+        // Against a step: jump it, once, from the ground - a second
+        // press in the air is a double jump or a pair of wings, and
+        // goes nowhere. Against a wall or a cliff: stop at once.
+        var moved = Math.Abs(player.position.X - _walkLastX) >= 0.5f;
+        _stuckFrames = moved ? 0 : _stuckFrames + 1;
         _walkLastX = player.position.X;
-        if (_stuckFrames >= 12 && _jumpFrames == 0)
+        if (_stuckFrames >= 12 && _jumpFrames == 0 && player.velocity.Y == 0f)
         {
-            if (++_hops > 4)
+            if (px != _hopAt)
+            {
+                _hopAt = px;
+                _hops = 0;
+            }
+            if (++_hops > 2 || !Jumpable(player))
             {
                 GiveUpWalking();
                 return;
             }
-            _jumpFrames = 14;
+            // The whole of a jump, and no longer: held past its top,
+            // the key is flight.
+            _jumpFrames = 16;
             _stuckFrames = 0;
         }
         if (_jumpFrames > 0)
-            _jumpFrames--;
+            _jumpFrames = moved ? Math.Min(_jumpFrames - 1, 3) : _jumpFrames - 1;
         WalkDirection = _walkDirection;
         WalkJump = _jumpFrames > 0;
     }
