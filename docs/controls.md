@@ -220,6 +220,9 @@ Buildings are under Places: anything made of worked wood or brick, or
 standing in front of a wall somebody put up. That is the player's own
 building, and the cabins and ruins the world came with.
 
+Platforms are under Places too: each run of them is one entry, with
+how many tiles long it is, down to a single platform hung in the air.
+
 A desert is under Places too: sand on the surface, away from the
 oceans, where a beach is sand as well. What lies under it is the
 Underground desert, its own entry.

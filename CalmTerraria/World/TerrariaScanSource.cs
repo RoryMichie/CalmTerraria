@@ -49,6 +49,7 @@ internal sealed class TerrariaScanSource : IScanSource
     private readonly int _spiderNest;
     private readonly int _building;
     private readonly int _desert;
+    private readonly int _platform;
 
     /// <summary>How far in from the edge of the world the game calls
     /// the surface a beach.</summary>
@@ -129,6 +130,17 @@ internal sealed class TerrariaScanSource : IScanSource
         foreach (var type in built)
             if (_placeOfType[type] < 0)
                 _placeOfType[type] = _building;
+
+        // Platforms, in runs: a bridge, a stair, an arena in the sky.
+        // Each run is its own entry however small, since one platform
+        // hung in the air is exactly what there is no other way to find.
+        _platform = Add(new ScanKind("Platform", Places, CellSize: 2, MinTiles: 1));
+        for (var type = 0; type < types; type++)
+            if (TileID.Sets.Platforms[type])
+            {
+                _placeOfType[type] = _platform;
+                _categoryOfType[type] = null;
+            }
 
         _liquidKinds = new[] { "Water", "Lava", "Honey", "Shimmer" }
             .Select(name => Add(new ScanKind(name, Liquids, CellSize: 2, MinTiles: 40)))

@@ -1,0 +1,47 @@
+# A row of platforms is found by the scanner, under Places.
+heard Single player
+play calmtest calmtest
+heard Ready
+wait 3000
+do time day
+do clear
+do godmode
+do arena
+wait 1500
+do hold WoodPlatform 300
+key ctrl+k
+key l
+key l
+key l
+key l
+key l
+key l
+key m
+key x
+key l
+key l
+key l
+key l
+key l
+key x
+heard Second corner
+key tab
+heard Build
+wait 300
+key enter
+heard Done
+wait 3000
+do survey
+key end
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+key ctrl+pagedown
+wait 300
+key pagedown
+key pagedown
+key home
+quit

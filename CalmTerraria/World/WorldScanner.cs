@@ -40,14 +40,15 @@ internal sealed class WorldScanner
 
     /// <summary>The place - biome, dungeon, building - that a tile is
     /// in, as the background survey last had it: the smallest whose
-    /// bounds hold the tile. Buildings are left to the room check.</summary>
+    /// bounds hold the tile. Buildings are left to the room check, and
+    /// a run of platforms is not somewhere to be in.</summary>
     public Feature? PlaceAt(int x, int y)
     {
         Feature? best = null;
         long bestArea = long.MaxValue;
         foreach (var feature in _latest ?? new List<Feature>())
         {
-            if (feature.Kind.Category != TerrariaScanSource.Places || feature.Kind.Name == "Building")
+            if (feature.Kind.Category != TerrariaScanSource.Places || feature.Kind.Name is "Building" or "Platform")
                 continue;
             var (left, top, right, bottom) = feature.Bounds;
             if (x < left || x > right || y < top - 20 || y > bottom + 20)
